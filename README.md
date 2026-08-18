@@ -20,9 +20,12 @@ The current world and document records are generated from structured template
 blueprints. Generated prose is templated and has not been expert-reviewed.
 Expert authoring, recruitment, and review gates remain pending.
 
-The v1 synthetic data and evaluation material are public. Official model
-results, human-review results, stakeholder-model selection, and judge
-calibration remain separate release gates.
+The checked-in v1 fixture is intentionally prepared for public distribution:
+all 72 worlds, including oracle state, assertions, hidden events, and reference
+traces, are public synthetic data under CC BY 4.0. Repository fixture
+publication is distinct from declaring an official benchmark release or result
+set. Official model results, human-review results, stakeholder-model selection,
+and judge calibration remain separate release gates.
 
 ## Contract
 
@@ -82,7 +85,11 @@ record contains the exact `runtime_version`, immutable `image_digest`, and full
 `git_revision`. It also contains an `executor_policy_digest` covering effective
 inherited rlimits and other evaluator host and job policies. The digest records
 policy and creates no resource cap. The environment is configuration-bound.
-Local runs without that provenance remain runnable but unofficial.
+Local runs without that provenance remain runnable but unofficial. Container
+and evaluator hosts must also enforce explicit safety ceilings for processes,
+memory, CPU, file descriptors, and execution duration; those ceilings are
+security controls and are recorded in the executor policy rather than treated
+as benchmark budgets.
 
 When a system relies on provider defaults, its resolved manifest must pin a
 SHA-256 digest of the canonical provider-default and API configuration. A
