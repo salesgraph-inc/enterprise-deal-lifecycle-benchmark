@@ -3495,6 +3495,7 @@ def generate_dataset(
     forbidden_phrases: Iterable[str] = (),
     forbidden_entities: Iterable[str] = (),
     shared_seller_actor_ids: Iterable[str] = (),
+    force: bool = False,
 ) -> dict[str, Any]:
     target = (
         Path(root)
@@ -3504,6 +3505,13 @@ def generate_dataset(
     target.mkdir(parents=True, exist_ok=True)
     output_path = target / "output"
     if output_path.exists():
+        if not output_path.is_dir() or output_path.is_symlink():
+            raise ValueError(f"refusing to replace unsafe output path: {output_path}")
+        if any(output_path.iterdir()) and not force:
+            raise ValueError(
+                f"output path already exists and is not empty: {output_path}; "
+                "pass force=True to replace generated output"
+            )
         shutil.rmtree(output_path)
     worlds: list[dict[str, Any]] = []
     for vertical_index in range(len(VERTICALS)):
