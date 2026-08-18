@@ -1,7 +1,9 @@
 [project]
-name = "data"
+name = "edlb"
 version = "0.1.0"
-description = "Add your description here"
+description = "Enterprise Deal Lifecycle Benchmark"
+license = "MIT"
+license-files = ["LICENSE", "LICENSE-DATA"]
 readme = "README.md"
 authors = [
     { name = "Ricardo Nunez", email = "113212961+ricardonunez-io@users.noreply.github.com" }
@@ -10,7 +12,14 @@ requires-python = ">=3.14"
 dependencies = []
 
 [project.scripts]
-data = "data:main"
+edlb = "edlb.cli:main"
+
+[dependency-groups]
+dev = [
+    "jsonschema>=4.23",
+    "mypy>=1.13",
+    "ruff>=0.8",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
