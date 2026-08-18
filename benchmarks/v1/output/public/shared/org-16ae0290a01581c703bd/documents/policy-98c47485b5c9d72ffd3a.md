@@ -1,0 +1,20 @@
+# Blueharbor Risk Partners customer references
+
+- Document ID: policy-98c47485b5c9d72ffd3a
+- Seller: org-16ae0290a01581c703bd
+- Vertical: commercial_insurance
+- Effective date: 2025-01-24T00:00:00Z
+- Synthetic: true
+- Provenance: EDLB deterministic policy template v1.0.0, CC-BY-4.0
+
+## Control
+
+Rule: For customer references, Blueharbor Risk Partners may not mark policy issuance complete until Placement Director verifies signed submission, exposure schedule, and five-year loss runs.
+Owner: Placement Director
+Required evidence: signed submission, exposure schedule, and five-year loss runs.
+Approval threshold: Exposure above USD 250,000.00 (25000000 minor units) requires written approval from Placement Director.
+Escalation trigger: Escalate when loss data is older than 90 days or a material exposure is unclassified.
+
+## Recordkeeping
+
+Attach the evidence to the policy issuance record, preserve prior versions, and record the decision date before advancing the commercial insurance placement.

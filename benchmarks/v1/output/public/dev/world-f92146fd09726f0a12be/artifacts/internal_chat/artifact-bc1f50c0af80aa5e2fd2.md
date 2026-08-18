@@ -1,0 +1,9 @@
+# Legal Services security and privilege review update
+
+- Channel: internal chat
+- Date: 2025-05-30T09:00:00Z
+- Participants: Wren K. Cairn, Rhea M. Orchard
+
+Wren K. Cairn: The USD 950,000.00 amount is unchanged, but security and privilege review still has an open dependency.
+Rhea M. Orchard: I will flag the stale projection and avoid overwriting the audit history.
+Wren K. Cairn: The fee arrangement record remains the latest confirmed source for this thread.

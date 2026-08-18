@@ -1,0 +1,14 @@
+# Manufacturing commercial terms update
+
+- From: account.executive@northstar-fabrication.example
+- To: pax-c-juniper@juniper-northfield-collective.example
+- Date: 2025-06-10T09:00:00Z
+- Subject: Juniper Northfield Collective industrial component and equipment sale | commercial terms review
+
+Hi Pax C. Juniper,
+
+Today we agreed not to advance beyond commercial terms until the source record is reconciled. Please reply with corrections to the owner, amount, or timing.
+The quality and capacity review record remains the latest confirmed source for this thread.
+
+Regards,
+Hollis K. Cairn

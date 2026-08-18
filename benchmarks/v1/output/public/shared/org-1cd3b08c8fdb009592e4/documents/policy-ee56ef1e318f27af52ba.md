@@ -1,0 +1,20 @@
+# Fieldstone Advisory Studio CRM field dictionary
+
+- Document ID: policy-ee56ef1e318f27af52ba
+- Seller: org-1cd3b08c8fdb009592e4
+- Vertical: consulting
+- Effective date: 2025-01-02T00:00:00Z
+- Synthetic: true
+- Provenance: EDLB deterministic policy template v1.0.0, CC-BY-4.0
+
+## Control
+
+Rule: For CRM field dictionary, Fieldstone Advisory Studio may not mark commercial model complete until Engagement Partner verifies signed discovery summary, scope assumptions, and executive sponsor confirmation.
+Owner: Engagement Partner
+Required evidence: signed discovery summary, scope assumptions, and executive sponsor confirmation.
+Approval threshold: Exposure above USD 250,000.00 (25000000 minor units) requires written approval from Engagement Partner.
+Escalation trigger: Escalate when a workstream lacks an accountable buyer or success measure.
+
+## Recordkeeping
+
+Attach the evidence to the commercial model record, preserve prior versions, and record the decision date before advancing the strategy and operations engagement.

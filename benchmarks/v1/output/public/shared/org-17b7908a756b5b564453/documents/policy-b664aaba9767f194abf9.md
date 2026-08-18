@@ -1,0 +1,20 @@
+# Northstar Fabrication Cooperative risk escalation
+
+- Document ID: policy-b664aaba9767f194abf9
+- Seller: org-17b7908a756b5b564453
+- Vertical: manufacturing
+- Effective date: 2025-01-15T00:00:00Z
+- Synthetic: true
+- Provenance: EDLB deterministic policy template v1.0.0, CC-BY-4.0
+
+## Control
+
+Rule: For risk escalation, Northstar Fabrication Cooperative may not mark rfq complete until Supply Chain Risk Lead verifies material traceability certificate and supplier continuity assessment.
+Owner: Supply Chain Risk Lead
+Required evidence: material traceability certificate and supplier continuity assessment.
+Approval threshold: Exposure above USD 50,000.00 (5000000 minor units) requires written approval from Supply Chain Risk Lead.
+Escalation trigger: Escalate when a sole-source material lacks a qualified alternate.
+
+## Recordkeeping
+
+Attach the evidence to the rfq record, preserve prior versions, and record the decision date before advancing the industrial component and equipment sale.

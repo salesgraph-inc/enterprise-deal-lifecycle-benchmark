@@ -2710,6 +2710,7 @@ def _write_world(root: Path, world: dict[str, Any]) -> None:
     with (base / "artifacts.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(
             handle,
+            lineterminator="\n",
             fieldnames=[
                 "artifact_id",
                 "kind",
@@ -2898,7 +2899,7 @@ def _write_authoring(
             "gates",
             "shared_document_count",
         ]
-        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         for vertical_index, vertical in enumerate(VERTICALS):
             writer.writerow(

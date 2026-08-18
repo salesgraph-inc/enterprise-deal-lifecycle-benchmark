@@ -1,0 +1,23 @@
+# Corporate Banking diligence update
+
+- Owner: Kiran L. Grove
+- Audience: Finley D. Umber
+- Effective date: 2025-06-08T09:00:00Z
+- Motion: commercial lending and treasury sale
+
+## Decision record
+
+Document the accountable owner and acceptance evidence for diligence.
+
+## Open items
+
+- Confirm the accountable owner for diligence.
+- Link the current evidence to the Corporate Banking gate record.
+- Keep any commercial exception within the approval matrix.
+- Evidence update: The kyc and aml record remains the latest confirmed source for this thread.
+
+## Pricing
+
+- Primary scope: USD 82,000,000.00 (8200000000 minor units)
+- Delivery and contingency: USD 18,000,000.00 (1800000000 minor units)
+- Total: USD 100,000,000.00 (10000000000 minor units)

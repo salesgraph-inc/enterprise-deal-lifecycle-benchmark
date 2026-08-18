@@ -1,0 +1,14 @@
+# Legal Services conflicts update
+
+- From: account.executive@quarry-counsel.example
+- To: tavi-a-thorne@yarrow-elmshore-partners.example
+- Date: 2025-03-20T09:00:00Z
+- Subject: Yarrow Elmshore Partners outside counsel pursuit | conflicts review
+
+Hi Tavi A. Thorne,
+
+I captured the conflicts owner, the remaining evidence request, and the next step for the outside counsel pursuit. Please confirm the decision group and target date.
+The conflicts record remains the latest confirmed source for this thread.
+
+Regards,
+Hollis K. Umber

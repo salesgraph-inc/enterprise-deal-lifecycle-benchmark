@@ -1,0 +1,9 @@
+# Commercial Insurance policy issuance update
+
+- Channel: internal chat
+- Date: 2025-08-06T09:00:00Z
+- Participants: Indra K. Orchard, Jules M. Dovetail
+
+Indra K. Orchard: The USD 1,400,000.00 amount is unchanged, but policy issuance still has an open dependency.
+Jules M. Dovetail: I will flag the stale projection and avoid overwriting the audit history.
+Indra K. Orchard: Rhea E. Rook confirmed a spending hold through the next planning cycle, so the policy issuance gate cannot receive approval now.

@@ -1,0 +1,20 @@
+# Quarry Counsel LLP discovery guide
+
+- Document ID: policy-668d3ae7825cac4ae220
+- Seller: org-21770da6ddd5c8892db4
+- Vertical: legal_services
+- Effective date: 2025-01-11T00:00:00Z
+- Synthetic: true
+- Provenance: EDLB deterministic policy template v1.0.0, CC-BY-4.0
+
+## Control
+
+Rule: For discovery guide, Quarry Counsel LLP may not mark security and privilege review complete until Conflicts Counsel verifies completed conflicts search, affiliate list, and written clearance.
+Owner: Conflicts Counsel
+Required evidence: completed conflicts search, affiliate list, and written clearance.
+Approval threshold: Exposure above USD 50,000.00 (5000000 minor units) requires written approval from Conflicts Counsel.
+Escalation trigger: Escalate when a potential conflict lacks a documented waiver or clearance.
+
+## Recordkeeping
+
+Attach the evidence to the security and privilege review record, preserve prior versions, and record the decision date before advancing the outside counsel pursuit.

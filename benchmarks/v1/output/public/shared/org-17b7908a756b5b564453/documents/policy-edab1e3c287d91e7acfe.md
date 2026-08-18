@@ -1,0 +1,20 @@
+# Northstar Fabrication Cooperative capacity planning
+
+- Document ID: policy-edab1e3c287d91e7acfe
+- Seller: org-17b7908a756b5b564453
+- Vertical: manufacturing
+- Effective date: 2025-01-22T00:00:00Z
+- Synthetic: true
+- Provenance: EDLB deterministic policy template v1.0.0, CC-BY-4.0
+
+## Control
+
+Rule: For capacity planning, Northstar Fabrication Cooperative may not mark rfq complete until Plant Engineering Director verifies technical validation report, tooling plan, and dated capacity model.
+Owner: Plant Engineering Director
+Required evidence: technical validation report, tooling plan, and dated capacity model.
+Approval threshold: Exposure above USD 75,000.00 (7500000 minor units) requires written approval from Plant Engineering Director.
+Escalation trigger: Escalate when tooling lead time exceeds 12 weeks or planned utilization exceeds 85 percent.
+
+## Recordkeeping
+
+Attach the evidence to the rfq record, preserve prior versions, and record the decision date before advancing the industrial component and equipment sale.

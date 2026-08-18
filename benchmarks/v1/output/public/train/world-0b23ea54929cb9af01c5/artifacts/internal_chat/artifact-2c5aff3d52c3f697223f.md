@@ -1,0 +1,9 @@
+# Manufacturing rfq update
+
+- Channel: internal chat
+- Date: 2025-01-06T09:00:00Z
+- Participants: Sable M. Thorne, Pax N. Ives
+
+Sable M. Thorne: Reconcile the rfq stage before forecast review.
+Pax N. Ives: I will trace the owner and source history, then preserve the prior values.
+Sable M. Thorne: The rfq record remains the latest confirmed source for this thread.
