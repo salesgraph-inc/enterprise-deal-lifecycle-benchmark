@@ -66,9 +66,7 @@ class BlindTest(unittest.TestCase):
             ledger.record_submission("team-a", "2999-01-01T00:00:00Z")
             with self.assertRaises(SubmissionLimitError):
                 ledger.record_submission("team-a", "4000-01-01T00:00:00Z")
-            self.assertEqual(
-                ledger.recent_count("team-a", "2026-01-03T00:00:00Z"), 2
-            )
+            self.assertEqual(ledger.recent_count("team-a", "2026-01-03T00:00:00Z"), 2)
 
     def test_team_ids_must_be_canonical(self) -> None:
         with SubmissionLedger(clock=lambda: datetime(2026, 1, 1, tzinfo=UTC)) as ledger:
