@@ -37,5 +37,7 @@ reviewer record, or calibration artifact exists and is reproducible.
 
 The current register is in status.md. The generated data and runtime exist,
 but expert recruitment, two reviews per world, model and judge calibration,
-the resource characterization pilot, official three-trial runs, and public
-release remain pending.
+the resource characterization pilot, official three-trial runs, and official
+benchmark release remain pending. The checked-in v1 fixture is intentionally
+prepared for public distribution under CC BY 4.0; that data boundary does not
+establish an official benchmark result or leaderboard release.
