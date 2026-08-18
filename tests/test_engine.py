@@ -521,11 +521,13 @@ class EngineTest(unittest.TestCase):
                     "wall_timeout_seconds": base.wall_timeout_seconds,
                 }
                 values[field] = value
-                with self.subTest(field=field):
-                    with self.assertRaises(ValueError):
-                        build_podman_command(
-                            PodmanConfig(base.image, world, output, base.command, **values)
-                        )
+                with (
+                    self.subTest(field=field),
+                    self.assertRaises(ValueError),
+                ):
+                    build_podman_command(
+                        PodmanConfig(base.image, world, output, base.command, **values)
+                    )
 
     def test_scoped_records_are_visible_only_to_explicit_roles(self) -> None:
         with make_engine() as engine:
