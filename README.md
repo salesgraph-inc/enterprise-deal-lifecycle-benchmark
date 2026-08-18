@@ -64,9 +64,11 @@ deterministic grading, reliability calculations, and reports.
 
 Blind-evaluator support includes canary scanning, a submission quota ledger,
 exact-byte SHA-256 manifest hashing, HMAC result signing, immutable
-network-disabled Podman isolation, and RevOps-only CRM merge. Focused tests
-cover these controls. End-to-end blind evaluator security evidence and
-container endpoint allowlisting remain pending.
+network-disabled Podman isolation, and RevOps-only CRM merge. In production,
+the evaluator must derive each submission's team ID from its authenticated
+identity context; it must never accept a team ID from the submission payload.
+Focused tests cover these controls. End-to-end blind evaluator security
+evidence and container endpoint allowlisting remain pending.
 
 ## Resource policy
 
@@ -120,6 +122,9 @@ benchmarks/v1/output/public/dev/     public dev worlds
 benchmarks/v1/output/public/blind/   public blind worlds
 benchmarks/v1/authoring/             blueprints and shared documents
 ~~~
+
+Regenerating an existing non-empty output directory is destructive and requires
+an explicit `edlb generate --force` confirmation.
 
 ## Machine validation
 
