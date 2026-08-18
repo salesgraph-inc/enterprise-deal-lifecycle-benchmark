@@ -68,10 +68,12 @@ controls. External systems declare model IDs, digests, prompt hashes, and
 provider settings in a resolved agent manifest before execution. EDLB records
 that declaration and binds it to configuration and manifest hashes.
 External execution also pins runtime, artifact, revision, and effective host
-and job policy provenance in a resolved environment manifest. The
-executor-policy digest records inherited rlimits and other policy and adds no
-resource cap. Adapter-reported usage, latency, and cost are recorded only when
-supplied. Provider defaults and endpoint ceilings remain external to EDLB.
+and job policy provenance in a resolved environment manifest. The executor-
+policy digest records inherited rlimits and other policy. Evaluator hosts and
+containers must enforce explicit safety ceilings for processes, memory, CPU,
+file descriptors, and execution duration; these are security controls, not
+benchmark budgets. Adapter-reported usage, latency, and cost are recorded only
+when supplied. Provider defaults and endpoint ceilings remain external to EDLB.
 
 The implemented operator controls are per-checkpoint tool calls, per-checkpoint
 turns, per-response timeout, and runner retries. For nullable controls, null
@@ -135,9 +137,10 @@ These controls address synthetic-data privacy and provenance risks described in
 ## Splits and leakage controls
 
 The release pack contains 24 train, 24 dev, and 24 blind worlds. Counterfactual
-pairs remain in one split. All v1 causal truth, assertions, oracle state, hidden
-events, and reference traces are public. Future packs marked
-`release_visibility=private` remain outside public artifacts until retirement.
+pairs remain in one split. All checked-in v1 causal truth, assertions, oracle
+state, hidden events, and reference traces are public synthetic data. Future or
+unretired packs marked `release_visibility=private` remain outside public
+artifacts and are not licensed until retired and explicitly released.
 
 Every event distinguishes effective, recorded, and available time. Tests prove
 that no artifact or signal is visible before its available time. Public bundles
@@ -154,7 +157,9 @@ The automated checks and generated validation records exist. Expert recruitment
 and both reviews per world have not been completed. Stakeholder-model
 selection, model and judge calibration, the 12-world resource characterization
 pilot, official three-trial model runs, endpoint allowlisting, end-to-end blind
-evaluator security evidence, and public release are also pending. Canary
+evaluator security evidence, and official benchmark release are also pending.
+The checked-in v1 fixture is intentionally prepared for public distribution,
+independent of those official-result gates. Canary
 scanning, quota enforcement, exact-byte manifest hashing, HMAC result signing,
 immutable Podman isolation, and RevOps-only CRM merge are implemented and
 focused-tested.
@@ -167,8 +172,9 @@ trademark or legal clearance.
 
 ## Licensing
 
-Source code and schemas are licensed under MIT. Public synthetic data and
-retired test packs use CC BY 4.0. Process references are cited for design
-context and do not grant rights to reproduce their text, marks, or third-party
-material. Blind worlds, oracle state, private assertions, and unreleased traces
-are not public data.
+Source code and schemas are licensed under MIT. All checked-in v1 synthetic
+data, including the 72 worlds, oracle state, assertions, hidden events, and
+reference traces, is licensed under CC BY 4.0. Process references are cited for
+design context and do not grant rights to reproduce their text, marks, or third-
+party material. Future or unretired packs marked `release_visibility=private`
+remain unpublished and unlicensed until retired and explicitly released.
