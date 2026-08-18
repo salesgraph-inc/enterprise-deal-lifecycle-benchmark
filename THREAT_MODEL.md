@@ -73,21 +73,12 @@ characters in a query or semantic-list item, 100 semantic-list items, 50
 external recipients or meeting participants, and an explicit retrieval request
 of 100 records. Omitting a retrieval limit remains unlimited. These are input
 and side-effect safety ceilings, not model, context, checkpoint, or total-run
-budgets. Blind containers have a read-only root, ignore image-declared volumes,
-mount no writable host path, and receive one 64 MiB temporary filesystem at
-`/tmp`. Results travel through the JSONL standard streams. These storage
-controls protect evaluator availability and do not set a run wall time, model
-memory, token budget, or model setting. The isolation flags follow the
+budgets. Blind containers have a read-only root, ignore image-declared volumes, mount no
+writable host path, and receive one 64 MiB temporary filesystem at `/tmp`. Results
+travel through the JSONL standard streams. These storage controls protect evaluator
+availability and are distinct from the finite process, memory, CPU, file-descriptor,
+and wall-clock ceilings documented above. The isolation flags follow the
 [Podman run contract](https://docs.podman.io/en/stable/markdown/podman-run.1.html).
-The command also sets `--pids-limit=-1`, which Podman's
-[current flag definition](https://github.com/containers/podman/blob/main/cmd/podman/common/create.go)
-defines as unlimited. It sets `--ulimit=host`, which Podman's
-[rlimit implementation](https://github.com/containers/podman/blob/main/pkg/specgenutil/specgen.go)
-maps to an empty OCI rlimit list instead of injected `nofile` or `nproc`
-values. The inherited host rlimits remain executor-environment policy, not an
-EDLB limit. Official evaluators must pin and record that environment before
-claiming comparable results.
-
 Lossless `team_message` and `yield` trace paths, snapshot and diff exports,
 replay payload and hash validation, state and score hashes, aggregate dataset
 validation, canary scanning, quota enforcement, exact-byte manifest hashing,
