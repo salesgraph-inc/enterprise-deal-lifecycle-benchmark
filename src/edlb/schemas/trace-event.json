@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/trace-event.json",
+  "title": "TraceEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "sequence",
+    "message_id",
+    "occurred_at",
+    "kind",
+    "actor_role",
+    "payload_hash",
+    "payload"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "message_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "start",
+        "observation",
+        "tool_call",
+        "tool_result",
+        "team_message",
+        "yield",
+        "checkpoint_complete",
+        "run_end",
+        "system_error"
+      ]
+    },
+    "actor_role": {
+      "type": "string",
+      "enum": [
+        "system",
+        "account_executive",
+        "domain_specialist",
+        "sales_manager",
+        "revops"
+      ]
+    },
+    "idempotency_key": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z0-9][a-z0-9._:-]{0,191}$"
+    },
+    "payload_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "payload": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "latency_ms": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "token_usage": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "input": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "output": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "cost_minor_units": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    }
+  }
+}

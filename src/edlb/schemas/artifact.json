@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/artifact.json",
+  "title": "Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "visibility": {
+            "const": "role_scoped"
+          }
+        },
+        "required": ["visibility"]
+      },
+      "then": {
+        "required": ["visible_roles"],
+        "properties": {
+          "visible_roles": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "required": [
+    "artifact_id",
+    "world_id",
+    "kind",
+    "title",
+    "created_at",
+    "available_at",
+    "visibility",
+    "content",
+    "checksum",
+    "provenance"
+  ],
+  "properties": {
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "world_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "call_transcript",
+        "email",
+        "internal_chat",
+        "crm_record",
+        "crm_history",
+        "calendar_event",
+        "proposal",
+        "quote",
+        "contract",
+        "diligence_document",
+        "policy_document",
+        "web_page",
+        "news_item"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "available_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": ["public", "agent_visible", "role_scoped", "oracle_only"]
+    },
+    "visible_roles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "account_executive",
+          "domain_specialist",
+          "sales_manager",
+          "revops"
+        ]
+      }
+    },
+    "source_actor_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+      }
+    },
+    "recipient_actor_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+      }
+    },
+    "thread_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "record_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mime_type", "body", "language"],
+      "properties": {
+        "mime_type": {
+          "type": "string",
+          "pattern": "^[a-z0-9.+-]+/[a-z0-9.+-]+$"
+        },
+        "body": {
+          "type": "string",
+          "maxLength": 1000000
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2,8}$"
+        },
+        "source_uri": {
+          "type": "string",
+          "pattern": "^(artifacts|https://edlb\\.example)/"
+        },
+        "renderings": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "mime_type",
+              "checksum",
+              "normalized_source_uri",
+              "renderer"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^artifacts/rendered/[a-z0-9._-]+\\.(pdf|xlsx)$"
+              },
+              "mime_type": {
+                "type": "string",
+                "enum": [
+                  "application/pdf",
+                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ]
+              },
+              "checksum": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "normalized_source_uri": {
+                "type": "string",
+                "pattern": "^artifacts/"
+              },
+              "renderer": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "version",
+                  "configuration_hash",
+                  "implementation_hash"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "version": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "configuration_hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[0-9a-f]{64}$"
+                  },
+                  "implementation_hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[0-9a-f]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "checksum": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "synthetic_only",
+        "source_type",
+        "generator",
+        "generator_version",
+        "license"
+      ],
+      "properties": {
+        "synthetic_only": {
+          "const": true
+        },
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "generated_template",
+            "generated_model",
+            "derived_projection",
+            "policy_reference"
+          ]
+        },
+        "generator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "generator_version": {
+          "type": "string",
+          "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "model_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "prompt_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_urls": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "license": {
+          "type": "string",
+          "const": "CC-BY-4.0"
+        }
+      }
+    }
+  }
+}

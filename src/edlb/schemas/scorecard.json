@@ -1,0 +1,313 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/scorecard.json",
+  "title": "Scorecard",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "benchmark_version",
+    "world_id",
+    "track",
+    "status",
+    "execution_index",
+    "strict_cycle_pass",
+    "critical_violation",
+    "category_scores",
+    "secondary_metrics",
+    "reliability",
+    "resource_usage",
+    "grader_version",
+    "generated_at"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "benchmark_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "world_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "vertical": {
+      "type": "string",
+      "enum": [
+        "manufacturing",
+        "construction",
+        "commercial_insurance",
+        "consulting",
+        "legal_services",
+        "corporate_banking"
+      ]
+    },
+    "track": {
+      "type": "string",
+      "enum": ["fixed_harness", "open_team"]
+    },
+    "trial_seed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "configuration_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "manifest_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "rubric_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "oracle_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["valid", "invalid", "infrastructure_error", "agent_error"]
+    },
+    "execution_index": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "strict_cycle_pass": {
+      "type": "boolean"
+    },
+    "critical_violation": {
+      "type": "boolean"
+    },
+    "category_scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_and_understanding",
+        "crm_integrity",
+        "stakeholder_management",
+        "workflow_compliance",
+        "communication_quality",
+        "forecast_calibration",
+        "longitudinal_recovery",
+        "side_effect_discipline"
+      ],
+      "properties": {
+        "evidence_and_understanding": {"type": "number", "minimum": 0, "maximum": 1},
+        "crm_integrity": {"type": "number", "minimum": 0, "maximum": 1},
+        "stakeholder_management": {"type": "number", "minimum": 0, "maximum": 1},
+        "workflow_compliance": {"type": "number", "minimum": 0, "maximum": 1},
+        "communication_quality": {"type": "number", "minimum": 0, "maximum": 1},
+        "forecast_calibration": {"type": "number", "minimum": 0, "maximum": 1},
+        "longitudinal_recovery": {"type": "number", "minimum": 0, "maximum": 1},
+        "side_effect_discipline": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "secondary_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "terminal_outcome": {
+          "type": "string",
+          "enum": [
+            "closed_won",
+            "closed_lost",
+            "no_decision",
+            "disqualified",
+            "canceled"
+          ]
+        },
+        "revenue_minor_units": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "margin_minor_units": {
+          "type": "integer"
+        },
+        "cycle_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "forecast_brier": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "amount_error_minor_units": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "close_date_error_days": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "reliability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pass_at_1": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pass_at_3": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pass_power_3": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "confidence_interval": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    },
+    "resource_usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool_calls", "turns", "retries", "latency_ms"],
+      "properties": {
+        "tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "turns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "latency_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cost_minor_units": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "invalid_actions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tokens": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "metric_availability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cost_minor_units": {"type": "boolean"},
+            "tokens": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "rubric_validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "valid",
+        "deterministic_weight",
+        "total_weight",
+        "deterministic_fraction",
+        "minimum_deterministic_fraction",
+        "errors"
+      ],
+      "properties": {
+        "valid": {"type": "boolean"},
+        "deterministic_weight": {"type": "number", "minimum": 0},
+        "total_weight": {"type": "number", "minimum": 0},
+        "deterministic_fraction": {"type": "number", "minimum": 0, "maximum": 1},
+        "minimum_deterministic_fraction": {"type": "number", "const": 0.75},
+        "errors": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "pending_judge_assertions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+      }
+    },
+    "assertions": {
+      "type": "array",
+      "items": {"type": "object"}
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["assertion_id", "severity", "message"],
+        "properties": {
+          "assertion_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["info", "warning", "critical"]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        }
+      }
+    },
+    "grader_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "state_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "score_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "valid"}}},
+      "then": {
+        "required": ["rubric_hash", "state_hash", "score_hash"],
+        "properties": {
+          "secondary_metrics": {"required": ["terminal_outcome"]}
+        }
+      }
+    }
+  ]
+}

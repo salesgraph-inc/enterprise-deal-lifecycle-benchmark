@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/actor.json",
+  "title": "Actor",
+  "type": "object",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "visibility": {
+            "enum": ["internal_role_scoped", "restricted"]
+          }
+        },
+        "required": ["visibility"]
+      },
+      "then": {
+        "required": ["visible_roles"],
+        "properties": {
+          "visible_roles": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "required": [
+    "actor_id",
+    "kind",
+    "display_name",
+    "organization_id",
+    "role_tags",
+    "active_from",
+    "visibility"
+  ],
+  "properties": {
+    "actor_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["seller", "buyer", "internal", "external_system"]
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "organization_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "role_tags": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "account_executive",
+          "domain_specialist",
+          "sales_manager",
+          "revops",
+          "champion",
+          "economic_buyer",
+          "procurement",
+          "legal",
+          "risk",
+          "finance",
+          "technical_evaluator",
+          "executive_sponsor",
+          "gatekeeper",
+          "competitor",
+          "analyst",
+          "internal_approver"
+        ]
+      }
+    },
+    "active_from": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "active_until": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "email": {
+      "type": ["string", "null"],
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.(example|test|invalid)$"
+    },
+    "phone": {
+      "type": ["string", "null"],
+      "pattern": "^\\+1-202-555-[0-9]{4}$"
+    },
+    "reports_to": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": ["public", "internal_role_scoped", "restricted"]
+    },
+    "visible_roles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "account_executive",
+          "domain_specialist",
+          "sales_manager",
+          "revops"
+        ]
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "job_title": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "authority_level": {
+          "type": "string",
+          "enum": ["none", "contributor", "approver", "final_decider"]
+        },
+        "department": {
+          "type": "string",
+          "maxLength": 160
+        }
+      }
+    }
+  }
+}

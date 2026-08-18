@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/assertion.json",
+  "title": "Assertion",
+  "type": "object",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "scope": {"const": "checkpoint"}
+        },
+        "required": ["scope"]
+      },
+      "then": {"required": ["checkpoint_id"]}
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {"const": "llm_judge"}
+        },
+        "required": ["kind"]
+      },
+      "then": {
+        "required": ["judge"],
+        "properties": {"judge": {"type": "object"}}
+      }
+    }
+  ],
+  "required": [
+    "assertion_id",
+    "world_id",
+    "scope",
+    "category",
+    "kind",
+    "target",
+    "required",
+    "critical",
+    "controllability",
+    "weight",
+    "evidence_refs",
+    "provenance"
+  ],
+  "properties": {
+    "assertion_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "world_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["checkpoint", "world"]
+    },
+    "checkpoint_id": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "evidence_and_understanding",
+        "crm_integrity",
+        "stakeholder_management",
+        "workflow_compliance",
+        "communication_quality",
+        "forecast_calibration",
+        "longitudinal_recovery",
+        "side_effect_discipline"
+      ]
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["deterministic", "llm_judge", "metric"]
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "operator", "expected"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_.\\[\\]-]+$"
+        },
+        "operator": {
+          "type": "string",
+          "enum": [
+            "equals",
+            "not_equals",
+            "contains",
+            "not_contains",
+            "in",
+            "subset_of",
+            "gte",
+            "lte",
+            "count",
+            "exists",
+            "forbidden"
+          ]
+        },
+        "expected": {},
+        "tolerance": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "required": {
+      "type": "boolean"
+    },
+    "critical": {
+      "type": "boolean"
+    },
+    "controllability": {
+      "type": "string",
+      "enum": ["controllable", "partially_controllable", "uncontrollable"]
+    },
+    "weight": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+      }
+    },
+    "judge": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["criterion", "judge_version", "prompt_hash"],
+      "properties": {
+        "criterion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "judge_version": {
+          "type": "string",
+          "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "prompt_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "license"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "expert_authored",
+            "derived_from_policy",
+            "generated",
+            "synthetic_blueprint"
+          ]
+        },
+        "license": {
+          "type": "string",
+          "const": "CC-BY-4.0"
+        }
+      }
+    }
+  }
+}

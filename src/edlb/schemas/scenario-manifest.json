@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/scenario-manifest.json",
+  "title": "ScenarioManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "split": {"const": "blind"}
+        },
+        "required": ["split"]
+      },
+      "then": {
+        "required": [
+          "pair_id",
+          "counterfactual_variant",
+          "causal_skeleton",
+          "terminal_outcome",
+          "seed"
+        ]
+      }
+    }
+  ],
+  "required": [
+    "schema_version",
+    "world_id",
+    "split",
+    "vertical",
+    "seller_org_id",
+    "buyer_org_id",
+    "title",
+    "description",
+    "start_at",
+    "end_at",
+    "duration_days",
+    "checkpoint_ids",
+    "actor_ids",
+    "event_ids",
+    "artifact_ids",
+    "required_channels",
+    "license",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "v1.0.0"
+    },
+    "world_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "pair_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "counterfactual_variant": {
+      "type": "string",
+      "enum": ["a", "b"]
+    },
+    "split": {
+      "type": "string",
+      "enum": ["train", "dev", "blind"]
+    },
+    "vertical": {
+      "type": "string",
+      "enum": [
+        "manufacturing",
+        "construction",
+        "commercial_insurance",
+        "consulting",
+        "legal_services",
+        "corporate_banking"
+      ]
+    },
+    "causal_skeleton": {
+      "type": "string",
+      "enum": [
+        "champion_departure",
+        "late_authority_entry",
+        "budget_shock",
+        "requirements_change",
+        "competitive_pressure",
+        "external_event"
+      ]
+    },
+    "seller_org_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "buyer_org_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "start_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration_days": {
+      "type": "integer",
+      "minimum": 180,
+      "maximum": 365
+    },
+    "checkpoint_ids": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+      }
+    },
+    "actor_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+      }
+    },
+    "event_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+      }
+    },
+    "artifact_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+      }
+    },
+    "required_channels": {
+      "type": "array",
+      "minItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "call_transcript",
+          "email",
+          "internal_chat",
+          "crm",
+          "calendar",
+          "document",
+          "web_signal"
+        ]
+      }
+    },
+    "terminal_outcome": {
+      "type": "string",
+      "enum": [
+        "closed_won",
+        "closed_lost",
+        "no_decision",
+        "disqualified",
+        "canceled"
+      ]
+    },
+    "outcome_reason": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "license": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "data"],
+      "properties": {
+        "code": {
+          "const": "MIT"
+        },
+        "data": {
+          "const": "CC-BY-4.0"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "synthetic_only",
+        "generator",
+        "generator_version",
+        "created_at",
+        "source_policy_ids"
+      ],
+      "properties": {
+        "synthetic_only": {
+          "const": true
+        },
+        "generator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "generator_version": {
+          "type": "string",
+          "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_policy_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+          }
+        },
+        "source_urls": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      }
+    }
+  }
+}

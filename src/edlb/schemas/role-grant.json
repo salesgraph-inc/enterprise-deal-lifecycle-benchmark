@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/role-grant.json",
+  "title": "RoleGrant",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "grant_id",
+    "principal_id",
+    "role",
+    "permissions",
+    "resource_scopes",
+    "can_contact_external",
+    "can_write_crm",
+    "can_approve_commercial",
+    "can_request_approval"
+  ],
+  "properties": {
+    "grant_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "principal_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "account_executive",
+        "domain_specialist",
+        "sales_manager",
+        "revops"
+      ]
+    },
+    "permissions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "crm.read",
+          "crm.write",
+          "crm.merge",
+          "communications.read",
+          "communications.send_external",
+          "communications.send_internal",
+          "calendar.read",
+          "calendar.write",
+          "documents.read",
+          "documents.write",
+          "approvals.read",
+          "approvals.request",
+          "approvals.decide",
+          "web.read",
+          "team.read",
+          "team.send",
+          "run.read",
+          "run.complete_checkpoint"
+        ]
+      }
+    },
+    "resource_scopes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "current_world",
+          "seller_org",
+          "buyer_org",
+          "assigned_opportunity",
+          "assigned_vertical"
+        ]
+      }
+    },
+    "can_contact_external": {
+      "type": "boolean"
+    },
+    "can_write_crm": {
+      "type": "boolean"
+    },
+    "can_approve_commercial": {
+      "type": "boolean"
+    },
+    "can_request_approval": {
+      "type": "boolean"
+    },
+    "approval_limit_minor_units": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    }
+  }
+}
