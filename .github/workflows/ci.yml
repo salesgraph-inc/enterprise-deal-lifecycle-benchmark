@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check --no-input uv==0.8.17
+
+      - name: Install locked development dependencies
+        run: uv sync --group dev --frozen
+
+      - name: Run tests
+        run: uv run --group dev python -m unittest discover -s tests
+
+      - name: Validate schemas
+        run: uv run --group dev python -m unittest tests.test_schema
+
+      - name: Run Ruff
+        run: uv run --group dev ruff check .
+
+      - name: Compile Python sources
+        run: python -m compileall -q src tests
+
+      - name: Audit Python dependencies
+        run: uv run --with pip-audit==2.9.0 pip-audit --strict
+
+      - name: Scan repository history for secrets
+        uses: gitleaks/gitleaks-action@v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
