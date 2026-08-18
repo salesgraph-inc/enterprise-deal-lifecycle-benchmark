@@ -1191,6 +1191,60 @@ for line in sys.stdin:
             )
             self.assertEqual(result.tool_calls, checkpoint_count * 4)
 
+    def _bundle_with_artifact_path(self, directory: Path, path: str) -> Path:
+        bundle = directory / "world"
+        shutil.copytree(WORLD, bundle)
+        rows = [
+            json.loads(line)
+            for line in (bundle / "artifacts.jsonl").read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        rows[0]["path"] = path
+        (bundle / "artifacts.jsonl").write_text(
+            "\n".join(json.dumps(row) for row in rows) + "\n",
+            encoding="utf-8",
+        )
+        return bundle
+
+    def test_world_bundle_rejects_absolute_artifact_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            outside = Path(directory) / "outside.txt"
+            outside.write_text("not a bundle artifact", encoding="utf-8")
+            bundle = self._bundle_with_artifact_path(directory=Path(directory), path=str(outside))
+            with self.assertRaisesRegex(BundleError, "escapes bundle root"):
+                load_world_bundle(bundle)
+
+    def test_world_bundle_rejects_parent_artifact_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            outside = Path(directory) / "outside.txt"
+            outside.write_text("not a bundle artifact", encoding="utf-8")
+            bundle = self._bundle_with_artifact_path(
+                directory=Path(directory), path="../outside.txt"
+            )
+            with self.assertRaisesRegex(BundleError, "escapes bundle root"):
+                load_world_bundle(bundle)
+
+    def test_world_bundle_rejects_symlinked_artifact_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            outside = base / "outside.txt"
+            outside.write_text("not a bundle artifact", encoding="utf-8")
+            bundle = base / "world"
+            shutil.copytree(WORLD, bundle)
+            (bundle / "artifact-escape.txt").symlink_to(outside)
+            rows = [
+                json.loads(line)
+                for line in (bundle / "artifacts.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            rows[0]["path"] = "artifact-escape.txt"
+            (bundle / "artifacts.jsonl").write_text(
+                "\n".join(json.dumps(row) for row in rows) + "\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(BundleError, "escapes bundle root"):
+                load_world_bundle(bundle)
+
     def test_podman_does_not_mount_private_world(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             world = Path(directory) / "private" / "blind" / "world"
