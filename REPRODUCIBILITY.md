@@ -58,41 +58,34 @@ Use the CLI run command with either the fixed-harness or open-team track, then
 grade the run and write a report. Replay only with the matching world,
 manifest inputs, and trace.
 
-EDLB sets no model or execution budget by default. It injects no token caps or
-temperature, top-p, reasoning-effort, or cost settings, and has no default
-checkpoint tool-call, turn, response-time, total wall-time, context-history, or
-retrieval-result cap. Open Team launch retries and Fixed Harness activation
-retries default to zero. The implemented operator controls are per-checkpoint
-tool calls, turns, response timeout, and track-scoped retries; nullable controls
-use null for unlimited. External systems declare model IDs,
-digests, prompt hashes, and provider settings in a resolved pre-run agent
-manifest. EDLB records that declaration and binds it to configuration and
-manifest hashes. Direct `open_world` setup defaults to unresolved
-configuration. External execution also requires `--environment-manifest` with
-the exact runtime version, immutable image or package digest, full Git revision,
-and SHA-256 executor-policy digest. That digest covers effective inherited
-rlimits and other evaluator host and job policies. It records policy and creates
-no resource cap. Both manifests are configuration-bound, and unresolved runs
-are unofficial. Comparisons require identical execution policy and configuration.
-Official scoring uses exactly three trials per system and world.
+EDLB sets no model or scored benchmark budget by default. It injects no token caps or
+temperature, top-p, reasoning-effort, or cost settings. Open Team launch retries and
+Fixed Harness activation retries default to zero. The implemented scored controls are
+per-checkpoint tool calls, turns, response timeout, and track-scoped retries; nullable
+controls use null for unlimited. External systems declare model IDs, digests, prompt
+hashes, and provider settings in a resolved pre-run agent manifest. EDLB records that
+declaration and binds it to configuration and manifest hashes. Direct `open_world` setup
+defaults to unresolved configuration. External execution also requires
+`--environment-manifest` with the exact runtime version, immutable image or package
+digest, full Git revision, and SHA-256 executor-policy digest. That digest covers
+effective inherited rlimits and other evaluator host and job policies. It records
+policy and creates no scored benchmark cap. Both manifests are configuration-bound,
+and unresolved runs are unofficial. Comparisons require identical execution policy
+and configuration. Official scoring uses exactly three trials per system and world.
 
-Business, authorization, and temporal rules, protocol trust-boundary
-validation, blind submission quotas and canaries, network isolation, and
-declared evaluator safety policy remain in force as semantic or security
-controls.
+Blind container execution does apply finite host-safety ceilings, separate from the
+scored benchmark budget: 512 processes, 16 GiB memory, 8 CPUs, 4,096 open files,
+512 `nproc`, and a 3,600-second wall-clock limit. The command is prefixed with the
+GNU `timeout` supervisor, which sends `TERM` at the limit and force-kills after 30
+seconds. Operators may configure stricter finite values within the validated ranges,
+but cannot request unlimited process, memory, CPU, file-descriptor, or wall-clock
+resources. These ceilings protect the evaluator from malicious or runaway submitted
+code and must be recorded in the executor-policy digest; they do not change model
+settings, token budgets, checkpoint scoring, or benchmark semantics.
 
-Blind container execution explicitly sets `--pids-limit=-1`, so Podman's
-default process ceiling does not become benchmark policy. This adds no scored
-CPU, memory, wall-time, or model limit. Podman's
-[current flag definition](https://github.com/containers/podman/blob/main/cmd/podman/common/create.go)
-defines `-1` as unlimited.
-
-Blind execution also passes `--ulimit=host`. Podman's
-[rlimit implementation](https://github.com/containers/podman/blob/main/pkg/specgenutil/specgen.go)
-then emits no OCI rlimit overrides, so values such as `nofile` and `nproc`
-come from the evaluator process. EDLB does not choose those values. Official
-evaluators must pin and record their executor environment for comparable runs.
-
+Business, authorization, and temporal rules, protocol trust-boundary validation,
+blind submission quotas and canaries, network isolation, and declared evaluator
+safety policy remain in force as semantic or security controls.
 The evaluator enforces an 8 MiB per-message JSONL transport ceiling, sized
 above the broker's bounded semantic envelope after worst-case JSON escaping.
 Crossing it invalidates the protocol exchange. The evaluator does not truncate
