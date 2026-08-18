@@ -448,35 +448,78 @@ class ProtocolTest(unittest.TestCase):
 
 
 class EngineTest(unittest.TestCase):
-    def test_blind_container_has_only_bounded_ephemeral_storage(self) -> None:
+    def test_blind_container_has_bounded_host_resources(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             world = root / "private" / "blind" / "world"
             output = root / "output"
             world.mkdir(parents=True)
-            command = build_podman_command(
-                PodmanConfig(
-                    "edlb:test@sha256:" + "a" * 64,
-                    world,
-                    output,
-                    ("edlb", "run"),
-                )
+            base = PodmanConfig(
+                "edlb:test@sha256:" + "a" * 64,
+                world,
+                output,
+                ("edlb", "run"),
             )
+            command = build_podman_command(base)
+            self.assertEqual(command[:4], ["timeout", "--signal=TERM", "--kill-after=30s", "3600s"])
             self.assertIn("--read-only-tmpfs=false", command)
             self.assertIn("--image-volume=ignore", command)
-            self.assertEqual(command.count("--pids-limit=-1"), 1)
-            self.assertEqual(command.count("--ulimit=host"), 1)
-            self.assertEqual(sum(item.startswith("--ulimit") for item in command), 1)
+            self.assertIn("--pids-limit=512", command)
+            self.assertIn("--memory=16g", command)
+            self.assertIn("--cpus=8", command)
+            self.assertIn("--ulimit=nofile=4096:4096", command)
+            self.assertIn("--ulimit=nproc=512:512", command)
+            self.assertNotIn("--pids-limit=-1", command)
+            self.assertNotIn("--ulimit=host", command)
             self.assertIn("/tmp:rw,noexec,nosuid,nodev,size=64m", command)
             self.assertEqual(command.count("--tmpfs"), 1)
             self.assertNotIn("-v", command)
             self.assertNotIn("--mount", command)
             self.assertNotIn("--volume", command)
-            self.assertFalse(any("nofile=" in item for item in command))
-            self.assertFalse(any("nproc=" in item for item in command))
             self.assertNotIn(str(output), " ".join(command))
             self.assertFalse(output.exists())
 
+            custom = build_podman_command(
+                PodmanConfig(
+                    base.image,
+                    world,
+                    output,
+                    base.command,
+                    pids_limit=128,
+                    memory_limit="2g",
+                    cpus_limit=1.5,
+                    nofile_limit=1024,
+                    nproc_limit=128,
+                    wall_timeout_seconds=900,
+                )
+            )
+            self.assertEqual(custom[:4], ["timeout", "--signal=TERM", "--kill-after=30s", "900s"])
+            self.assertIn("--pids-limit=128", custom)
+            self.assertIn("--memory=2g", custom)
+            self.assertIn("--cpus=1.5", custom)
+            self.assertIn("--ulimit=nofile=1024:1024", custom)
+            self.assertIn("--ulimit=nproc=128:128", custom)
+
+            for field, value in (
+                ("pids_limit", 0),
+                ("memory_limit", "0g"),
+                ("cpus_limit", 0),
+                ("nofile_limit", 63),
+                ("nproc_limit", 0),
+                ("wall_timeout_seconds", 0),
+            ):
+                values = {
+                    "pids_limit": base.pids_limit,
+                    "memory_limit": base.memory_limit,
+                    "cpus_limit": base.cpus_limit,
+                    "nofile_limit": base.nofile_limit,
+                    "nproc_limit": base.nproc_limit,
+                    "wall_timeout_seconds": base.wall_timeout_seconds,
+                }
+                values[field] = value
+                with self.subTest(field=field):
+                    with self.assertRaises(ValueError):
+                        build_podman_command(PodmanConfig(base.image, world, output, base.command, **values))
     def test_scoped_records_are_visible_only_to_explicit_roles(self) -> None:
         with make_engine() as engine:
             scoped_event = Event(
