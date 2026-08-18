@@ -21,9 +21,12 @@ gates, not benchmark results.
 | Open-team baseline | pending | Runner and worlds exist; no official baseline run is recorded |
 | Blind evaluator security tests | pending | Future private-pack path exists; evaluator security evidence is not complete |
 | Container endpoint allowlisting | pending | Not implemented in the current tree |
+| v1 data licensing and public boundary | passed | All checked-in v1 worlds and oracle/assertion/hidden-event/reference-trace material are CC BY 4.0; future `release_visibility=private` packs remain excluded until retired and explicitly released |
 | Canary, quota, manifest hash, result signing, Podman isolation, and merge controls | in_progress | Focused tests cover canary scans, quota ledger, exact-byte manifest hashes, HMAC signatures, immutable Podman isolation, and RevOps-only merge; end-to-end evaluator evidence is pending |
 | Formal trademark and legal clearance | pending | Preliminary namespace observations are not legal clearance |
-| Public release | passed | All v1 worlds, answer material, and validation records are checked in under the public pack |
+| Repository fixture publication | in_progress | The checked-in v1 fixture is prepared for public distribution; owner approval, formal legal clearance, and complete release-evaluator security evidence remain pending |
 
 No benchmark score, realism score, agreement statistic, calibration result,
-official three-trial result, or leaderboard entry has been established.
+official three-trial result, or leaderboard entry has been established. The
+repository fixture's intended public data boundary is separate from approval of
+an official benchmark release or result set.
