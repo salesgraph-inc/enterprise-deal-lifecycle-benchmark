@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import importlib
 import json
 import sys
 import tempfile
 import unittest
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,7 +29,9 @@ class BlindTest(unittest.TestCase):
         manifest = b'{"seed": 7}\n'
         with (
             tempfile.TemporaryDirectory() as directory,
-            SubmissionLedger(Path(directory) / "ledger.sqlite") as ledger,
+            SubmissionLedger(
+                Path(directory) / "ledger.sqlite", trusted_timestamps=True
+            ) as ledger,
         ):
             digest = register_manifest_hash(
                 ledger, "team-a", "run-1", manifest, "2026-01-01T00:00:00Z"
@@ -43,18 +47,51 @@ class BlindTest(unittest.TestCase):
                 )
 
     def test_submission_ledger_accepts_timestamp_only(self) -> None:
-        with SubmissionLedger() as ledger:
+        with SubmissionLedger(trusted_timestamps=True) as ledger:
             ledger.record_submission("team-a", "2026-01-01T00:00:00Z")
             ledger.record_submission("team-a", "2026-01-02T00:00:00Z")
             with self.assertRaises(SubmissionLimitError):
                 ledger.record_submission("team-a", "2026-01-03T00:00:00Z")
 
-    def test_canaries_scan_bytes(self) -> None:
+    def test_untrusted_timestamps_cannot_bypass_quota(self) -> None:
+        times = iter(
+            [
+                datetime(2026, 1, 1, tzinfo=UTC),
+                datetime(2026, 1, 2, tzinfo=UTC),
+                datetime(2026, 1, 3, tzinfo=UTC),
+            ]
+        )
+        with SubmissionLedger(clock=lambda: next(times)) as ledger:
+            ledger.record_submission("team-a", "1900-01-01T00:00:00Z")
+            ledger.record_submission("team-a", "2999-01-01T00:00:00Z")
+            with self.assertRaises(SubmissionLimitError):
+                ledger.record_submission("team-a", "4000-01-01T00:00:00Z")
+            self.assertEqual(
+                ledger.recent_count("team-a", "2026-01-03T00:00:00Z"), 2
+            )
+
+    def test_team_ids_must_be_canonical(self) -> None:
+        with SubmissionLedger(clock=lambda: datetime(2026, 1, 1, tzinfo=UTC)) as ledger:
+            with self.assertRaises(ValueError):
+                ledger.record_submission(" team-a", "2026-01-01T00:00:00Z")
+            with self.assertRaises(ValueError):
+                ledger.record_submission("a" * 129, "2026-01-01T00:00:00Z")
+
+    def test_canaries_scan_bytes_and_common_encodings(self) -> None:
+        token = b"canary-secret"
         self.assertEqual(
-            scan_canaries(b"safe canary-secret", b"trace", ("canary-secret",)),
+            scan_canaries(b"safe canary-secret", b"trace", (token,)),
             ("canary-secret",),
         )
-        self.assertEqual(scan_canaries(b"safe", b"trace", ("canary-secret",)), ())
+        self.assertEqual(
+            scan_canaries(b"safe", base64.b64encode(token), (token,)),
+            ("canary-secret",),
+        )
+        self.assertEqual(
+            scan_canaries(token.hex().encode(), b"trace", (token,)),
+            ("canary-secret",),
+        )
+        self.assertEqual(scan_canaries(b"safe", b"trace", (token,)), ())
 
     def test_public_result_and_signature(self) -> None:
         result = {
