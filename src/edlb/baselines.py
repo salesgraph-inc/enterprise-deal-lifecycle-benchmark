@@ -28,12 +28,6 @@ class PodmanConfig:
     output_path: Path
     command: tuple[str, ...]
     allow_network: bool = False
-    pids_limit: int = 512
-    memory_limit: str = "16g"
-    cpus_limit: float = 8.0
-    nofile_limit: int = 4096
-    nproc_limit: int = 512
-    wall_timeout_seconds: int = 3600
 
 
 class Baseline:
@@ -235,39 +229,8 @@ def validate_blind_target(world_path: str | Path, output_path: str | Path) -> No
         raise ValueError("blind output cannot be written inside the world bundle")
 
 
-def _validate_resource_limits(config: PodmanConfig) -> None:
-    if type(config.pids_limit) is not int or not 1 <= config.pids_limit <= 65536:
-        raise ValueError("pids_limit must be an integer from 1 through 65536")
-    if (
-        not isinstance(config.memory_limit, str)
-        or not re.fullmatch(
-            r"[1-9][0-9]*(?:[kmgt]i?|[bB])?", config.memory_limit, re.IGNORECASE
-        )
-    ):
-        raise ValueError("memory_limit must be a positive Podman memory quantity")
-    if (
-        isinstance(config.cpus_limit, bool)
-        or not isinstance(config.cpus_limit, (int, float))
-        or not 0 < config.cpus_limit <= 256
-    ):
-        raise ValueError("cpus_limit must be a finite number from 0 through 256")
-    if (
-        type(config.nofile_limit) is not int
-        or not 64 <= config.nofile_limit <= 1_000_000
-    ):
-        raise ValueError("nofile_limit must be an integer from 64 through 1000000")
-    if type(config.nproc_limit) is not int or not 1 <= config.nproc_limit <= 65536:
-        raise ValueError("nproc_limit must be an integer from 1 through 65536")
-    if (
-        type(config.wall_timeout_seconds) is not int
-        or not 1 <= config.wall_timeout_seconds <= 86_400
-    ):
-        raise ValueError("wall_timeout_seconds must be an integer from 1 through 86400")
-
-
 def build_podman_command(config: PodmanConfig) -> list[str]:
     validate_blind_target(config.world_path, config.output_path)
-    _validate_resource_limits(config)
     if not re.fullmatch(r"[^\s;&|<>$`\\]+@sha256:[0-9a-f]{64}", config.image):
         raise ValueError("image must use an immutable sha256 digest reference")
     if not config.command:
@@ -275,10 +238,6 @@ def build_podman_command(config: PodmanConfig) -> list[str]:
     if config.allow_network:
         raise ValueError("blind batch execution must use a disabled network")
     command = [
-        "timeout",
-        "--signal=TERM",
-        "--kill-after=30s",
-        f"{config.wall_timeout_seconds}s",
         "podman",
         "run",
         "--rm",
@@ -287,11 +246,8 @@ def build_podman_command(config: PodmanConfig) -> list[str]:
         "--read-only",
         "--read-only-tmpfs=false",
         "--image-volume=ignore",
-        f"--pids-limit={config.pids_limit}",
-        f"--memory={config.memory_limit}",
-        f"--cpus={config.cpus_limit:g}",
-        f"--ulimit=nofile={config.nofile_limit}:{config.nofile_limit}",
-        f"--ulimit=nproc={config.nproc_limit}:{config.nproc_limit}",
+        "--pids-limit=-1",
+        "--ulimit=host",
         "--cap-drop=ALL",
         "--security-opt=no-new-privileges",
         "--network=none",

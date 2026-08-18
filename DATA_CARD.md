@@ -69,10 +69,9 @@ provider settings in a resolved agent manifest before execution. EDLB records
 that declaration and binds it to configuration and manifest hashes.
 External execution also pins runtime, artifact, revision, and effective host
 and job policy provenance in a resolved environment manifest. The executor-
-policy digest records inherited rlimits and other policy. Evaluator hosts and
-containers must enforce explicit safety ceilings for processes, memory, CPU,
-file descriptors, and execution duration; these are security controls, not
-benchmark budgets. Adapter-reported usage, latency, and cost are recorded only
+policy digest records inherited rlimits and other policy without adding a
+resource cap. EDLB does not impose a total wall-time, CPU, memory, process, or
+file-descriptor cap. Adapter-reported usage, latency, and cost are recorded only
 when supplied. Provider defaults and endpoint ceilings remain external to EDLB.
 
 The implemented operator controls are per-checkpoint tool calls, per-checkpoint

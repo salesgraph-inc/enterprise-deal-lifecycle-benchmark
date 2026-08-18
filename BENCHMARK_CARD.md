@@ -86,9 +86,9 @@ agents.
 The CLI supports dataset validation and generation, fixed-harness and open-team
 runs, trace replay, grading, reports, and container command construction.
 The harness applies checkpoint tool-call, turn, and response-time limits only
-when an operator supplies them. EDLB imposes no total wall-time cap. It always
-enforces protocol validation, role grants, timing, visibility, idempotency, and
-trace capture. The causal module owns event-first interventions and bounded
+when an operator supplies them. EDLB imposes no total wall-time, CPU, memory,
+process, or file-descriptor cap. It always enforces protocol validation, role
+grants, timing, visibility, idempotency, and trace capture. The causal module owns event-first interventions and bounded
 realization checks. Grading evaluates deterministic assertions, tracks pending
 judge assertions, computes secondary metrics and reliability statistics, and
 renders scorecards.
@@ -120,6 +120,9 @@ the exact runtime version, immutable image or package digest, and full Git
 revision, plus a SHA-256 digest of effective inherited rlimits and other
 evaluator host and job policies. The digest records policy and creates no
 resource cap. EDLB binds it to the same configuration and manifest hashes.
+Executor host policy is external, hash-bound, and must remain identical for
+comparable runs. Blind-container storage isolation retains a read-only root,
+disabled network, no writable host mounts, and one 64 MiB temporary filesystem.
 
 When a system relies on provider defaults, its resolved manifest must pin a
 SHA-256 digest of the canonical provider-default and API configuration. A

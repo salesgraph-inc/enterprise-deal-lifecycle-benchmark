@@ -87,11 +87,10 @@ record contains the exact `runtime_version`, immutable `image_digest`, and full
 `git_revision`. It also contains an `executor_policy_digest` covering effective
 inherited rlimits and other evaluator host and job policies. The digest records
 policy and creates no resource cap. The environment is configuration-bound.
-Local runs without that provenance remain runnable but unofficial. Container
-and evaluator hosts must also enforce explicit safety ceilings for processes,
-memory, CPU, file descriptors, and execution duration; those ceilings are
-security controls and are recorded in the executor policy rather than treated
-as benchmark budgets.
+Local runs without that provenance remain runnable but unofficial. EDLB does
+not impose a total wall-time, CPU, memory, process, or file-descriptor cap.
+Those policies belong to the evaluator host, are hash-bound in the environment
+manifest, and must remain identical for comparable runs.
 
 When a system relies on provider defaults, its resolved manifest must pin a
 SHA-256 digest of the canonical provider-default and API configuration. A
@@ -113,6 +112,9 @@ Business, authorization, and temporal rules remain part of the benchmark.
 Protocol trust-boundary validation, blind submission quotas and canaries,
 network isolation, and declared evaluator safety policy remain security
 controls, not model or execution budgets.
+Blind containers retain a read-only root, no writable host mounts, disabled
+network, and one 64 MiB `noexec,nosuid,nodev` temporary filesystem for storage
+isolation. These controls are not benchmark resource limits.
 
 The generated packs are stored at:
 

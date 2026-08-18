@@ -1196,7 +1196,9 @@ for line in sys.stdin:
         shutil.copytree(WORLD, bundle)
         rows = [
             json.loads(line)
-            for line in (bundle / "artifacts.jsonl").read_text(encoding="utf-8").splitlines()
+            for line in (bundle / "artifacts.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
             if line.strip()
         ]
         rows[0]["path"] = path
@@ -1210,7 +1212,9 @@ for line in sys.stdin:
         with tempfile.TemporaryDirectory() as directory:
             outside = Path(directory) / "outside.txt"
             outside.write_text("not a bundle artifact", encoding="utf-8")
-            bundle = self._bundle_with_artifact_path(directory=Path(directory), path=str(outside))
+            bundle = self._bundle_with_artifact_path(
+                directory=Path(directory), path=str(outside)
+            )
             with self.assertRaisesRegex(BundleError, "escapes bundle root"):
                 load_world_bundle(bundle)
 
@@ -1234,7 +1238,9 @@ for line in sys.stdin:
             (bundle / "artifact-escape.txt").symlink_to(outside)
             rows = [
                 json.loads(line)
-                for line in (bundle / "artifacts.jsonl").read_text(encoding="utf-8").splitlines()
+                for line in (bundle / "artifacts.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
                 if line.strip()
             ]
             rows[0]["path"] = "artifact-escape.txt"
@@ -1264,17 +1270,10 @@ for line in sys.stdin:
             self.assertIn("--interactive", command)
             self.assertIn("--read-only-tmpfs=false", command)
             self.assertIn("--image-volume=ignore", command)
-            self.assertNotIn("--pids-limit=-1", command)
-            self.assertNotIn("--ulimit=host", command)
-            self.assertIn("--pids-limit=512", command)
-            self.assertIn("--memory=16g", command)
-            self.assertIn("--cpus=8", command)
-            self.assertIn("--ulimit=nofile=4096:4096", command)
-            self.assertIn("--ulimit=nproc=512:512", command)
+            self.assertEqual(command.count("--pids-limit=-1"), 1)
+            self.assertEqual(command.count("--ulimit=host"), 1)
+            self.assertEqual(sum(item.startswith("--ulimit") for item in command), 1)
             self.assertIn("/tmp:rw,noexec,nosuid,nodev,size=64m", command)
-            self.assertEqual(
-                command[:4], ["timeout", "--signal=TERM", "--kill-after=30s", "3600s"]
-            )
 
     def test_podman_requires_immutable_image(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

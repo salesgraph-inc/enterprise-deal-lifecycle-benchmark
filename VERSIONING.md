@@ -16,7 +16,8 @@ comparable only when its run manifest records all of these versions.
   immutable image or package digest, full Git revision, and SHA-256 digest of
   effective inherited rlimits and other evaluator host and job policies in a
   resolved environment manifest. The digest records policy and creates no
-  resource cap. EDLB binds both to configuration and manifest hashes.
+  resource cap. EDLB does not impose a total wall-time, CPU, memory, process,
+  or file-descriptor cap. It binds both to configuration and manifest hashes.
   Nullable controls use null for unlimited.
 - A benchmark release names the world set, split assignment, tool schema,
   stakeholder configuration, judge configuration, and grader together.
@@ -56,7 +57,9 @@ judge, and model versions, plus scenario hash, prompt hash, image digest,
 random seeds, execution policy, and provider settings. A replay is valid only
 when these inputs and the action trace match the recorded manifest. EDLB
 supplies no model or execution budget by default, no token caps, no total
-wall-time cap, and no default checkpoint tool-call, turn, or response-time cap.
+wall-time, CPU, memory, process, or file-descriptor cap, and no default
+checkpoint tool-call, turn, or response-time cap. Executor host policy is
+external and hash-bound in the environment manifest.
 Open Team launch retries and Fixed Harness activation retries default to zero.
 The implemented operator controls are per-checkpoint tool calls, turns,
 response timeout, and track-scoped retries; comparisons require identical

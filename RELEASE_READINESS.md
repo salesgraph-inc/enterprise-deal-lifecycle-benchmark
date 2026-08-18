@@ -54,6 +54,10 @@ Unresolved aggregates are unofficial.
 Business, authorization, and temporal rules, protocol trust-boundary
 validation, blind submission quotas and canaries, network isolation, and
 declared evaluator safety policy remain required controls.
+EDLB itself imposes no total wall-time, CPU, memory, process, or file-descriptor
+cap. Evaluator host policy must be recorded in the hash-bound environment
+manifest. Blind-container storage isolation retains the 64 MiB temporary
+filesystem and network and filesystem restrictions.
 
 ## Pending owner action
 

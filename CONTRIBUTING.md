@@ -32,7 +32,10 @@ manifest. EDLB records that declaration and binds it to configuration and
 manifest hashes. External execution also pins runtime, artifact, revision, and
 effective host and job policy provenance in a resolved environment manifest.
 The executor-policy digest records inherited rlimits and other policy and adds
-no resource cap. Keep execution policy and configuration identical for comparisons.
+no resource cap. EDLB imposes no total wall-time, CPU, memory, process, or
+file-descriptor cap. Keep executor policy and configuration identical for
+comparisons. Blind-container storage isolation retains the 64 MiB temporary
+filesystem and network and filesystem restrictions.
 
 Business, authorization, and temporal rules, protocol trust-boundary
 validation, blind submission quotas and canaries, network isolation, and

@@ -69,19 +69,17 @@ defaults to unresolved configuration. External execution also requires
 `--environment-manifest` with the exact runtime version, immutable image or package
 digest, full Git revision, and SHA-256 executor-policy digest. That digest covers
 effective inherited rlimits and other evaluator host and job policies. It records
-policy and creates no scored benchmark cap. Both manifests are configuration-bound,
-and unresolved runs are unofficial. Comparisons require identical execution policy
-and configuration. Official scoring uses exactly three trials per system and world.
+policy provenance and creates no EDLB resource cap. Both manifests are configuration-
+bound, and unresolved runs are unofficial. Comparisons require identical execution
+policy and configuration. Official scoring uses exactly three trials per system and
+world.
 
-Blind container execution does apply finite host-safety ceilings, separate from the
-scored benchmark budget: 512 processes, 16 GiB memory, 8 CPUs, 4,096 open files,
-512 `nproc`, and a 3,600-second wall-clock limit. The command is prefixed with the
-GNU `timeout` supervisor, which sends `TERM` at the limit and force-kills after 30
-seconds. Operators may configure stricter finite values within the validated ranges,
-but cannot request unlimited process, memory, CPU, file-descriptor, or wall-clock
-resources. These ceilings protect the evaluator from malicious or runaway submitted
-code and must be recorded in the executor-policy digest; they do not change model
-settings, token budgets, checkpoint scoring, or benchmark semantics.
+EDLB does not impose a total wall-time, CPU, memory, process, or file-descriptor cap.
+The evaluator host owns those policies and must record them in the hash-bound
+executor policy for comparable runs. Blind containers still use a read-only root,
+no writable host mounts, disabled network, and one 64 MiB
+`noexec,nosuid,nodev` temporary filesystem for storage isolation. Those controls do
+not change benchmark semantics or model settings.
 
 Business, authorization, and temporal rules, protocol trust-boundary validation,
 blind submission quotas and canaries, network isolation, and declared evaluator

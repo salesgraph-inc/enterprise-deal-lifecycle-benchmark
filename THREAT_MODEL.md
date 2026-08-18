@@ -35,7 +35,7 @@ evidence that the release gate has passed.
 | Copyright or trademark contamination | Unlicensed dataset content | Cite process references, generate original text, retain provenance, review license | Provenance and citations present, legal clearance pending |
 | Model realization changes causal truth | Non-reproducible or invalid worlds | Structured causal engine owns truth, constrained realization, cache and digest | Runtime controls present, model calibration pending |
 | Judge overreach or criterion cascade | Unreliable scores | Deterministic majority, criterion-scoped evidence slices, two judge passes, human calibration | Judge path present, calibration pending |
-| Implicit resource budget | Unfair truncation or incomparable results | No scored model settings by default, explicit per-checkpoint controls, resolved pre-run agent manifest, manifest and configuration hashes; separate finite host-safety ceilings are recorded in the executor policy | Contracted; runtime verification pending |
+| Implicit resource budget | Unfair truncation or incomparable results | No model or total execution cap by default, explicit per-checkpoint controls, resolved pre-run agent manifest, manifest and configuration hashes, and externally owned executor policy bound by hash | Contracted; runtime verification pending |
 | Untrusted tool payload or fan-out | Evaluator memory, storage, or side-effect exhaustion | Broker input ceilings for text, queries, lists, recipients, and explicit retrieval requests | Implemented and focused-tested |
 | Submission storage exhaustion | Evaluator disk exhaustion | Rootless read-only container, ignored image volumes, no writable host mount, one 64 MiB temporary filesystem | Command construction focused-tested |
 | Runtime or model outage | Misclassified infrastructure failure | Distinguish invalid infrastructure from agent failure, optional launch or activation retries, run status, declared evaluator safety policy | Runner controls present, official run pending |
@@ -51,23 +51,15 @@ prompt hashes, and provider settings in a resolved pre-run agent manifest. They
 separately declare the exact runtime version, immutable image or package digest, full
 Git revision, and a SHA-256 digest of effective inherited rlimits and other evaluator
 host and job policies in a resolved environment manifest. The digest records policy
-and creates no scored benchmark cap. EDLB binds both manifests to configuration and
+and creates no EDLB resource cap. EDLB binds both manifests to configuration and
 manifest hashes. Direct `open_world` setup may remain unresolved, external execution
 requires both manifests, and aggregates with unresolved runs are unofficial.
 
-Blind container execution has finite host-safety ceilings independent of scored
-benchmark budgets: 512 processes, 16 GiB memory, 8 CPUs, 4,096 open files, 512
-`nproc`, and a 3,600-second wall-clock limit by default. `build_podman_command`
-prefixes execution with GNU `timeout`, sending `TERM` at the limit and force-killing
-after 30 seconds. All limits are configurable only to validated finite values. The
-read-only root, ignored image volumes, no writable host mounts, disabled network,
-and one 64 MiB temporary filesystem remain in force. These controls protect
-evaluator availability against malicious or runaway submitted code; they are
-recorded in the executor-policy digest and do not set model settings, token
-budgets, checkpoint scoring, or benchmark semantics. Business, authorization, and
-temporal rules, protocol trust-boundary validation, blind submission quotas and
-canaries, network isolation, and declared evaluator safety policy remain required
-controls.
+EDLB does not impose a total wall-time, CPU, memory, process, or file-descriptor cap.
+Those policies belong to the evaluator host and are hash-bound for comparable runs.
+The read-only root, ignored image volumes, no writable host mounts, disabled network,
+and one 64 MiB `noexec,nosuid,nodev` temporary filesystem remain in force. These are
+trust-boundary and storage-isolation controls, not benchmark resource limits.
 The tool broker accepts at most 100,000 characters in a free-text field, 1,000
 characters in a query or semantic-list item, 100 semantic-list items, 50
 external recipients or meeting participants, and an explicit retrieval request
@@ -76,8 +68,7 @@ and side-effect safety ceilings, not model, context, checkpoint, or total-run
 budgets. Blind containers have a read-only root, ignore image-declared volumes, mount no
 writable host path, and receive one 64 MiB temporary filesystem at `/tmp`. Results
 travel through the JSONL standard streams. These storage controls protect evaluator
-availability and are distinct from the finite process, memory, CPU, file-descriptor,
-and wall-clock ceilings documented above. The isolation flags follow the
+availability and are distinct from any evaluator-host resource policy. The isolation flags follow the
 [Podman run contract](https://docs.podman.io/en/stable/markdown/podman-run.1.html).
 Lossless `team_message` and `yield` trace paths, snapshot and diff exports,
 replay payload and hash validation, state and score hashes, aggregate dataset
