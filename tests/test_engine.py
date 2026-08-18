@@ -461,7 +461,9 @@ class EngineTest(unittest.TestCase):
                 ("edlb", "run"),
             )
             command = build_podman_command(base)
-            self.assertEqual(command[:4], ["timeout", "--signal=TERM", "--kill-after=30s", "3600s"])
+            self.assertEqual(
+                command[:4], ["timeout", "--signal=TERM", "--kill-after=30s", "3600s"]
+            )
             self.assertIn("--read-only-tmpfs=false", command)
             self.assertIn("--image-volume=ignore", command)
             self.assertIn("--pids-limit=512", command)
@@ -493,7 +495,9 @@ class EngineTest(unittest.TestCase):
                     wall_timeout_seconds=900,
                 )
             )
-            self.assertEqual(custom[:4], ["timeout", "--signal=TERM", "--kill-after=30s", "900s"])
+            self.assertEqual(
+                custom[:4], ["timeout", "--signal=TERM", "--kill-after=30s", "900s"]
+            )
             self.assertIn("--pids-limit=128", custom)
             self.assertIn("--memory=2g", custom)
             self.assertIn("--cpus=1.5", custom)
@@ -519,7 +523,10 @@ class EngineTest(unittest.TestCase):
                 values[field] = value
                 with self.subTest(field=field):
                     with self.assertRaises(ValueError):
-                        build_podman_command(PodmanConfig(base.image, world, output, base.command, **values))
+                        build_podman_command(
+                            PodmanConfig(base.image, world, output, base.command, **values)
+                        )
+
     def test_scoped_records_are_visible_only_to_explicit_roles(self) -> None:
         with make_engine() as engine:
             scoped_event = Event(
