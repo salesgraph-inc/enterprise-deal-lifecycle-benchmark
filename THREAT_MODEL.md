@@ -35,32 +35,39 @@ evidence that the release gate has passed.
 | Copyright or trademark contamination | Unlicensed dataset content | Cite process references, generate original text, retain provenance, review license | Provenance and citations present, legal clearance pending |
 | Model realization changes causal truth | Non-reproducible or invalid worlds | Structured causal engine owns truth, constrained realization, cache and digest | Runtime controls present, model calibration pending |
 | Judge overreach or criterion cascade | Unreliable scores | Deterministic majority, criterion-scoped evidence slices, two judge passes, human calibration | Judge path present, calibration pending |
-| Implicit resource budget | Unfair truncation or incomparable results | No default model settings or execution caps, explicit per-checkpoint controls, resolved pre-run agent manifest, manifest and configuration hashes, no total wall-time or container process cap | Contracted, runtime verification pending |
+| Implicit resource budget | Unfair truncation or incomparable results | No scored model settings by default, explicit per-checkpoint controls, resolved pre-run agent manifest, manifest and configuration hashes; separate finite host-safety ceilings are recorded in the executor policy | Contracted; runtime verification pending |
 | Untrusted tool payload or fan-out | Evaluator memory, storage, or side-effect exhaustion | Broker input ceilings for text, queries, lists, recipients, and explicit retrieval requests | Implemented and focused-tested |
 | Submission storage exhaustion | Evaluator disk exhaustion | Rootless read-only container, ignored image volumes, no writable host mount, one 64 MiB temporary filesystem | Command construction focused-tested |
 | Runtime or model outage | Misclassified infrastructure failure | Distinguish invalid infrastructure from agent failure, optional launch or activation retries, run status, declared evaluator safety policy | Runner controls present, official run pending |
 | Test-pack extraction or replay | Blind leaderboard contamination | Rootless execution, canaries, quotas, exact manifests, private evaluator | Lossless `team_message` and `yield` traces, snapshot and diff exports, replay payload and hash validation, state and score hashes, aggregate validation, canary scans, quota ledger, exact-byte manifest hashes, HMAC signatures, and immutable Podman isolation are focused-tested; end-to-end evaluator evidence pending |
 | Dependency or image drift | Results cannot be reproduced | Versioned schemas, hashes, image digest, tool and model manifests | Run-manifest fields and immutable image checks present, release image controls pending |
 
-EDLB sets no model or execution budget by default. It injects no token caps or
-temperature, top-p, reasoning-effort, or cost settings, and has no default
-checkpoint tool-call, turn, response-time, total wall-time, context-history, or
-retrieval-result cap. Open Team launch retries and Fixed Harness activation
-retries default to zero. The implemented operator controls are per-checkpoint
-tool calls, turns, response timeout, and track-scoped retries;
-nullable controls use null for unlimited. External systems declare model IDs,
-digests, prompt hashes, and provider settings in a resolved pre-run agent
-manifest. They separately declare the exact runtime version, immutable image or
-package digest, full Git revision, and a SHA-256 digest of effective inherited
-rlimits and other evaluator host and job policies in a resolved environment
-manifest. The digest records policy and creates no resource cap. EDLB binds both
-to configuration and manifest hashes. Direct `open_world` setup may
-remain unresolved, external execution requires both manifests, and aggregates
-with unresolved runs are unofficial. Business, authorization, and temporal
-rules, protocol trust-boundary validation, blind submission quotas and canaries,
-network isolation, and declared evaluator safety policy remain required
-controls.
+EDLB sets no model or scored benchmark budget by default. It injects no token caps or
+temperature, top-p, reasoning-effort, or cost settings. Open Team launch retries and
+Fixed Harness activation retries default to zero. The implemented scored controls are
+per-checkpoint tool calls, turns, response timeout, and track-scoped retries;
+nullable controls use null for unlimited. External systems declare model IDs, digests,
+prompt hashes, and provider settings in a resolved pre-run agent manifest. They
+separately declare the exact runtime version, immutable image or package digest, full
+Git revision, and a SHA-256 digest of effective inherited rlimits and other evaluator
+host and job policies in a resolved environment manifest. The digest records policy
+and creates no scored benchmark cap. EDLB binds both manifests to configuration and
+manifest hashes. Direct `open_world` setup may remain unresolved, external execution
+requires both manifests, and aggregates with unresolved runs are unofficial.
 
+Blind container execution has finite host-safety ceilings independent of scored
+benchmark budgets: 512 processes, 16 GiB memory, 8 CPUs, 4,096 open files, 512
+`nproc`, and a 3,600-second wall-clock limit by default. `build_podman_command`
+prefixes execution with GNU `timeout`, sending `TERM` at the limit and force-killing
+after 30 seconds. All limits are configurable only to validated finite values. The
+read-only root, ignored image volumes, no writable host mounts, disabled network,
+and one 64 MiB temporary filesystem remain in force. These controls protect
+evaluator availability against malicious or runaway submitted code; they are
+recorded in the executor-policy digest and do not set model settings, token
+budgets, checkpoint scoring, or benchmark semantics. Business, authorization, and
+temporal rules, protocol trust-boundary validation, blind submission quotas and
+canaries, network isolation, and declared evaluator safety policy remain required
+controls.
 The tool broker accepts at most 100,000 characters in a free-text field, 1,000
 characters in a query or semantic-list item, 100 semantic-list items, 50
 external recipients or meeting participants, and an explicit retrieval request
