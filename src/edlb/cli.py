@@ -190,7 +190,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 
 def cmd_generate(args: argparse.Namespace) -> int:
-    summary = generate_dataset(args.root)
+    summary = generate_dataset(args.root, force=args.force)
     _json_print(summary)
     return 0 if summary.get("valid") else 1
 
@@ -333,6 +333,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     generate = commands.add_parser("generate")
     generate.add_argument("--root", type=Path)
+    generate.add_argument(
+        "--force",
+        action="store_true",
+        help="replace an existing non-empty generated output directory",
+    )
     generate.set_defaults(handler=cmd_generate)
 
     run = commands.add_parser("run")
