@@ -166,6 +166,7 @@ def make_engine(
             "created_at": START,
             "source_policy_ids": (),
         },
+        release_visibility="public",
     )
     checkpoints = (
         Checkpoint(

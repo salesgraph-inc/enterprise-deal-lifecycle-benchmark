@@ -44,16 +44,23 @@ def _resolve_world(path: str | Path, allow_private: bool = False):
         return candidate
     if candidate.is_file() and candidate.name == "manifest.json":
         return candidate.parent
-    for root in (candidate, candidate / "benchmarks" / "v1"):
+    roots = (
+        Path.cwd() / "benchmarks" / "v1",
+        Path(__file__).resolve().parents[2] / "benchmarks" / "v1",
+        Path.cwd(),
+        Path(__file__).resolve().parents[2],
+    )
+    world_id = candidate.name
+    for root in roots:
         for location in (
             root / "output" / "public" / "train",
             root / "output" / "public" / "dev",
+            root / "output" / "public" / "blind",
             root / "private" / "blind",
         ):
-            if location.is_dir():
-                matches = list(location.glob(f"{path}*/manifest.json"))
-                if matches:
-                    return matches[0].parent
+            bundle = location / world_id
+            if bundle.is_dir() and (bundle / "manifest.json").is_file():
+                return bundle
     raise ValueError(f"world bundle not found: {path}")
 
 
@@ -183,7 +190,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 
 def cmd_generate(args: argparse.Namespace) -> int:
-    summary = generate_dataset(args.root, args.private_config, args.official)
+    summary = generate_dataset(args.root)
     _json_print(summary)
     return 0 if summary.get("valid") else 1
 
@@ -326,8 +333,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     generate = commands.add_parser("generate")
     generate.add_argument("--root", type=Path)
-    generate.add_argument("--private-config", type=Path)
-    generate.add_argument("--official", action="store_true")
     generate.set_defaults(handler=cmd_generate)
 
     run = commands.add_parser("run")

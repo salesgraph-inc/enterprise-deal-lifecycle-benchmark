@@ -449,9 +449,12 @@ def load_world_bundle(path: str | Path, allow_private: bool = False) -> WorldBun
     manifest = _json(root / "manifest.json")
     if not isinstance(manifest, Mapping) or not manifest.get("world_id"):
         raise BundleError("world manifest must contain world_id")
-    private = manifest.get("split") == "blind"
+    release_visibility = manifest.get("release_visibility")
+    if release_visibility not in {"public", "private"}:
+        raise BundleError("world manifest must contain valid release_visibility")
+    private = release_visibility == "private"
     if private and not allow_private:
-        raise BundleError("blind world bundles require allow_private=True")
+        raise BundleError("private world bundles require allow_private=True")
     events = tuple(_jsonl(root / "events.jsonl"))
     artifacts = tuple(_jsonl(root / "artifacts.jsonl"))
     actor_file = root / "actors.jsonl"
@@ -485,7 +488,7 @@ def validate_world_bundle(
     errors: list[str] = []
     if bundle.path.name != bundle.world_id:
         errors.append("bundle directory name does not match manifest world_id")
-    required = ("world_id", "vertical", "split")
+    required = ("world_id", "vertical", "split", "release_visibility")
     errors.extend(f"manifest missing {key}" for key in required if key not in manifest)
     synthetic = manifest.get(
         "synthetic", (manifest.get("provenance") or {}).get("synthetic_only")
@@ -522,10 +525,10 @@ def validate_world_bundle(
     for event in bundle.events:
         if not event.get("event_id") or not event.get("available_at"):
             errors.append("event is missing event_id or available_at")
-    if bundle.split == "dev" and bundle.oracle_path is not None:
-        errors.append("dev bundle must not contain oracle.json")
-    if bundle.split == "blind" and not bundle.private:
-        errors.append("blind bundle must be private")
+    if bundle.private and bundle.split != "blind":
+        errors.append("private bundle must use the blind split")
+    if not (bundle.path / "hidden_events.jsonl").is_file():
+        errors.append("world bundle is missing hidden_events.jsonl")
     result = {
         "valid": not errors,
         "world_id": bundle.world_id,
@@ -573,7 +576,7 @@ def _dataset_observed_extras(
     public_ids = {
         str(row["world_id"])
         for row in worlds
-        if row.get("split") in {"train", "dev"} and row.get("world_id") is not None
+        if not row.get("private") and row.get("world_id") is not None
     }
     visible_pairs: dict[str, str] = {}
     if pair_path is not None:
@@ -593,28 +596,21 @@ def _dataset_observed_extras(
                 visible_pairs[world_id] = str(matches[0]["pair_id"])
     elif public_ids:
         errors.append("public authoring identities are missing")
-    blind_rows = [row for row in worlds if row.get("split") == "blind"]
-    if not blind_rows:
-        validation_path = _dataset_sidecar(root, "authoring/validation.json")
-        validation = _json(validation_path) if validation_path is not None else {}
-        pair_count = (
-            int(validation["pair_count"])
-            if isinstance(validation, Mapping)
-            and isinstance(validation.get("pair_count"), int)
-            and not isinstance(validation.get("pair_count"), bool)
-            else None
-        )
-        if pair_count is None:
-            errors.append("public pair count is missing")
-        return shared_count, pair_count, errors
-    private_validation_path = _dataset_sidecar(root, "private/validation.json")
-    private_validation = (
-        _json(private_validation_path) if private_validation_path is not None else {}
+    private_rows = [row for row in worlds if row.get("private")]
+    validation_path = _dataset_sidecar(
+        root,
+        "private/validation.json" if private_rows else "authoring/validation.json",
+    )
+    validation = _json(validation_path) if validation_path is not None else {}
+    pair_count = (
+        int(validation["pair_count"])
+        if isinstance(validation, Mapping)
+        and isinstance(validation.get("pair_count"), int)
+        and not isinstance(validation.get("pair_count"), bool)
+        else None
     )
     pair_diffs = (
-        private_validation.get("pair_diffs", ())
-        if isinstance(private_validation, Mapping)
-        else ()
+        validation.get("pair_diffs", ()) if isinstance(validation, Mapping) else ()
     )
     pair_members: dict[str, set[str]] = {}
     world_pairs: dict[str, str] = {}
@@ -628,7 +624,14 @@ def _dataset_observed_extras(
         pair_diffs = ()
     for item in pair_diffs:
         if not isinstance(item, Mapping) or not item.get("pair_id"):
-            errors.append("private pair identity is invalid")
+            errors.append("pair identity is invalid")
+            continue
+        members = item.get("world_ids")
+        if not isinstance(members, Sequence) or isinstance(members, (str, bytes)):
+            errors.append(f"pair {item['pair_id']} world_ids are invalid")
+            continue
+        member_ids = {str(value) for value in members}
+        if not member_ids & observed_ids:
             continue
         pair_id = str(item["pair_id"])
         if pair_id in seen_pair_ids:
@@ -655,10 +658,6 @@ def _dataset_observed_extras(
             or {str(value) for value in allowed_differences} != expected_differences
         ):
             errors.append(f"pair {pair_id} allowed differences are invalid")
-        members = item.get("world_ids")
-        if not isinstance(members, Sequence) or isinstance(members, (str, bytes)):
-            errors.append(f"pair {pair_id} world_ids are invalid")
-            continue
         for value in members:
             world_id = str(value)
             if world_id in world_pairs and world_pairs[world_id] != pair_id:
@@ -675,23 +674,28 @@ def _dataset_observed_extras(
         if len({row.get("vertical") for row in paired_worlds}) != 1:
             errors.append(f"pair {pair_id} spans multiple verticals")
     if set(world_pairs) != observed_ids:
-        errors.append("private pair identities do not cover observed worlds")
-    if len(pair_members) != 36:
+        errors.append("pair identities do not cover observed worlds")
+    expected_pair_count = len(observed_ids) // 2
+    if len(pair_members) != expected_pair_count:
+        errors.append(
+            f"observed dataset must contain {expected_pair_count} unique pair identities"
+        )
+    if len(observed_ids) == 72 and len(pair_members) != 36:
         errors.append("full dataset must contain 36 unique pair identities")
-    if len(observed_ids) != 72:
-        errors.append("full pair identity validation requires 72 unique worlds")
     for world_id, pair_id in visible_pairs.items():
         if world_pairs.get(world_id) != pair_id:
             errors.append(f"public pair identity mismatch for {world_id}")
-    for blind_row in blind_rows:
+    for blind_row in private_rows:
         world_id = str(blind_row.get("world_id", ""))
         blind_pair_id = blind_row.get("pair_id")
         if not blind_pair_id:
             errors.append(f"private pair identity is missing for {world_id}")
         elif world_pairs.get(world_id) != str(blind_pair_id):
             errors.append(f"private pair identity mismatch for {world_id}")
-    pair_count = len(pair_members) if pair_members else None
-    return shared_count, pair_count, errors
+    observed_pair_count = len(pair_members) if pair_members else pair_count
+    if observed_pair_count is None:
+        errors.append("dataset pair count is missing")
+    return shared_count, observed_pair_count, errors
 
 
 AGGREGATE_FIELDS = frozenset(
@@ -885,18 +889,20 @@ def validate_dataset(path: str | Path, allow_private: bool = False) -> dict[str,
                     break
     public_worlds: list[dict[str, Any]] = []
     requested_splits: tuple[str, ...]
-    if root.name in {"train", "dev"} and root.parent.name == "public":
+    if root.name in {"train", "dev", "blind"} and root.parent.name == "public":
         public_root = root.parent
         requested_splits = (root.name,)
     elif root.name == "public":
         public_root = root
-        requested_splits = ("train", "dev")
-    elif aggregate_manifest is not None and (root / "public").is_dir():
+        requested_splits = ("train", "dev", "blind")
+    elif (root.name == "output" or aggregate_manifest is not None) and (
+        root / "public"
+    ).is_dir():
         public_root = root / "public"
-        requested_splits = ("train", "dev")
+        requested_splits = ("train", "dev", "blind")
     else:
         public_root = root / "output" / "public"
-        requested_splits = ("train", "dev")
+        requested_splits = ("train", "dev", "blind")
     if public_root.is_dir():
         for split in requested_splits:
             public_worlds.extend(
@@ -952,19 +958,14 @@ def validate_dataset(path: str | Path, allow_private: bool = False) -> dict[str,
                 public_errors,
             )
         )
-    elif requested_splits == ("train", "dev"):
+    elif len(requested_splits) > 1:
         errors.append("aggregate manifest is missing")
-    full_pack = allow_private and (root / "output").is_dir()
+    full_pack = (root / "output").is_dir()
     if full_pack:
-        train_count = sum(row.get("split") == "train" for row in public_worlds)
-        dev_count = sum(row.get("split") == "dev" for row in public_worlds)
-        if (
-            not train_count
-            or train_count != dev_count
-            or len(private_worlds) != train_count
-        ):
-            errors.append("private blind split does not complete the full dataset")
-    if allow_private and (private_worlds or full_pack):
+        expected_pack_count = len(public_worlds) + len(private_worlds)
+        if expected_pack_count != 72:
+            errors.append("dataset does not contain 72 worlds")
+    if allow_private and private_worlds:
         private_validation_path = _dataset_sidecar(root, "private/validation.json")
         if private_validation_path is None:
             errors.append("private validation summary is missing")
@@ -1517,6 +1518,7 @@ def _scenario_model(bundle: WorldBundle) -> ScenarioManifest:
     end = _date_value(end_text) if end_text else start + timedelta(days=duration_days)
     values: dict[str, Any] = {
         "world_id": bundle.world_id,
+        "release_visibility": source.get("release_visibility"),
         "split": source.get("split"),
         "vertical": source.get("vertical"),
         "seller_org_id": source.get("seller_org_id", source.get("seller_id")),

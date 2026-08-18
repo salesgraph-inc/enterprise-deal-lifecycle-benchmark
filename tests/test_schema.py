@@ -98,7 +98,7 @@ def _bundles() -> list[Path]:
     return sorted(
         list((ROOT / "benchmarks/v1/output/public/train").glob("*/"))
         + list((ROOT / "benchmarks/v1/output/public/dev").glob("*/"))
-        + list((ROOT / "benchmarks/v1/private/blind").glob("*/"))
+        + list((ROOT / "benchmarks/v1/output/public/blind").glob("*/"))
     )
 
 
@@ -248,12 +248,10 @@ class SchemaTest(unittest.TestCase):
         public_bundles = sorted(
             list((ROOT / "benchmarks/v1/output/public/train").glob("*/"))
             + list((ROOT / "benchmarks/v1/output/public/dev").glob("*/"))
+            + list((ROOT / "benchmarks/v1/output/public/blind").glob("*/"))
         )
-        private_bundles = sorted((ROOT / "benchmarks/v1/private/blind").glob("*/"))
-        self.assertEqual(len(public_bundles), 48)
-        if private_bundles:
-            self.assertEqual(len(private_bundles), 24)
-        bundles = public_bundles + private_bundles
+        self.assertEqual(len(public_bundles), 72)
+        bundles = public_bundles
         for bundle in bundles:
             self.assert_valid(
                 "scenario-manifest",
@@ -277,14 +275,13 @@ class SchemaTest(unittest.TestCase):
                 self.assert_valid(
                     "scenario-manifest", value["scenario_manifest"], oracle
                 )
+            self.assertTrue((bundle / "hidden_events.jsonl").is_file())
 
     def test_generated_protocol_messages(self) -> None:
         paths = sorted(
-            (ROOT / "benchmarks/v1/output/public").glob(
-                "*/world-*/reference_trace.jsonl"
-            )
+            (ROOT / "benchmarks/v1/output/public").glob("*/*/reference_trace.jsonl")
         )
-        self.assertGreater(len(paths), 0)
+        self.assertEqual(len(paths), 72)
         for path in paths:
             for line_number, row in enumerate(_rows(path), 1):
                 self.assert_valid("protocol-message", row, f"{path}:{line_number}")

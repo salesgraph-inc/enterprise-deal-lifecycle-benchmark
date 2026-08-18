@@ -413,6 +413,7 @@ class RunEngine:
                 "created_at": start,
                 "source_policy_ids": (),
             },
+            release_visibility="public",
         )
 
     def close(self) -> None:

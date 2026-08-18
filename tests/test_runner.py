@@ -129,7 +129,9 @@ class RunnerTest(unittest.TestCase):
                 RunLimits(timeout_seconds=1),
             )
 
-    def test_blind_access_uses_manifest_split_for_copies_and_symlinks(self) -> None:
+    def test_private_access_uses_manifest_visibility_for_copies_and_symlinks(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             blind = root / "blind-source"
@@ -137,6 +139,7 @@ class RunnerTest(unittest.TestCase):
             manifest_path = blind / "manifest.json"
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             manifest["split"] = "blind"
+            manifest["release_visibility"] = "private"
             manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
             copied = root / "copied"
             shutil.copytree(blind, copied)
@@ -469,12 +472,27 @@ class RunnerTest(unittest.TestCase):
             self.assertEqual(score["execution_index"], 100.0)
             self.assertTrue(score["strict_cycle_pass"])
 
-    def test_scripted_oracle_explicitly_rejects_dev_without_reference(self) -> None:
-        with open_world(DEV_WORLD, run_id="scripted-oracle-dev-test") as engine:
+    def test_scripted_oracle_replays_public_dev_reference(self) -> None:
+        reference = DEV_WORLD / "reference_trace.jsonl"
+        start = next(
+            row
+            for row in (
+                json.loads(line)
+                for line in reference.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            )
+            if row["kind"] == "start"
+        )
+        payload = start["payload"]
+        with open_world(
+            DEV_WORLD,
+            run_id="scripted-oracle-dev-test",
+            agent_manifest=payload["agent_manifest"],
+            limits=RunLimits(**payload["limits"]),
+        ) as engine:
             result = baselines.ScriptedOracle().run(engine)
-            self.assertEqual(result.status, "failed")
-            self.assertEqual(engine.status, "failed")
-            self.assertIn("dev bundles intentionally omit", result.errors[0])
+            self.assertEqual(result.status, "completed")
+            self.assertEqual(engine.status, "completed")
 
     def test_model_metadata_sums_message_metrics(self) -> None:
         result = runner.RunResult("metric-run", "world-1", "fixed_harness", "running")

@@ -1,0 +1,14 @@
+# Commercial Insurance quote comparison update
+
+- From: account.executive@blueharbor-risk.example
+- To: avery-a-north@larkspur-yarrow-collective.example
+- Date: 2025-08-02T09:00:00Z
+- Subject: Larkspur Yarrow Collective commercial insurance placement | quote comparison review
+
+Hi Avery A. North,
+
+I captured the quote comparison owner, the remaining evidence request, and the next step for the commercial insurance placement. Please confirm the decision group and target date.
+The underwriting record remains the latest confirmed source for this thread.
+
+Regards,
+Yara K. Grove

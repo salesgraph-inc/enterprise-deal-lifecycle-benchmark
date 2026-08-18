@@ -3,8 +3,8 @@
 ## Summary
 
 EDLB v1 is a generated synthetic dataset for longitudinal enterprise sales
-evaluation. The pack contains 48 public worlds, 24 train and 24 dev, plus 24
-private blind worlds. Each world contains 72 artifacts, for 5,184 artifacts
+evaluation. The pack contains all 72 worlds publicly, 24 each in train, dev,
+and blind splits. Each world contains 72 artifacts, for 5,184 artifacts
 overall, 716 checkpoint windows are defined across the pack, 180 shared seller
 documents are indexed in the authoring pack, there are 36 counterfactual pairs,
 and 4 rich renderings.
@@ -14,8 +14,8 @@ blueprints. Generated prose is templated and has not been expert-reviewed.
 Expert authoring, recruitment, and review gates remain pending.
 
 The generator, runner, causal module, grader, statistics, and reporting paths
-are present. Human review, stakeholder-model selection, judge calibration,
-official model runs, and public release remain pending.
+are present. Human review, stakeholder-model selection, judge calibration, and
+official model runs remain pending.
 
 ## Intended use
 
@@ -91,10 +91,10 @@ security controls, not model or execution budgets.
 Generation checks world counts and split assignment, six-vertical coverage,
 counterfactual pairing, checkpoint and duration bounds, channel counts,
 artifact checksums and paths, event timing, role visibility, synthetic
-provenance, public projections, blind separation, and post-intervention
-artifact differences. Dataset validation checks manifest identity, synthetic
-provenance, artifact paths, event identity and availability, dev oracle
-absence, and private blind access.
+provenance, public release visibility, and post-intervention artifact
+differences. Dataset validation checks manifest identity, synthetic
+provenance, artifact paths, event identity and availability, public oracle and
+hidden-event files, and private-pack access when explicitly enabled.
 
 The Draft 2020-12 schema suite validates every generated normative record,
 rubric assertion, and reference protocol message. It registers an explicit
@@ -109,8 +109,8 @@ evidence and container endpoint allowlisting remain pending.
 The final machine gate passes the functional test suite. Lossless
 `team_message` and `yield` trace paths, snapshot and state-diff exports, replay
 payload and hash validation, state and score hashes, aggregate dataset
-validation, and the 48 reference-trace checks are implemented. All 48 checked
-reference traces match oracle and score EI 100.0 with Strict Cycle Pass; all 16
+validation, and the 72 reference-trace checks are implemented. All 72 checked
+reference traces match oracle and score EI 100.0 with Strict Cycle Pass; all 24
 closed-won traces ablate to `no_decision`.
 
 ## Synthetic and privacy boundary
@@ -123,9 +123,9 @@ do not imply real events.
 
 Automated privacy fixtures reject live domains, non-reserved phone numbers,
 configured copied phrases and entities, and duplicate person identities. These
-are configured-list checks, not a global real-person or copy scan. Release-
-evaluator boundary checks for private answer fields and other leakage remain
-pending. The data card and provenance record must identify generator version, source
+are configured-list checks, not a global real-person or copy scan. Future
+private-pack boundary checks remain supported through explicit release
+visibility. The data card and provenance record must identify generator version, source
 process references, model or template digest when applicable, prompt hash when
 applicable, seed, creation time, and license.
 
@@ -135,9 +135,9 @@ These controls address synthetic-data privacy and provenance risks described in
 ## Splits and leakage controls
 
 The release pack contains 24 train, 24 dev, and 24 blind worlds. Counterfactual
-pairs remain in one split. Blind causal truth, private assertions, oracle state,
-and unreleased traces stay outside public artifacts. Retired blind packs may
-be published as CC BY 4.0 data after the maintainer release decision.
+pairs remain in one split. All v1 causal truth, assertions, oracle state, hidden
+events, and reference traces are public. Future packs marked
+`release_visibility=private` remain outside public artifacts until retirement.
 
 Every event distinguishes effective, recorded, and available time. Tests prove
 that no artifact or signal is visible before its available time. Public bundles

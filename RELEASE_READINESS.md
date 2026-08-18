@@ -5,7 +5,7 @@ authorship and review remain pending release gates.
 
 ## Implemented and machine-checked
 
-- [x] 72 total worlds, 48 public and 24 private blind.
+- [x] 72 public worlds, 24 each in train, dev, and blind.
 - [x] 72 artifacts per world and 5,184 total artifacts.
 - [x] 716 checkpoint windows across the full pack.
 - [x] 180 shared seller documents.
@@ -20,8 +20,8 @@ authorship and review remain pending release gates.
 - [x] Lossless `team_message` and `yield` trace paths, snapshot and diff
       exports, replay payload and hash validation, state and score hashes, and
       aggregate dataset validation.
-- [x] 48 checked reference traces match oracle and score EI 100.0 with Strict
-      Cycle Pass; all 16 closed-won traces ablate to `no_decision`.
+- [x] 72 checked reference traces match oracle and score EI 100.0 with Strict
+      Cycle Pass; all 24 closed-won traces ablate to `no_decision`.
 - [x] Automated privacy negative fixtures reject live domains, non-reserved
       phone numbers, configured copied phrases and entities, and duplicate
       person identities. These are configured-list checks, not a global
@@ -65,7 +65,7 @@ declared evaluator safety policy remain required controls.
       end-to-end blind-evaluator security tests.
 - [ ] Obtain formal trademark and legal clearance.
 - [ ] Publish only reviewed, reproducible leaderboard results.
-- [ ] Approve public release and retire any blind pack being published.
+- [ ] Approve official benchmark publication and leaderboard release.
 
 The fixed-harness and open-team leaderboards remain empty until official runs
 and release approval exist. Preliminary PyPI and GitHub namespace observations

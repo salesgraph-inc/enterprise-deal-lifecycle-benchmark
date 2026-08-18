@@ -20,7 +20,6 @@ from .models import stable_hash
 
 DATASET_VERSION = "v1.0.0"
 DATASET_SEED = 20260817
-PRIVATE_CONFIG_NAME = "generation_config.json"
 ARTIFACT_COUNTS = {
     "transcript": 10,
     "email": 14,
@@ -1687,6 +1686,7 @@ def _build_world(
         "causal_family": family,
         "variant": variant_name,
         "variant_index": variant,
+        "release_visibility": "public",
         "split": _world_split(vertical_index, family_index),
         "seed": pair_seed,
         "start_date": start.isoformat(),
@@ -2655,6 +2655,7 @@ def _manifest(
     manifest: dict[str, Any] = {
         "schema_version": DATASET_VERSION,
         "world_id": world["world_id"],
+        "release_visibility": world["release_visibility"],
         "split": world["split"],
         "vertical": world["vertical"],
         "seller_org_id": world["seller_org_id"],
@@ -2721,8 +2722,8 @@ def _summary_markdown(world: dict[str, Any]) -> str:
 
 
 def _write_world(root: Path, world: dict[str, Any]) -> None:
-    is_private = world["split"] == "blind"
-    include_oracle = world["split"] == "train" or is_private
+    is_private = world["release_visibility"] == "private"
+    include_oracle = True
     base = (
         root
         / ("private/blind" if is_private else f"output/public/{world['split']}")
@@ -2736,7 +2737,7 @@ def _write_world(root: Path, world: dict[str, Any]) -> None:
     visible_events, hidden_events = _build_events(world, artifacts)
     checkpoints = _checkpoint_records(world, artifacts, visible_events)
     _write_json(
-        base / "manifest.json", _manifest(world, visible_events, artifacts, is_private)
+        base / "manifest.json", _manifest(world, visible_events, artifacts, True)
     )
     _write_jsonl(base / "actors.jsonl", world["actors"])
     _write_jsonl(base / "checkpoints.jsonl", checkpoints)
@@ -2798,8 +2799,7 @@ def _write_world(root: Path, world: dict[str, Any]) -> None:
         _write_jsonl(
             base / "reference_trace.jsonl", _build_reference_trace(world, artifacts)
         )
-    if is_private:
-        _write_jsonl(base / "hidden_events.jsonl", hidden_events)
+    _write_jsonl(base / "hidden_events.jsonl", hidden_events)
 
 
 def _policy_control_index(theme: str) -> int:
@@ -2953,37 +2953,26 @@ def _write_authoring(
     _write_jsonl(
         authoring / "worlds.jsonl",
         [
-            (
-                {
-                    "world_id": world["world_id"],
-                    "pair_id": world["pair_id"],
-                    "vertical": world["vertical"],
-                    "seller_org_id": world["seller_org_id"],
-                    "buyer_org_id": world["buyer_org_id"],
-                    "split": world["split"],
-                    "seed": world["seed"],
-                    "duration_days": world["duration_days"],
-                    "checkpoint_count": world["checkpoint_count"],
-                    "intervention_checkpoint_id": world["intervention_checkpoint_id"],
-                    "intervention_sequence": world["intervention_sequence"],
-                    "causal_family": world["causal_family"],
-                    "variant": world["variant"],
-                    "reference_outcome": world["reference_outcome"],
-                    "defects": world["defects"],
-                    "actors": world["actors"],
-                    "checkpoints": world["checkpoints"],
-                }
-                if world["split"] == "train"
-                else {
-                    "world_id": world["world_id"],
-                    "vertical": world["vertical"],
-                    "seller_org_id": world["seller_org_id"],
-                    "buyer_org_id": world["buyer_org_id"],
-                    "split": world["split"],
-                    "duration_days": world["duration_days"],
-                    "checkpoint_count": world["checkpoint_count"],
-                }
-            )
+            {
+                "world_id": world["world_id"],
+                "pair_id": world["pair_id"],
+                "vertical": world["vertical"],
+                "seller_org_id": world["seller_org_id"],
+                "buyer_org_id": world["buyer_org_id"],
+                "release_visibility": world["release_visibility"],
+                "split": world["split"],
+                "seed": world["seed"],
+                "duration_days": world["duration_days"],
+                "checkpoint_count": world["checkpoint_count"],
+                "intervention_checkpoint_id": world["intervention_checkpoint_id"],
+                "intervention_sequence": world["intervention_sequence"],
+                "causal_family": world["causal_family"],
+                "variant": world["variant"],
+                "reference_outcome": world["reference_outcome"],
+                "defects": world["defects"],
+                "actors": world["actors"],
+                "checkpoints": world["checkpoints"],
+            }
             for world in worlds
         ],
     )
@@ -2995,7 +2984,7 @@ def _write_authoring(
                 "",
                 f"This directory contains deterministic synthetic blueprints for six verticals, six causal families, two variants per family, and {len(worlds)} public deal worlds.",
                 "",
-                "Train truth is available for authoring and reference use. Dev authoring contains only the public projection. Blind blueprints and outputs are withheld under benchmarks/v1/private.",
+                "All train, dev, and blind blueprints, truth, assertions, reference traces, and hidden events are public in this v1 release. Future unreleased packs use release_visibility=private and remain outside output/public.",
                 "",
                 "Public dataset seed: deterministic and versioned in the generator.",
                 f"Dataset version: {DATASET_VERSION}",
@@ -3386,7 +3375,7 @@ def _validate(
         ):
             errors.append(f"deterministic_weight={world['world_id']}")
     public_root = root / "output/public"
-    for split in ("train", "dev"):
+    for split in SPLITS:
         expected = sum(world["split"] == split for world in worlds)
         actual = (
             len(list((public_root / split).glob("*/manifest.json")))
@@ -3396,58 +3385,35 @@ def _validate(
         if actual != expected:
             errors.append(f"{split}_bundle_count={actual}")
     blind_root = root / "private/blind"
-    if include_blind:
-        actual_blind = (
-            len(list(blind_root.glob("*/manifest.json"))) if blind_root.exists() else 0
-        )
-        if actual_blind != sum(world["split"] == "blind" for world in worlds):
-            errors.append(f"blind_bundle_count={actual_blind}")
-    prohibited_manifest_keys = {
-        "pair_id",
-        "counterfactual_variant",
-        "causal_skeleton",
-        "terminal_outcome",
-        "seed",
-        "outcome_reason",
-    }
-    prohibited_authoring_keys = prohibited_manifest_keys | {
-        "causal_family",
-        "variant",
-        "reference_outcome",
-        "intervention_checkpoint_id",
-        "intervention_sequence",
-        "defects",
-        "checkpoints",
-        "actors",
-    }
-    public_worlds = [world for world in worlds if world["split"] != "blind"]
+    expected_private = sum(world["release_visibility"] == "private" for world in worlds)
+    actual_private = (
+        len(list(blind_root.glob("*/manifest.json"))) if blind_root.exists() else 0
+    )
+    if actual_private != expected_private:
+        errors.append(f"private_bundle_count={actual_private}")
+    public_worlds = [
+        world for world in worlds if world["release_visibility"] == "public"
+    ]
     for world in public_worlds:
         bundle = public_root / world["split"] / world["world_id"]
         manifest = json.loads((bundle / "manifest.json").read_text())
-        if prohibited_manifest_keys & manifest.keys():
-            errors.append(f"public_manifest_truth={world['world_id']}")
+        if manifest.get("release_visibility") != "public":
+            errors.append(f"public_manifest_visibility={world['world_id']}")
         if bundle.name != world["world_id"] or not id_pattern.fullmatch(bundle.name):
             errors.append(f"public_bundle_id={bundle}")
-        if world["split"] == "dev":
-            summary_text = (bundle / "content_summary.md").read_text()
-            truth_values = (
-                world["pair_id"],
-                world["causal_family"],
-                world["variant"],
-                world["reference_outcome"],
-            )
-            if any(
-                value in summary_text or value in _json(manifest)
-                for value in truth_values
-            ):
-                errors.append(f"dev_summary_truth={world['world_id']}")
+        for required_file in (
+            "hidden_events.jsonl",
+            "oracle.json",
+            "reference_trace.jsonl",
+        ):
+            if not (bundle / required_file).is_file():
+                errors.append(f"public_missing_{required_file}={world['world_id']}")
     authoring_rows = [
         json.loads(line)
         for line in (root / "authoring/worlds.jsonl").read_text().splitlines()
     ]
-    for row in authoring_rows:
-        if row["split"] == "dev" and prohibited_authoring_keys & row.keys():
-            errors.append(f"dev_authoring_truth={row['world_id']}")
+    if len(authoring_rows) != len(worlds):
+        errors.append(f"authoring_world_count={len(authoring_rows)}")
     pair_diffs: list[dict[str, Any]] = []
     seen_pairs: set[str] = set()
     for world in worlds:
@@ -3523,33 +3489,8 @@ def _validate(
     }
 
 
-def _load_private_config(
-    root: Path, private_config: Path | str | None, official: bool
-) -> int | None:
-    if not official:
-        return None
-    config_path = (
-        Path(private_config)
-        if private_config is not None
-        else root / "private" / PRIVATE_CONFIG_NAME
-    )
-    if not config_path.exists():
-        raise FileNotFoundError(
-            f"private generation config required for official generation: {config_path}"
-        )
-    config = json.loads(config_path.read_text())
-    if config.get("dataset_version") != DATASET_VERSION:
-        raise ValueError("private generation config dataset version mismatch")
-    blind_seed = config.get("blind_seed")
-    if not isinstance(blind_seed, int) or isinstance(blind_seed, bool):
-        raise TypeError("private generation config must contain an integer blind_seed")
-    return blind_seed
-
-
 def generate_dataset(
     root: Path | str | None = None,
-    private_config: Path | str | None = None,
-    official: bool = False,
     *,
     forbidden_phrases: Iterable[str] = (),
     forbidden_entities: Iterable[str] = (),
@@ -3561,69 +3502,40 @@ def generate_dataset(
         else Path(__file__).resolve().parents[2] / "benchmarks/v1"
     )
     target.mkdir(parents=True, exist_ok=True)
-    blind_seed = _load_private_config(target, private_config, official)
     output_path = target / "output"
     if output_path.exists():
         shutil.rmtree(output_path)
-    if official:
-        blind_path = target / "private" / "blind"
-        if blind_path.exists():
-            shutil.rmtree(blind_path)
     worlds: list[dict[str, Any]] = []
     for vertical_index in range(len(VERTICALS)):
         for family_index in range(len(FAMILIES)):
             for variant in range(2):
-                split = _world_split(vertical_index, family_index)
-                if split == "blind" and not official:
-                    continue
-                seed = (
-                    blind_seed
-                    if split == "blind" and blind_seed is not None
-                    else DATASET_SEED
+                worlds.append(
+                    _build_world(vertical_index, family_index, variant, DATASET_SEED)
                 )
-                worlds.append(_build_world(vertical_index, family_index, variant, seed))
     shared_documents = _write_shared_documents(target)
-    _write_authoring(
-        target,
-        [world for world in worlds if world["split"] != "blind"],
-        shared_documents,
-    )
+    _write_authoring(target, worlds, shared_documents)
     for world in worlds:
         _write_world(target, world)
     summary = _validate(
         target,
         worlds,
         shared_documents,
-        official,
+        True,
         forbidden_phrases=forbidden_phrases,
         forbidden_entities=forbidden_entities,
         shared_seller_actor_ids=shared_seller_actor_ids,
     )
-    public_worlds = [world for world in worlds if world["split"] != "blind"]
-    public_summary = _validate(
-        target,
-        public_worlds,
-        shared_documents,
-        False,
-        forbidden_phrases=forbidden_phrases,
-        forbidden_entities=forbidden_entities,
-        shared_seller_actor_ids=shared_seller_actor_ids,
-    )
-    published_validation = {
-        key: value
-        for key, value in public_summary.items()
-        if key not in {"pair_diffs", "outcome_counts"}
-    }
+    public_summary = summary
+    published_validation = public_summary
     _write_json(
         target / "output/manifest.json",
         {
             "dataset_version": DATASET_VERSION,
             "seed": DATASET_SEED,
-            "world_count": len(public_worlds),
+            "world_count": len(worlds),
             "verticals": [vertical["id"] for vertical in VERTICALS],
             "splits": {
-                split: public_summary["split_counts"][split]
-                for split in ("train", "dev")
+                split: public_summary["split_counts"][split] for split in SPLITS
             },
             "shared_documents": public_summary["shared_document_count"],
             "artifact_count_per_world": public_summary["artifact_count_per_world"],
@@ -3632,8 +3544,6 @@ def generate_dataset(
         },
     )
     _write_json(target / "authoring/validation.json", published_validation)
-    if official:
-        _write_json(target / "private/validation.json", summary)
     if not summary["valid"]:
         raise ValueError(_json(summary))
     return summary
@@ -3642,10 +3552,8 @@ def generate_dataset(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path)
-    parser.add_argument("--official", action="store_true")
-    parser.add_argument("--private-config", type=Path)
     args = parser.parse_args()
-    summary = generate_dataset(args.root, args.private_config, args.official)
+    summary = generate_dataset(args.root)
     print(json.dumps(summary, sort_keys=True))
 
 

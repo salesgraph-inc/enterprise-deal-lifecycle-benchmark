@@ -106,6 +106,12 @@ class CliTest(unittest.TestCase):
     def test_help_and_validate(self) -> None:
         self.assertEqual(main(["validate", str(WORLD)]), 0)
 
+    def test_resolve_world_accepts_bare_blind_id_and_direct_paths(self) -> None:
+        blind = min((ROOT / "benchmarks/v1/output/public/blind").glob("world-*"))
+        self.assertEqual(cli._resolve_world(blind.name), blind)
+        self.assertEqual(cli._resolve_world(blind), blind)
+        self.assertEqual(cli._resolve_world(blind / "manifest.json"), blind)
+
     def test_run_help_describes_optional_limits(self) -> None:
         output = io.StringIO()
         with redirect_stdout(output), self.assertRaises(SystemExit) as context:
@@ -174,7 +180,28 @@ class CliTest(unittest.TestCase):
             self.assertEqual(main(["validate", str(ROOT / "benchmarks/v1/output")]), 0)
         value = json.loads(output.getvalue())
         self.assertTrue(value["valid"])
-        self.assertEqual(value["world_count"], 48)
+        self.assertEqual(value["world_count"], 72)
+
+    def test_validate_rejects_missing_aggregate_manifest_for_multi_split_dataset(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "v1"
+            (root / "output").mkdir(parents=True)
+            (root / "output/public").symlink_to(
+                ROOT / "benchmarks/v1/output/public", target_is_directory=True
+            )
+            (root / "authoring").symlink_to(
+                ROOT / "benchmarks/v1/authoring", target_is_directory=True
+            )
+            result = runner.validate_dataset(root)
+            self.assertFalse(result["valid"])
+            self.assertEqual(result["errors"], ["aggregate manifest is missing"])
+
+    def test_validate_single_public_split_without_aggregate_manifest(self) -> None:
+        result = runner.validate_dataset(ROOT / "benchmarks/v1/output/public/blind")
+        self.assertTrue(result["valid"])
+        self.assertEqual(result["world_count"], 24)
 
     def test_validate_rejects_declared_aggregate_world_count(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -225,13 +252,12 @@ class CliTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "v1"
             (root / "output").mkdir(parents=True)
-            (root / "output/public").symlink_to(
-                ROOT / "benchmarks/v1/output/public", target_is_directory=True
-            )
-            shutil.copy2(
-                ROOT / "benchmarks/v1/output/manifest.json",
-                root / "output/manifest.json",
-            )
+            (root / "output/public").mkdir()
+            for split in ("train", "dev"):
+                (root / "output/public" / split).symlink_to(
+                    ROOT / "benchmarks/v1/output/public" / split,
+                    target_is_directory=True,
+                )
             (root / "authoring").symlink_to(
                 ROOT / "benchmarks/v1/authoring", target_is_directory=True
             )
@@ -250,6 +276,7 @@ class CliTest(unittest.TestCase):
                 vertical_index = blind_vertical_counts.get(vertical, 0)
                 blind_vertical_counts[vertical] = vertical_index + 1
                 manifest["split"] = "blind"
+                manifest["release_visibility"] = "private"
                 manifest["world_id"] = world_id
                 manifest["pair_id"] = (
                     f"pair-blind-fixture-{vertical}-{vertical_index // 2:02d}"
@@ -259,6 +286,30 @@ class CliTest(unittest.TestCase):
                 runner.validate_world_bundle(path.parent)
                 for path in sorted((root / "output/public").glob("*/*/manifest.json"))
             ]
+            observed_public = runner._observed_dataset(root, public, [])
+            dataset_seed = json.loads(
+                (ROOT / "benchmarks/v1/output/manifest.json").read_text(
+                    encoding="utf-8"
+                )
+            )["seed"]
+            (root / "output/manifest.json").write_text(
+                json.dumps(
+                    {
+                        "dataset_version": observed_public["dataset_version"],
+                        "seed": dataset_seed,
+                        "world_count": observed_public["world_count"],
+                        "artifact_total": observed_public["artifact_total"],
+                        "artifact_count_per_world": observed_public[
+                            "artifact_count_per_world"
+                        ],
+                        "shared_documents": observed_public["shared_documents"],
+                        "splits": observed_public["splits"],
+                        "verticals": observed_public["verticals"],
+                        "validation": observed_public["validation"],
+                    }
+                ),
+                encoding="utf-8",
+            )
             private = [
                 runner.validate_world_bundle(path.parent, allow_private=True)
                 for path in sorted(blind_root.glob("*/manifest.json"))
@@ -305,7 +356,7 @@ class CliTest(unittest.TestCase):
                 if world_id not in paired_public_ids:
                     key = (str(row["split"]), str(row["vertical"]))
                     unpaired_groups.setdefault(key, []).append(world_id)
-            self.assertEqual(sum(map(len, unpaired_groups.values())), 24)
+            self.assertEqual(sum(map(len, unpaired_groups.values())), 0)
             for (split, vertical), world_ids in sorted(unpaired_groups.items()):
                 self.assertEqual(len(world_ids) % 2, 0)
                 pair_diffs.extend(
@@ -370,7 +421,7 @@ class CliTest(unittest.TestCase):
             blind.rename(held)
             missing_world = runner.validate_dataset(root, allow_private=True)
             self.assertIn(
-                "private blind split does not complete the full dataset",
+                "dataset does not contain 72 worlds",
                 missing_world["errors"],
             )
             held.rename(blind_root / original_name)

@@ -10,12 +10,12 @@
 - Out of scope: production sales automation, customer ranking, credit decisions,
   underwriting decisions, legal advice, or employee evaluation
 
-The generated data contains 48 public worlds, 24 train and 24 dev, and 24
-maintainer-only blind worlds. Each world has 72 artifacts. The full pack
-therefore contains 72 worlds, 5,184 artifacts, 716 checkpoint windows, 180
-shared seller documents, 36 counterfactual pairs, and 4 rich renderings. No
-benchmark performance, human-review result, stakeholder-model selection, or
-judge-calibration result is claimed.
+The generated data contains all 72 worlds publicly, 24 each in train, dev, and
+blind splits. Each world has 72 artifacts. The full pack therefore contains 72
+worlds, 5,184 artifacts, 716 checkpoint windows, 180 shared seller documents,
+36 counterfactual pairs, and 4 rich renderings. No benchmark performance,
+human-review result, stakeholder-model selection, or judge-calibration result
+is claimed.
 
 Current worlds and shared documents are generated from structured template
 blueprints. Generated prose is templated and has not been expert-reviewed.
@@ -195,19 +195,19 @@ been run.
 
 Generation checks world and split counts, vertical and channel coverage,
 counterfactual pairs, timing bounds, artifact checksums and paths, visibility,
-synthetic provenance, public projections, blind separation, and
-post-intervention differences. Dataset validation checks manifest identity,
-synthetic provenance, artifact paths, event identity and availability, dev
-oracle absence, and private blind access.
+synthetic provenance, public release visibility, and post-intervention
+differences. Dataset validation checks manifest identity, synthetic provenance,
+artifact paths, event identity and availability, public oracle and hidden-event
+files, and private-pack access when explicitly enabled.
 
 The schema suite uses Draft 2020-12 validators with an explicit RFC 3339
 date-time checker and validates all generated normative records plus all JSONL
 protocol variants. The reproducible check commands are documented in
 README.md and REPRODUCIBILITY.md.
 
-The final machine gate passes the functional test suite. All 48 checked
+The final machine gate passes the functional test suite. All 72 checked
 reference traces match their oracle and score EI 100.0 with Strict Cycle Pass;
-all 16 closed-won traces ablate to `no_decision`.
+all 24 closed-won traces ablate to `no_decision`.
 
 ## Known limitations and pending gates
 
@@ -219,8 +219,8 @@ industry-specific language.
 Formal trademark and legal clearance, expert recruitment, two expert reviews
 per world, stakeholder-model selection, model and judge calibration, the
 12-world resource characterization pilot, official three-trial model runs,
-container endpoint allowlisting, end-to-end blind evaluator security evidence,
-and public release remain pending. Canary scanning, quota enforcement,
+container endpoint allowlisting, and end-to-end evaluator security evidence
+remain pending. Canary scanning, quota enforcement,
 exact-byte manifest hashing, HMAC result signing, immutable Podman isolation,
 and RevOps-only CRM merge are implemented and focused-tested.
 
@@ -229,9 +229,9 @@ and RevOps-only CRM merge are implemented and focused-tested.
 All entities, communications, documents, and external signals are synthetic,
 fictional, and provenance tagged. Process references are used for workflow
 design and are not copied into generated artifacts. Source code and schemas use
-the MIT License. Public synthetic data and retired test packs use CC BY 4.0.
-Oracle state, private assertions, unreleased traces, and blind worlds remain
-maintainer-only until retirement.
+the MIT License. All v1 synthetic data, oracle state, assertions, hidden events,
+reference traces, and test packs use CC BY 4.0. Future packs marked
+`release_visibility=private` remain maintainer-only until retirement.
 
 ## Preliminary namespace checks
 

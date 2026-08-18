@@ -8,9 +8,9 @@
     {
       "if": {
         "properties": {
-          "split": {"const": "blind"}
+          "release_visibility": {"const": "private"}
         },
-        "required": ["split"]
+        "required": ["release_visibility"]
       },
       "then": {
         "required": [
@@ -26,6 +26,7 @@
   "required": [
     "schema_version",
     "world_id",
+    "release_visibility",
     "split",
     "vertical",
     "seller_org_id",
@@ -63,6 +64,10 @@
     "split": {
       "type": "string",
       "enum": ["train", "dev", "blind"]
+    },
+    "release_visibility": {
+      "type": "string",
+      "enum": ["public", "private"]
     },
     "vertical": {
       "type": "string",

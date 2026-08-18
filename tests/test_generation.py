@@ -84,21 +84,7 @@ class GenerationTest(unittest.TestCase):
         ]
         cls.official_root = Path(cls.temp_dirs[2].name) / "benchmarks" / "v1"
         cls.public_summaries = [generate_dataset(root) for root in cls.public_roots]
-        config = cls.official_root / "private" / "generation_config.json"
-        config.parent.mkdir(parents=True)
-        cls.test_blind_seed = int.from_bytes(
-            hashlib.sha256(b"edlb-test-private-seed").digest()[:8], "big"
-        )
-        config.write_text(
-            json.dumps(
-                {
-                    "config_version": "1.0",
-                    "dataset_version": "v1.0.0",
-                    "blind_seed": cls.test_blind_seed,
-                }
-            )
-        )
-        cls.official_summary = generate_dataset(cls.official_root, config, True)
+        cls.official_summary = generate_dataset(cls.official_root)
         cls.schemas = {
             path.name.removesuffix(".json"): json.loads(path.read_text())
             for path in importlib.resources.files("edlb").joinpath("schemas").iterdir()
@@ -131,28 +117,22 @@ class GenerationTest(unittest.TestCase):
 
     def bundles(self) -> list[tuple[Path, bool]]:
         result: list[tuple[Path, bool]] = []
-        for split in ("train", "dev"):
+        for split in ("train", "dev", "blind"):
             result.extend(
                 (path.parent, False)
                 for path in self.official_root.joinpath("output", "public", split).glob(
                     "*/manifest.json"
                 )
             )
-        result.extend(
-            (path.parent, True)
-            for path in self.official_root.joinpath("private", "blind").glob(
-                "*/manifest.json"
-            )
-        )
         return result
 
-    def test_public_and_private_counts(self) -> None:
+    def test_public_counts(self) -> None:
         public = self.public_summaries[0]
         official = self.official_summary
         self.assertTrue(public["valid"])
         self.assertTrue(official["valid"])
-        self.assertEqual(public["world_count"], 48)
-        self.assertEqual(public["split_counts"], {"train": 24, "dev": 24, "blind": 0})
+        self.assertEqual(public["world_count"], 72)
+        self.assertEqual(public["split_counts"], {"train": 24, "dev": 24, "blind": 24})
         self.assertEqual(official["world_count"], 72)
         self.assertEqual(
             official["split_counts"], {"train": 24, "dev": 24, "blind": 24}
@@ -183,38 +163,30 @@ class GenerationTest(unittest.TestCase):
             self.assertTrue(diff["pre_intervention_artifacts_equal"])
             self.assertGreater(diff["post_intervention_artifact_differences"], 0)
 
-    def test_public_authoring_boundary_and_private_separation(self) -> None:
+    def test_public_authoring_contains_full_truth(self) -> None:
         root = self.public_roots[0]
         rows = _rows(root / "authoring" / "worlds.jsonl")
-        self.assertEqual(len(rows), 48)
-        self.assertFalse(any(row["split"] == "blind" for row in rows))
+        self.assertEqual(len(rows), 72)
+        self.assertEqual({row["split"] for row in rows}, {"train", "dev", "blind"})
         self.assertEqual(len(_rows(root / "authoring" / "shared_documents.jsonl")), 180)
         self.assertFalse((root / "private").exists())
         for row in rows:
-            if row["split"] == "dev":
-                self.assertFalse(DEV_AUTHORING_TRUTH_FIELDS & row.keys())
-            else:
-                self.assertTrue(
-                    {
-                        "pair_id",
-                        "seed",
-                        "causal_family",
-                        "variant",
-                        "reference_outcome",
-                        "defects",
-                    }
-                    <= row.keys()
-                )
-        validation = json.loads((root / "authoring" / "validation.json").read_text())
-        self.assertNotIn("pair_diffs", validation)
-        self.assertNotIn("outcome_counts", validation)
-        self.assertFalse((root / "authoring" / "schema_projection_gaps.json").exists())
-        blind_ids = {
-            path.parent.name
-            for path in self.official_root.joinpath("private", "blind").glob(
-                "*/manifest.json"
+            self.assertTrue(
+                {
+                    "pair_id",
+                    "seed",
+                    "causal_family",
+                    "variant",
+                    "reference_outcome",
+                    "defects",
+                }
+                <= row.keys()
             )
-        }
+        validation = json.loads((root / "authoring" / "validation.json").read_text())
+        self.assertEqual(validation["pair_count"], 36)
+        self.assertEqual(len(validation["pair_diffs"]), 36)
+        self.assertIn("outcome_counts", validation)
+        self.assertFalse((root / "authoring" / "schema_projection_gaps.json").exists())
         public_text = "\n".join(
             path.read_text(errors="ignore")
             for base in (
@@ -224,7 +196,7 @@ class GenerationTest(unittest.TestCase):
             for path in base.rglob("*")
             if path.is_file()
         )
-        self.assertFalse(any(world_id in public_text for world_id in blind_ids))
+        self.assertTrue(all(row["world_id"] in public_text for row in rows))
 
     def test_opaque_public_ids_and_paths(self) -> None:
         semantic_tokens = {
@@ -239,7 +211,7 @@ class GenerationTest(unittest.TestCase):
             "no_decision",
             "disqualified",
         }
-        for split in ("train", "dev"):
+        for split in ("train", "dev", "blind"):
             for bundle in self.official_root.joinpath(
                 "output", "public", split
             ).iterdir():
@@ -280,27 +252,16 @@ class GenerationTest(unittest.TestCase):
         schema = self.schemas["scenario-manifest"]
         for bundle, private in self.bundles():
             manifest = json.loads((bundle / "manifest.json").read_text())
-            self.assert_shape(
-                manifest,
-                schema,
-                set() if private else MANIFEST_TRUTH_FIELDS - {"outcome_reason"},
-            )
-            if private:
-                self.assertTrue(set(schema["required"]) <= manifest.keys())
-            else:
-                self.assertFalse(MANIFEST_TRUTH_FIELDS & manifest.keys())
+            self.assertFalse(private)
+            self.assert_shape(manifest, schema)
+            self.assertEqual(manifest["release_visibility"], "public")
             summary = (bundle / "content_summary.md").read_text()
             self.assertNotIn("Causal family", summary)
             self.assertNotIn("Reference outcome", summary)
-            if manifest["split"] == "dev":
-                self.assertFalse((bundle / "oracle.json").exists())
-                self.assertFalse((bundle / "reference_trace.jsonl").exists())
-            else:
-                oracle = json.loads((bundle / "oracle.json").read_text())
-                self.assert_shape(oracle["scenario_manifest"], schema)
-                self.assertTrue((bundle / "reference_trace.jsonl").exists())
-            if private:
-                self.assertTrue((bundle / "hidden_events.jsonl").exists())
+            oracle = json.loads((bundle / "oracle.json").read_text())
+            self.assert_shape(oracle["scenario_manifest"], schema)
+            self.assertTrue((bundle / "reference_trace.jsonl").exists())
+            self.assertTrue((bundle / "hidden_events.jsonl").exists())
 
     def test_normative_record_shapes(self) -> None:
         actor_schema = self.schemas["actor"]
@@ -608,12 +569,7 @@ class GenerationTest(unittest.TestCase):
     def test_causal_differences_release_after_intervention(self) -> None:
         for vertical_index in range(6):
             for family_index in range(6):
-                split = generate_module._world_split(vertical_index, family_index)
-                seed = (
-                    self.test_blind_seed
-                    if split == "blind"
-                    else generate_module.DATASET_SEED
-                )
+                seed = generate_module.DATASET_SEED
                 left = generate_module._build_world(
                     vertical_index, family_index, 0, seed
                 )
@@ -715,14 +671,18 @@ class GenerationTest(unittest.TestCase):
         }
         coordinate = re.compile(r"(?:buyer|world)-\d{2}-\d{2}", re.IGNORECASE)
         pair_id = re.compile(r"pair-[0-9a-f]{20}")
-        for split in ("train", "dev"):
+        for split in ("train", "dev", "blind"):
             for bundle in self.official_root.joinpath("output", "public", split).glob(
                 "world-*"
             ):
                 for path in bundle.rglob("*"):
                     if not path.is_file() or path.name in {
+                        "manifest.json",
                         "oracle.json",
                         "reference_trace.jsonl",
+                        "hidden_events.jsonl",
+                        "rubric.json",
+                        "assertions.jsonl",
                     }:
                         continue
                     text = path.read_text(errors="ignore")
@@ -737,8 +697,17 @@ class GenerationTest(unittest.TestCase):
                 manifest = json.loads((bundle / "manifest.json").read_text())
                 self.assertNotIn(manifest["vertical"], manifest["title"].casefold())
         for row in _rows(self.official_root / "authoring" / "worlds.jsonl"):
-            if row["split"] == "dev":
-                self.assertFalse(DEV_AUTHORING_TRUTH_FIELDS & row.keys())
+            self.assertTrue(
+                {
+                    "pair_id",
+                    "seed",
+                    "causal_family",
+                    "variant",
+                    "reference_outcome",
+                    "defects",
+                }
+                <= row.keys()
+            )
 
     def test_no_scenario_note_or_real_contact_data(self) -> None:
         forbidden_email = re.compile(r"@[a-z0-9.-]+\.(com|org|net)\b", re.IGNORECASE)
@@ -908,7 +877,7 @@ class GenerationTest(unittest.TestCase):
             for bundle, private in self.bundles()
             if (bundle / "reference_trace.jsonl").exists()
         ]
-        self.assertEqual(len(reference_bundles), 48)
+        self.assertEqual(len(reference_bundles), 72)
         for bundle, private in reference_bundles:
             rows = _rows(bundle / "reference_trace.jsonl")
             for row in rows:
@@ -1053,7 +1022,7 @@ class GenerationTest(unittest.TestCase):
                 )
             finally:
                 engine.close()
-        self.assertEqual(winning_worlds, 16)
+        self.assertEqual(winning_worlds, 24)
 
     def test_do_nothing_fails_every_required_controllable_assertion(self) -> None:
         bundle = next(

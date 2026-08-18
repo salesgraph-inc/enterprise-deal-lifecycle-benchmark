@@ -141,6 +141,14 @@ def _split(value: Any) -> Literal["train", "dev", "blind"]:
     raise TypeError("split must be 'train', 'dev', or 'blind'")
 
 
+def _release_visibility(value: Any) -> Literal["public", "private"]:
+    if value == "public":
+        return "public"
+    if value == "private":
+        return "private"
+    raise TypeError("release_visibility must be 'public' or 'private'")
+
+
 def _role(
     value: Any,
 ) -> Literal["account_executive", "domain_specialist", "sales_manager", "revops"]:
@@ -226,6 +234,7 @@ class ScenarioManifest(JsonModel):
     seed: int | None = field(metadata={"omit_none": True})
     license: Mapping[str, str]
     provenance: Mapping[str, Any]
+    release_visibility: Literal["public", "private"]
     schema_version: str = "v1.0.0"
     outcome_reason: str | None = None
 
@@ -262,6 +271,7 @@ class ScenarioManifest(JsonModel):
             provenance=dict(value["provenance"]),
             schema_version=str(value.get("schema_version", "v1.0.0")),
             outcome_reason=value.get("outcome_reason"),
+            release_visibility=_release_visibility(value["release_visibility"]),
         )
 
 

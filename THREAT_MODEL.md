@@ -3,7 +3,7 @@
 ## Scope
 
 This model covers authoring, generation, packaging, execution, grading, and
-release of EDLB v1. It protects oracle state, blind test integrity, synthetic
+release of EDLB v1. It protects future private-pack integrity, synthetic
 provenance, agent isolation, reproducibility, and evaluator availability.
 
 The runtime and generated worlds are present. A control marked pending is not
@@ -13,8 +13,8 @@ evidence that the release gate has passed.
 
 | Asset | Required protection |
 | --- | --- |
-| Causal truth and terminal conditions | Never expose to an agent or public blind bundle |
-| Private assertions and answer keys | Keep in maintainer-only evaluator data |
+| Causal truth and terminal conditions | Do not expose through agent tools; v1 public files intentionally publish them |
+| Private assertions and answer keys | v1 publishes them; future `release_visibility=private` packs keep them in maintainer-only evaluator data |
 | Public world artifacts | Preserve timing, visibility, provenance, and license metadata |
 | Role permissions | Enforce in the broker, independent of prompts |
 | Run traces and scorecards | Preserve lossless sequence, hashes, and version context |
@@ -104,8 +104,8 @@ clearance remain pending.
    idempotency checks.
 5. Runtime to grader. The grader receives a trace and state snapshot. It does
    not ask the agent for hidden truth.
-6. Maintainer evaluator to submitted team. Blind worlds and private assertions
-   remain outside the submission container.
+6. Maintainer evaluator to submitted team. Future private worlds and private
+   assertions remain outside the submission container.
 
 ## Required security tests
 
@@ -121,7 +121,7 @@ clearance remain pending.
   answer fields. No global real-person or copy scan is claimed.
 - Verify identical replay from the same world, tool, model, and seed manifest.
 
-The 48 checked reference traces match oracle and score EI 100.0 with Strict
-Cycle Pass, and all 16 closed-won traces ablate to `no_decision`. No complete
+The 72 checked reference traces match oracle and score EI 100.0 with Strict
+Cycle Pass, and all 24 closed-won traces ablate to `no_decision`. No complete
 release-evaluator security result is available yet. A release cannot claim
 blind test integrity until these tests pass against the actual evaluator.

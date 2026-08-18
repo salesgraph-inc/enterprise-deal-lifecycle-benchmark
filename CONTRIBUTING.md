@@ -1,6 +1,7 @@
 # Contributing
 
-EDLB v1 includes the contract, generated public and private packs, runtime,
+EDLB v1 includes the contract, generated public pack, future private-pack
+support, runtime,
 CLI, harnesses, causal checks, grading, reporting, and release documentation.
 Do not add customer data, live integrations, fabricated benchmark results, or
 unreviewed changes to blind evaluator data.
@@ -12,8 +13,9 @@ unreviewed changes to blind evaluator data.
   causal variants in public IDs or filenames.
 - Use RFC 3339 date-time strings with explicit timezone information.
 - Represent money as integer minor units plus an ISO 4217 currency code.
-- Keep causal truth, private assertions, and blind test data outside public
-  bundles.
+- Keep any future bundle marked `release_visibility=private` outside public
+  bundles. v1's public pack intentionally includes causal truth, assertions,
+  oracle state, hidden events, and reference traces.
 - Keep comments out of generated schema and data files. Explain contract
   decisions in documentation or review records.
 
@@ -48,9 +50,9 @@ not copy customer records or passages from process references. Cite process
 sources for design context and record generator, model, prompt, seed, and
 license provenance.
 
-The current pack contains 48 public worlds, 24 train and 24 dev, plus 24
-private blind worlds. Each world contains 72 artifacts, for 5,184 artifacts
-overall, and 180 shared seller documents.
+The current pack contains 72 public worlds, 24 each in train, dev, and blind
+splits. Each world contains 72 artifacts, for 5,184 artifacts overall, and 180
+shared seller documents.
 
 The current records are generated from structured template blueprints. Expert
 authoring, recruitment, and review gates remain pending.
@@ -66,10 +68,10 @@ The reviewer template, status register, reproducibility guide, and release
 checklist are part of this repository. Expert recruitment, both reviews per
 world, stakeholder-model selection, model and judge calibration, the 12-world
 resource characterization pilot, official three-trial model runs, endpoint
-allowlisting, end-to-end blind evaluator security evidence, and public release
-remain pending. Canary scanning, quota enforcement, exact-byte manifest hashing,
-HMAC result signing, immutable Podman isolation, and RevOps-only CRM merge are
-implemented and focused-tested.
+allowlisting, and end-to-end evaluator security evidence remain pending. Canary
+scanning, quota enforcement, exact-byte manifest hashing, HMAC result signing,
+immutable Podman isolation, and RevOps-only CRM merge are implemented and
+focused-tested.
 
 ## Validation
 
@@ -81,7 +83,7 @@ uv run --group dev python3 -m unittest tests.test_schema
 uv run --group dev ruff check .
 python3 -m compileall -q src tests
 edlb validate benchmarks/v1/output
-edlb validate benchmarks/v1 --allow-private
+edlb validate benchmarks/v1
 ~~~
 
 The schema suite uses Draft 2020-12 validators with an explicit RFC 3339

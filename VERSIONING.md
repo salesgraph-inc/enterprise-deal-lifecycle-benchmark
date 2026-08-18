@@ -35,21 +35,19 @@ comparable only when its run manifest records all of these versions.
 
 ## Dataset releases
 
-The current pack contains 48 public worlds, 24 train and 24 dev, plus 24
-maintainer-only blind worlds. Each world contains 72 artifacts, for 5,184
-artifacts overall, and the authoring pack contains 180 shared seller
-documents.
+The current pack contains 72 public worlds, 24 each in train, dev, and blind
+splits. Each world contains 72 artifacts, for 5,184 artifacts overall, and the
+authoring pack contains 180 shared seller documents.
 
 World bundles are immutable after a release decision. Each bundle and artifact
 has a checksum. Counterfactual pairs remain in the same split. A correction
 creates a new benchmark release and preserves the old release for
 reproducibility.
 
-The public train split contains reference traces and runnable graders. The
-public dev split contains runnable rubrics and graders, but no reference trace
-or oracle. Blind worlds, causal truth, private assertions, and oracle state
-stay maintainer-only until the blind pack is retired. Retired packs may be
-released as CC BY 4.0 data.
+All v1 splits contain reference traces, runnable graders, causal truth, private
+assertions, and oracle state. A manifest's `release_visibility` field is the
+access-control boundary. Future packs marked `private` stay maintainer-only
+until retired, and retired packs may be released as CC BY 4.0 data.
 
 ## Reproducibility
 
@@ -81,8 +79,8 @@ unverified run.
 
 Formal trademark and legal clearance, expert recruitment, two expert reviews
 per world, stakeholder-model selection, model and judge calibration, the
-12-world resource characterization pilot, container endpoint allowlisting,
-end-to-end blind evaluator security evidence, and public release remain pending.
+12-world resource characterization pilot, container endpoint allowlisting, and
+end-to-end evaluator security evidence remain pending.
 Canary
 scanning, quota enforcement, exact-byte manifest hashing, HMAC result signing,
 immutable Podman isolation, and RevOps-only CRM merge are implemented and

@@ -7,10 +7,10 @@ valid terminal outcome.
 
 ## Current release state
 
-The v1 runtime and generated data are present. The repository contains 48
-public worlds, 24 train and 24 dev, plus 24 private blind worlds. Each world
-has 72 artifacts, for 5,184 artifacts across all 72 worlds, and the authoring
-pack contains 180 shared seller documents.
+The v1 runtime and generated data are present. The repository contains all 72
+worlds publicly, 24 each in train, dev, and blind splits. Every world has 72
+artifacts, for 5,184 artifacts, and the authoring pack contains 180 shared
+seller documents.
 
 Across the full pack there are 72 worlds, 5,184 artifacts, 716 checkpoint
 windows, 180 shared seller documents, 36 counterfactual pairs, and 4 rich
@@ -20,9 +20,9 @@ The current world and document records are generated from structured template
 blueprints. Generated prose is templated and has not been expert-reviewed.
 Expert authoring, recruitment, and review gates remain pending.
 
-The implementation is runnable, but this is not a public benchmark release.
-No official model result, human-review result, stakeholder-model selection,
-or judge-calibration result is represented as complete.
+The v1 synthetic data and evaluation material are public. Official model
+results, human-review results, stakeholder-model selection, and judge
+calibration remain separate release gates.
 
 ## Contract
 
@@ -110,7 +110,7 @@ The generated packs are stored at:
 ~~~text
 benchmarks/v1/output/public/train/   public train worlds
 benchmarks/v1/output/public/dev/     public dev worlds
-benchmarks/v1/private/blind/         maintainer-only blind worlds
+benchmarks/v1/output/public/blind/   public blind worlds
 benchmarks/v1/authoring/             blueprints and shared documents
 ~~~
 
@@ -119,10 +119,10 @@ benchmarks/v1/authoring/             blueprints and shared documents
 The generator validates world counts and split assignment, six-vertical
 coverage, counterfactual pairing, checkpoint and duration bounds, channel
 counts, artifact checksums and paths, event timing, role visibility, synthetic
-provenance, public-boundary projections, blind-data separation, and
-post-intervention artifact differences. runner.validate_dataset validates
-manifest identity, the synthetic flag, artifact paths, event identity and
-availability, dev oracle absence, and private blind handling.
+provenance, public release visibility, and post-intervention artifact
+differences. runner.validate_dataset validates manifest identity, the
+synthetic flag, artifact paths, event identity and availability, public oracle
+and hidden-event files, and private-pack handling when explicitly enabled.
 
 The Draft 2020-12 schema test validates every generated manifest, actor,
 artifact, event, checkpoint, assertion, rubric assertion, and public reference
@@ -137,9 +137,9 @@ Automated privacy fixtures reject live domains, non-reserved phone numbers,
 configured copied phrases and entities, and duplicate person identities. These
 fixtures are list-based and do not establish a global real-person or copy scan.
 
-The final machine gate passes the functional test suite. All 48 checked
+The final machine gate passes the functional test suite. All 72 checked
 reference traces match their oracle and score EI 100.0 with Strict Cycle Pass;
-all 16 closed-won traces ablate to `no_decision`.
+all 24 closed-won traces ablate to `no_decision`.
 
 Run the checks with:
 
@@ -149,15 +149,13 @@ uv run --group dev python3 -m unittest tests.test_schema
 uv run --group dev ruff check .
 python3 -m compileall -q src tests
 edlb validate benchmarks/v1/output
-edlb validate benchmarks/v1 --allow-private
+edlb validate benchmarks/v1
 ~~~
 
 The current generated records are summarized in
-benchmarks/v1/authoring/validation.json,
-benchmarks/v1/output/manifest.json, and
-benchmarks/v1/private/validation.json. The public manifest reports 48 worlds
-and 3,456 public artifacts. The private validation record reports 5,184
-artifacts when the 24 blind worlds are included.
+benchmarks/v1/authoring/validation.json and
+benchmarks/v1/output/manifest.json. The public manifest reports 72 worlds,
+5,184 artifacts, and 36 counterfactual pair diffs.
 
 ## Pending release gates
 
@@ -171,7 +169,7 @@ machine checks:
 - Official three-trial model runs.
 - Container endpoint allowlisting.
 - End-to-end blind evaluator security evidence against the release evaluator.
-- Public release and publication of leaderboard results.
+- Publication of official leaderboard results.
 
 The fixed-harness and open-team leaderboard files are intentionally empty until
 official runs exist.
@@ -192,9 +190,10 @@ process guidance only. They are not data sources for copied customer records.
 ## Licensing
 
 Source code and schemas are licensed under the MIT License in LICENSE.
-Synthetic benchmark data and retired public test packs are licensed under CC BY
-4.0 in LICENSE-DATA. Blind test data, oracle state, private assertions, and
-unreleased traces are not public data until a pack is retired.
+All v1 synthetic benchmark data, oracle state, assertions, reference traces,
+hidden events, and test packs are licensed under CC BY 4.0 in LICENSE-DATA.
+Future packs marked `release_visibility=private` remain outside the public
+release until retired.
 
 The benchmark contains no customer data. All organizations, people, domains,
 phone numbers, communications, and external signals must be generated and
