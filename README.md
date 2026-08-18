@@ -128,6 +128,7 @@ benchmarks/v1/output/public/train/   public train worlds
 benchmarks/v1/output/public/dev/     public dev worlds
 benchmarks/v1/output/public/blind/   public blind worlds
 benchmarks/v1/authoring/             blueprints and shared documents
+benchmarks/v1/baselines/             diagnostic provider trials, not leaderboard results
 ~~~
 
 Regenerating an existing non-empty output directory is destructive and requires

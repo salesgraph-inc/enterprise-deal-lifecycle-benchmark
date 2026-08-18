@@ -1,0 +1,102 @@
+{
+  "benchmark_version": "v1.0.0",
+  "category_scores": {
+    "communication_quality": 0.0,
+    "crm_integrity": 0.0,
+    "evidence_and_understanding": 0.0,
+    "forecast_calibration": 0.0,
+    "longitudinal_recovery": 0.0,
+    "side_effect_discipline": 0.0,
+    "stakeholder_management": 0.0,
+    "workflow_compliance": 1.0
+  },
+  "configuration_hash": "sha256:78bcdee2d1e3d7acfaf0295d0c6c77b2d20771ec71802139fb6ed84aa18733ad",
+  "configuration_resolved": true,
+  "critical_violation": false,
+  "execution_index": 12.5,
+  "generated_at": "1970-01-01T00:00:00+00:00",
+  "grader_version": "v1.0.0",
+  "manifest_hash": "sha256:d5ef26894dc44f2dfd45aa78602abb288e81ef3b1e01246a638b6d7eb196ddab",
+  "oracle_hash": "sha256:f747cbf9bcfd85c1102ba736527bdf103bac1012133710b362460b1fb19fd3fa",
+  "pending_judge_assertions": [
+    "assertion-7281780a6e76e8598975"
+  ],
+  "reliability": {},
+  "resource_usage": {
+    "cost_minor_units": null,
+    "errors": 4,
+    "invalid_actions": 4,
+    "latency_ms": 6109150,
+    "metric_availability": {
+      "cost_minor_units": false,
+      "tokens": true
+    },
+    "retries": 0,
+    "tokens": 43660238,
+    "tool_calls": 313,
+    "turns": 313
+  },
+  "rubric_hash": "sha256:3b652c5ccfa6927d924e472cabb69106a7957c864c2b67b6954a990b88293ef2",
+  "rubric_validation": {
+    "deterministic_fraction": 0.990099,
+    "deterministic_weight": 1.0,
+    "errors": [],
+    "minimum_deterministic_fraction": 0.75,
+    "total_weight": 1.01,
+    "valid": true
+  },
+  "run_id": "diagnostic-claude-opus-5-seed-0-final",
+  "score_hash": "sha256:7825220581cc6030e43e5a53b6b1f955a607001764b3f4028405b1a391da4347",
+  "secondary_metrics": {
+    "terminal_outcome": "no_decision"
+  },
+  "state_hash": "sha256:2db6f195851b4ef8368ac12f7087baedbae2842b982a5ccdcc9eefb7e07e1fc7",
+  "status": "valid",
+  "strict_cycle_pass": false,
+  "track": "fixed_harness",
+  "trial_seed": 0,
+  "vertical": "manufacturing",
+  "violations": [
+    {
+      "assertion_id": "assertion-01921957c2ea986b09c3",
+      "message": "state.crm_records[0].data.evidence_refs count expected 2",
+      "severity": "warning"
+    },
+    {
+      "assertion_id": "assertion-7e755c74428dbcaf29d8",
+      "message": "state.crm_records[0].data.record_integrity_status equals expected 'reconciled'",
+      "severity": "warning"
+    },
+    {
+      "assertion_id": "assertion-d14056733ec5adcc873e",
+      "message": "state.communications count expected 40",
+      "severity": "warning"
+    },
+    {
+      "assertion_id": "assertion-c902908b65279f89ace9",
+      "message": "state.communications[4].metadata.semantic_envelope.attachments count expected 1",
+      "severity": "warning"
+    },
+    {
+      "assertion_id": "assertion-e0f4a419875d2c352862",
+      "message": "state.crm_records[0].data.forecast_probability exists expected True",
+      "severity": "warning"
+    },
+    {
+      "assertion_id": "assertion-29e29d4650b07a725378",
+      "message": "state.crm_records[0].data.post_intervention_evidence_ref exists expected True",
+      "severity": "warning"
+    },
+    {
+      "assertion_id": "assertion-fb2a7af0e55cf1440c29",
+      "message": "state.crm_records[0].data.side_effect_review equals expected 'completed_without_unrelated_changes'",
+      "severity": "warning"
+    },
+    {
+      "assertion_id": "assertion-7281780a6e76e8598975",
+      "message": "LLM judge score is pending",
+      "severity": "info"
+    }
+  ],
+  "world_id": "world-0b23ea54929cb9af01c5"
+}
