@@ -409,6 +409,30 @@ class RunResult:
         }
 
 
+def _resolve_bundle_file(
+    root: Path, value: str | Path, *, required: bool = True
+) -> Path | None:
+    if not isinstance(value, (str, Path)):
+        raise BundleError(f"bundle file path must be a string: {value!r}")
+    relative = Path(value)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise BundleError(f"bundle file path escapes bundle root: {value!r}")
+    candidate = root / relative
+    try:
+        resolved = candidate.resolve(strict=False)
+    except OSError as exc:
+        raise BundleError(f"cannot resolve bundle file path {value!r}: {exc}") from exc
+    try:
+        resolved.relative_to(root)
+    except ValueError as exc:
+        raise BundleError(f"bundle file path escapes bundle root: {value!r}") from exc
+    if not resolved.is_file():
+        if required:
+            raise BundleError(f"bundle file is missing: {value!r}")
+        return None
+    return resolved
+
+
 def _json(path: Path) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -446,7 +470,9 @@ def _bundle_path(path: str | Path) -> Path:
 
 def load_world_bundle(path: str | Path, allow_private: bool = False) -> WorldBundle:
     root = _bundle_path(path).resolve()
-    manifest = _json(root / "manifest.json")
+    manifest_path = _resolve_bundle_file(root, "manifest.json")
+    assert manifest_path is not None
+    manifest = _json(manifest_path)
     if not isinstance(manifest, Mapping) or not manifest.get("world_id"):
         raise BundleError("world manifest must contain world_id")
     release_visibility = manifest.get("release_visibility")
@@ -455,25 +481,31 @@ def load_world_bundle(path: str | Path, allow_private: bool = False) -> WorldBun
     private = release_visibility == "private"
     if private and not allow_private:
         raise BundleError("private world bundles require allow_private=True")
-    events = tuple(_jsonl(root / "events.jsonl"))
-    artifacts = tuple(_jsonl(root / "artifacts.jsonl"))
-    actor_file = root / "actors.jsonl"
-    checkpoint_file = root / "checkpoints.jsonl"
-    actor_rows = tuple(_jsonl(actor_file)) if actor_file.is_file() else ()
+    events_path = _resolve_bundle_file(root, "events.jsonl")
+    artifacts_path = _resolve_bundle_file(root, "artifacts.jsonl")
+    assert events_path is not None and artifacts_path is not None
+    events = tuple(_jsonl(events_path))
+    artifacts = tuple(_jsonl(artifacts_path))
+    for row in artifacts:
+        artifact_path = row.get("path")
+        if artifact_path is not None:
+            _resolve_bundle_file(root, artifact_path)
+    actor_file = _resolve_bundle_file(root, "actors.jsonl", required=False)
+    checkpoint_file = _resolve_bundle_file(root, "checkpoints.jsonl", required=False)
+    actor_rows = tuple(_jsonl(actor_file)) if actor_file is not None else ()
     checkpoint_rows = (
-        tuple(_jsonl(checkpoint_file)) if checkpoint_file.is_file() else ()
+        tuple(_jsonl(checkpoint_file)) if checkpoint_file is not None else ()
     )
-    rubric_path = root / "rubric.json"
-    if not rubric_path.is_file():
-        raise BundleError("world bundle is missing rubric.json")
-    oracle_path = root / "oracle.json"
+    rubric_path = _resolve_bundle_file(root, "rubric.json")
+    assert rubric_path is not None
+    oracle_path = _resolve_bundle_file(root, "oracle.json", required=False)
     return WorldBundle(
         root,
         dict(manifest),
         events,
         artifacts,
         rubric_path,
-        oracle_path if oracle_path.is_file() else None,
+        oracle_path,
         private,
         actor_rows,
         checkpoint_rows,
@@ -1034,8 +1066,8 @@ def _artifact_content(
         if isinstance(body, str):
             return content, body
         return content, to_json(content)
-    relative = Path(str(relative_value))
-    path = bundle.path / relative
+    path = _resolve_bundle_file(bundle.path, str(relative_value))
+    assert path is not None
     raw = path.read_text(encoding="utf-8")
     if path.suffix.lower() == ".json":
         value = _json(path)
