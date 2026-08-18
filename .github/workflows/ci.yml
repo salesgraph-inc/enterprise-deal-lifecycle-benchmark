@@ -29,7 +29,7 @@ jobs:
           cache: pip
 
       - name: Install uv
-        run: python -m pip install --disable-pip-version-check --no-input uv==0.8.17
+        run: python -m pip install --disable-pip-version-check --no-input uv==0.12.5
 
       - name: Install locked development dependencies
         run: uv sync --group dev --frozen
@@ -47,9 +47,12 @@ jobs:
         run: python -m compileall -q src tests
 
       - name: Audit Python dependencies
-        run: uv run --with pip-audit==2.9.0 pip-audit --strict
+        run: uv run --with pip-audit==2.10.1 pip-audit --strict
 
       - name: Scan repository history for secrets
-        uses: gitleaks/gitleaks-action@v2.3.9
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: trufflesecurity/trufflehog@bcfcf73aaf4759d4dadc2783177c245a02792318
+        with:
+          base: ""
+          head: HEAD
+          version: 3.97.0
+          extra_args: --results=verified,unknown --fail
