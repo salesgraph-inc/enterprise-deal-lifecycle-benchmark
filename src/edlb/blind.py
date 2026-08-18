@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import json
 import math
 import sqlite3
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime, timedelta
 from numbers import Real
 from pathlib import Path
@@ -330,7 +331,21 @@ def scan_canaries(
         token_bytes = token.encode("utf-8") if isinstance(token, str) else bytes(token)
         if not token_bytes:
             raise ValueError("canary tokens must not be empty")
-        if token_bytes in output_bytes or token_bytes in trace_bytes:
+        standard = base64.b64encode(token_bytes)
+        urlsafe = base64.urlsafe_b64encode(token_bytes)
+        encodings = {
+            token_bytes,
+            standard,
+            standard.rstrip(b"="),
+            urlsafe,
+            urlsafe.rstrip(b"="),
+            token_bytes.hex().encode("ascii"),
+            token_bytes.hex().upper().encode("ascii"),
+        }
+        if any(
+            encoding in output_bytes or encoding in trace_bytes
+            for encoding in encodings
+        ):
             found.append(
                 token_bytes.decode("utf-8", errors="replace")
                 if not isinstance(token, str)
@@ -348,11 +363,16 @@ class SubmissionLedger:
         db_path: str | Path = ":memory:",
         max_submissions: int = MAX_SUBMISSIONS,
         window: timedelta = SUBMISSION_WINDOW,
+        *,
+        clock: Callable[[], datetime] | None = None,
+        trusted_timestamps: bool = False,
     ) -> None:
         if max_submissions < 1:
             raise ValueError("max_submissions must be positive")
         if window <= timedelta(0):
             raise ValueError("submission window must be positive")
+        if clock is not None and not callable(clock):
+            raise TypeError("clock must be callable")
         self.connection = sqlite3.connect(str(db_path), isolation_level=None)
         self.connection.execute("PRAGMA busy_timeout = 5000")
         self.connection.execute(
@@ -363,6 +383,8 @@ class SubmissionLedger:
         )
         self.max_submissions = max_submissions
         self.window = window
+        self.clock = clock or (lambda: datetime.now(UTC))
+        self.trusted_timestamps = trusted_timestamps
 
     def register_submission(
         self,
@@ -373,7 +395,11 @@ class SubmissionLedger:
     ) -> str:
         if not isinstance(team_id, str) or not team_id:
             raise ValueError("team_id must not be empty")
-        timestamp, normalized = _utc_timestamp(submitted_at)
+        if team_id != team_id.strip() or len(team_id.encode("utf-8")) > 128:
+            raise ValueError("team_id must be canonical and at most 128 bytes")
+        timestamp, normalized = _utc_timestamp(
+            submitted_at if self.trusted_timestamps else self.clock()
+        )
         digest = manifest_hash(manifest)
         timestamp_us = int(timestamp.timestamp() * 1_000_000)
         cutoff_us = int((timestamp - self.window).timestamp() * 1_000_000)
