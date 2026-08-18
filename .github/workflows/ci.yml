@@ -43,13 +43,16 @@ jobs:
       - name: Run Ruff
         run: uv run --group dev ruff check .
 
+      - name: Check Ruff formatting
+        run: uv run --group dev ruff format --check .
+
       - name: Compile Python sources
         run: python -m compileall -q src tests
 
       - name: Audit Python dependencies
         run: |
           uv export --group dev --frozen --no-emit-project --output-file /tmp/edlb-audit-requirements.txt
-          uv run --with pip-audit==2.10.1 pip-audit --strict --require-hashes --requirement /tmp/edlb-audit-requirements.txt
+          uv run --group dev pip-audit --strict --require-hashes --requirement /tmp/edlb-audit-requirements.txt
 
       - name: Scan repository history for secrets
         run: |
