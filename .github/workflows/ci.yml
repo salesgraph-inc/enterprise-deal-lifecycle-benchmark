@@ -47,7 +47,7 @@ jobs:
         run: python -m compileall -q src tests
 
       - name: Audit Python dependencies
-        run: uv run --with pip-audit==2.10.1 pip-audit --strict
+        run: uv run --with pip-audit==2.10.1 pip-audit --strict --skip-editable
 
       - name: Scan repository history for secrets
         uses: trufflesecurity/trufflehog@bcfcf73aaf4759d4dadc2783177c245a02792318
