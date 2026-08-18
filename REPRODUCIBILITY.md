@@ -86,6 +86,7 @@ settings, token budgets, checkpoint scoring, or benchmark semantics.
 Business, authorization, and temporal rules, protocol trust-boundary validation,
 blind submission quotas and canaries, network isolation, and declared evaluator
 safety policy remain in force as semantic or security controls.
+
 The evaluator enforces an 8 MiB per-message JSONL transport ceiling, sized
 above the broker's bounded semantic envelope after worst-case JSON escaping.
 Crossing it invalidates the protocol exchange. The evaluator does not truncate
