@@ -238,8 +238,11 @@ def validate_blind_target(world_path: str | Path, output_path: str | Path) -> No
 def _validate_resource_limits(config: PodmanConfig) -> None:
     if type(config.pids_limit) is not int or not 1 <= config.pids_limit <= 65536:
         raise ValueError("pids_limit must be an integer from 1 through 65536")
-    if not re.fullmatch(
-        r"[1-9][0-9]*(?:[kmgt]i?|[bB])?", config.memory_limit, re.IGNORECASE
+    if (
+        not isinstance(config.memory_limit, str)
+        or not re.fullmatch(
+            r"[1-9][0-9]*(?:[kmgt]i?|[bB])?", config.memory_limit, re.IGNORECASE
+        )
     ):
         raise ValueError("memory_limit must be a positive Podman memory quantity")
     if (
