@@ -52,9 +52,5 @@ jobs:
           uv run --with pip-audit==2.10.1 pip-audit --strict --require-hashes --requirement /tmp/edlb-audit-requirements.txt
 
       - name: Scan repository history for secrets
-        uses: trufflesecurity/trufflehog@bcfcf73aaf4759d4dadc2783177c245a02792318
-        with:
-          base: ""
-          head: HEAD
-          version: 3.97.0
-          extra_args: --results=verified,unknown --fail
+        run: |
+          docker run --rm --volume "$PWD:/repo:ro" ghcr.io/trufflesecurity/trufflehog@sha256:ff4c95e9df7d645daf2140e3ca1039031c63106268d5fbb25feb43ceca1bcc33 git file:///repo --results=verified,unknown --fail --no-update
