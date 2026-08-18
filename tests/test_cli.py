@@ -54,6 +54,12 @@ class CliTest(unittest.TestCase):
         args = cli.build_parser().parse_args(["run", str(WORLD)])
         self.assertEqual(cli._limits(args), RunLimits())
 
+    def test_generate_force_flag_is_explicit(self) -> None:
+        args = cli.build_parser().parse_args(["generate"])
+        self.assertFalse(args.force)
+        args = cli.build_parser().parse_args(["generate", "--force"])
+        self.assertTrue(args.force)
+
     def test_external_run_requires_resolved_agent_manifest(self) -> None:
         stderr = io.StringIO()
         with redirect_stderr(stderr):
