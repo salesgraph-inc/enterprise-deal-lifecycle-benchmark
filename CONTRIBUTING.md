@@ -17,6 +17,25 @@ unreviewed changes to blind evaluator data.
 - Keep comments out of generated schema and data files. Explain contract
   decisions in documentation or review records.
 
+## Execution-resource policy
+
+EDLB sets no model or execution budget by default. Do not add implicit token
+caps or temperature, top-p, reasoning-effort, or cost settings, or default
+checkpoint tool-call, turn, response-time, total wall-time, context-history, or
+retrieval-result caps. Runner retries default to zero. The implemented operator
+controls are per-checkpoint tool calls, turns, response timeout, and retries;
+nullable controls use null for unlimited. External systems must declare model
+IDs, digests, prompt hashes, and provider settings in a resolved pre-run agent
+manifest. EDLB records that declaration and binds it to configuration and
+manifest hashes. External execution also pins runtime, artifact, revision, and
+effective host and job policy provenance in a resolved environment manifest.
+The executor-policy digest records inherited rlimits and other policy and adds
+no resource cap. Keep execution policy and configuration identical for comparisons.
+
+Business, authorization, and temporal rules, protocol trust-boundary
+validation, blind submission quotas and canaries, network isolation, and
+declared evaluator safety policy remain required controls.
+
 ## Data authoring rules
 
 Author structured causal facts, event timing, visibility, policies, and rubric
@@ -46,10 +65,10 @@ benchmarks/v1/reviews/.
 The reviewer template, status register, reproducibility guide, and release
 checklist are part of this repository. Expert recruitment, both reviews per
 world, stakeholder-model selection, model and judge calibration, the 12-world
-model budget pilot, official three-trial model runs, endpoint allowlisting,
-end-to-end blind evaluator security evidence, and public release remain
-pending. Canary scanning, quota enforcement, exact-byte manifest hashing, HMAC
-result signing, immutable Podman isolation, and RevOps-only CRM merge are
+resource characterization pilot, official three-trial model runs, endpoint
+allowlisting, end-to-end blind evaluator security evidence, and public release
+remain pending. Canary scanning, quota enforcement, exact-byte manifest hashing,
+HMAC result signing, immutable Podman isolation, and RevOps-only CRM merge are
 implemented and focused-tested.
 
 ## Validation

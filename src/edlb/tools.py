@@ -291,10 +291,8 @@ def _validate_value(value: Any, schema: Mapping[str, Any], path: str) -> None:
     elif expected == "array":
         if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
             raise ProtocolError(f"{path} must be an array")
-        if (
-            not int(schema.get("minItems", 0))
-            <= len(value)
-            <= int(schema.get("maxItems", 2**31))
+        if len(value) < int(schema.get("minItems", 0)) or (
+            "maxItems" in schema and len(value) > int(schema["maxItems"])
         ):
             raise ProtocolError(f"{path} has an invalid item count")
         for index, item in enumerate(value):
@@ -306,10 +304,8 @@ def _validate_value(value: Any, schema: Mapping[str, Any], path: str) -> None:
     elif expected == "string":
         if not isinstance(value, str):
             raise ProtocolError(f"{path} must be a string")
-        if (
-            not int(schema.get("minLength", 0))
-            <= len(value)
-            <= int(schema.get("maxLength", 2**31))
+        if len(value) < int(schema.get("minLength", 0)) or (
+            "maxLength" in schema and len(value) > int(schema["maxLength"])
         ):
             raise ProtocolError(f"{path} has an invalid length")
         if schema.get("pattern") and not re.fullmatch(str(schema["pattern"]), value):
@@ -324,8 +320,8 @@ def _validate_value(value: Any, schema: Mapping[str, Any], path: str) -> None:
     elif expected == "integer":
         if not isinstance(value, int) or isinstance(value, bool):
             raise ProtocolError(f"{path} must be an integer")
-        if value < int(schema.get("minimum", value)) or value > int(
-            schema.get("maximum", value)
+        if value < int(schema.get("minimum", value)) or (
+            "maximum" in schema and value > int(schema["maximum"])
         ):
             raise ProtocolError(f"{path} is outside its allowed range")
     else:
@@ -397,7 +393,7 @@ class ToolDispatcher:
         name = call.tool_name
         if name == "crm.search":
             return self.engine.crm_search(
-                role, str(args.get("query", "")), int(args.get("limit", 50))
+                role, str(args.get("query", "")), args.get("limit")
             )
         if name == "crm.read":
             return self.engine.crm_read(role, str(args["record_id"]))
@@ -416,7 +412,7 @@ class ToolDispatcher:
                 role,
                 str(args.get("query", "")),
                 args.get("channel"),
-                int(args.get("limit", 50)),
+                args.get("limit"),
             )
         if name == "communications.read":
             return self.engine.communications_read(role, str(args["message_id"]))
@@ -431,7 +427,7 @@ class ToolDispatcher:
                 semantic_envelope=args.get("semantic_envelope"),
             )
         if name == "calendar.list":
-            return self.engine.calendar_list(role, int(args.get("limit", 50)))
+            return self.engine.calendar_list(role, args.get("limit"))
         if name == "calendar.schedule":
             return self.engine.calendar_schedule(
                 role,
@@ -465,7 +461,7 @@ class ToolDispatcher:
             )
         if name == "documents.search":
             return self.engine.documents_search(
-                role, str(args.get("query", "")), int(args.get("limit", 50))
+                role, str(args.get("query", "")), args.get("limit")
             )
         if name == "documents.read":
             return self.engine.documents_read(role, str(args["document_id"]))
@@ -494,7 +490,7 @@ class ToolDispatcher:
             )
         if name == "approvals.list":
             return self.engine.approvals_list(
-                role, args.get("status"), int(args.get("limit", 50))
+                role, args.get("status"), args.get("limit")
             )
         if name == "approvals.request":
             return self.engine.approvals_request(
@@ -514,15 +510,15 @@ class ToolDispatcher:
             )
         if name == "web.search":
             return self.engine.web_search(
-                role, str(args.get("query", "")), int(args.get("limit", 50))
+                role, str(args.get("query", "")), args.get("limit")
             )
         if name == "web.open":
             return self.engine.web_open(role, str(args["record_id"]))
         if name == "team.inbox":
-            return self.engine.team_inbox(role, int(args.get("limit", 50)))
+            return self.engine.team_inbox(role, args.get("limit"))
         if name == "team.search":
             return self.engine.team_search(
-                role, str(args.get("query", "")), int(args.get("limit", 50))
+                role, str(args.get("query", "")), args.get("limit")
             )
         if name == "team.send":
             return self.engine.team_send(

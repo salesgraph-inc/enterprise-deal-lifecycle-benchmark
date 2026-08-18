@@ -85,11 +85,13 @@ agents.
 
 The CLI supports dataset validation and generation, fixed-harness and open-team
 runs, trace replay, grading, reports, and container command construction.
-The harness enforces checkpoint tool-call and turn limits, protocol validation,
-role grants, timing, visibility, idempotency, and trace capture. The causal
-module owns event-first interventions and bounded realization checks. Grading
-evaluates deterministic assertions, tracks pending judge assertions, computes
-secondary metrics and reliability statistics, and renders scorecards.
+The harness applies checkpoint tool-call, turn, and response-time limits only
+when an operator supplies them. EDLB imposes no total wall-time cap. It always
+enforces protocol validation, role grants, timing, visibility, idempotency, and
+trace capture. The causal module owns event-first interventions and bounded
+realization checks. Grading evaluates deterministic assertions, tracks pending
+judge assertions, computes secondary metrics and reliability statistics, and
+renders scorecards.
 Lossless `team_message` and `yield` trace paths, snapshot and state-diff
 exports, replay payload and hash validation, state and score hashes, and
 aggregate dataset validation are implemented.
@@ -100,6 +102,45 @@ have focused tests.
 Automated privacy fixtures reject live domains, non-reserved phone numbers,
 configured copied phrases and entities, and duplicate person identities. These
 are configured-list checks, not a global real-person or copy scan.
+
+## Resource policy
+
+EDLB sets no model or execution budget by default. It does not inject token
+caps or temperature, top-p, reasoning-effort, or cost settings, and has no
+default checkpoint tool-call, turn, response-time, total wall-time,
+context-history, or retrieval-result cap. Open Team launch retries and Fixed
+Harness activation retries default to zero. External systems declare each
+role's model ID, digest, prompt hash, and provider settings in a resolved agent
+manifest before execution. EDLB records that declaration and binds it to
+configuration and manifest hashes. Adapter-reported usage, latency, and cost
+are recorded only when supplied.
+
+External execution separately requires a resolved environment manifest with
+the exact runtime version, immutable image or package digest, and full Git
+revision, plus a SHA-256 digest of effective inherited rlimits and other
+evaluator host and job policies. The digest records policy and creates no
+resource cap. EDLB binds it to the same configuration and manifest hashes.
+
+When a system relies on provider defaults, its resolved manifest must pin a
+SHA-256 digest of the canonical provider-default and API configuration. A
+changed default configuration therefore changes the EDLB configuration hash.
+If no provider defaults are used, the digest may be null.
+
+The implemented operator controls are per-checkpoint tool calls, per-checkpoint
+turns, per-response timeout, and track-scoped retries. For nullable controls,
+null means unlimited. A direct `open_world` call defaults to unresolved
+configuration. External execution requires resolved agent and environment
+manifests, and aggregates containing unresolved runs are marked unofficial.
+Results are comparable only under the same execution policy and configuration. Official
+fixed-harness and open-team scoring still requires exactly three trials per
+system and world. This separation follows the
+[Tau2 CLI reference](https://github.com/sierra-research/tau2-bench/blob/main/docs/cli-reference.md),
+which treats run controls as explicit operator settings.
+
+Business, authorization, and temporal rules remain benchmark semantics.
+Protocol trust-boundary validation, blind submission quotas and canaries,
+network isolation, and declared evaluator safety policy remain security
+controls. They are not model or execution budgets.
 
 ## Causal coverage
 
@@ -135,19 +176,20 @@ required assertion and every critical condition to pass.
 
 Terminal outcome, revenue, margin, close date, cycle length, and forecast error
 are reported separately. Win rate and revenue are not the headline score.
-Every official system run must be repeated three times. Reports include pass@1,
+Every official system run must have exactly three trials. Reports include pass@1,
 pass@3, pass^3, paired confidence intervals, resource use, and invalid-action
 counts.
 
 At least 75 percent of rubric weight must use deterministic checks. Language
-model judges are limited to bounded communication, grounding, and strategy
-criteria and must be calibrated against blinded human labels before affecting a
-headline score. Independent criteria and process versus outcome separation
-follow [verifier guidance](https://arxiv.org/html/2604.06240v1). Repeated trials
-follow the reliability concerns in [On Randomness in Agentic Evals](https://arxiv.org/html/2602.07150v2).
+model judges evaluate only criterion-scoped communication, grounding, and
+strategy criteria and must be calibrated against blinded human labels before
+affecting a headline score. Independent criteria and process versus outcome
+separation follow [verifier guidance](https://arxiv.org/html/2604.06240v1).
+Repeated trials follow the reliability concerns in [On Randomness in Agentic Evals](https://arxiv.org/html/2602.07150v2).
 
 The fixed-harness and open-team leaderboard files contain no entries. No
-official three-trial model run or 12-world model budget pilot has been run.
+official three-trial model run or 12-world resource characterization pilot has
+been run.
 
 ## Machine validation
 
@@ -163,7 +205,7 @@ date-time checker and validates all generated normative records plus all JSONL
 protocol variants. The reproducible check commands are documented in
 README.md and REPRODUCIBILITY.md.
 
-The final machine gate passes 137 functional tests. All 48 checked
+The final machine gate passes the functional test suite. All 48 checked
 reference traces match their oracle and score EI 100.0 with Strict Cycle Pass;
 all 16 closed-won traces ablate to `no_decision`.
 
@@ -176,11 +218,11 @@ industry-specific language.
 
 Formal trademark and legal clearance, expert recruitment, two expert reviews
 per world, stakeholder-model selection, model and judge calibration, the
-12-world model budget pilot, official three-trial model runs, container
-endpoint allowlisting, end-to-end blind evaluator security evidence, and public
-release remain pending. Canary scanning, quota enforcement, exact-byte manifest
-hashing, HMAC result signing, immutable Podman isolation, and RevOps-only CRM
-merge are implemented and focused-tested.
+12-world resource characterization pilot, official three-trial model runs,
+container endpoint allowlisting, end-to-end blind evaluator security evidence,
+and public release remain pending. Canary scanning, quota enforcement,
+exact-byte manifest hashing, HMAC result signing, immutable Podman isolation,
+and RevOps-only CRM merge are implemented and focused-tested.
 
 ## Data and licensing
 

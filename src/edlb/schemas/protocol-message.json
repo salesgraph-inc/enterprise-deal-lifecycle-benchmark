@@ -155,7 +155,7 @@
           "required": ["code", "message"],
           "properties": {
             "code": {"type": "string", "pattern": "^[a-z0-9_]+$"},
-            "message": {"type": "string", "minLength": 1, "maxLength": 1000}
+            "message": {"type": "string", "minLength": 1}
           }
         }
       },
@@ -223,7 +223,7 @@
           "enum": ["account_executive", "domain_specialist", "sales_manager", "revops"]
         },
         "observation_token": {"$ref": "#/$defs/observation_token"},
-        "reason": {"type": "string", "maxLength": 1000}
+        "reason": {"type": "string"}
       }
     },
     "checkpoint_complete": {
@@ -254,7 +254,7 @@
         },
         "observation_token": {"$ref": "#/$defs/observation_token"},
         "checkpoint_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
-        "summary": {"type": "string", "minLength": 1, "maxLength": 4000}
+        "summary": {"type": "string", "minLength": 1}
       }
     },
     "run_end": {
@@ -281,7 +281,7 @@
         "role": {"const": "system"},
         "observation_token": {"$ref": "#/$defs/observation_token"},
         "status": {"type": "string", "enum": ["completed", "failed", "invalid"]},
-        "reason": {"type": "string", "maxLength": 1000}
+        "reason": {"type": "string"}
       }
     }
   }

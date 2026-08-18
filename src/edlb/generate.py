@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
+from .models import stable_hash
+
 DATASET_VERSION = "v1.0.0"
 DATASET_SEED = 20260817
 PRIVATE_CONFIG_NAME = "generation_config.json"
@@ -1038,6 +1040,36 @@ def _timestamp(day: date | str, hour: int = 9) -> str:
 
 def _checksum(body: str) -> str:
     return f"sha256:{hashlib.sha256(body.encode()).hexdigest()}"
+
+
+REFERENCE_AGENT_MANIFEST = {
+    "resolved": True,
+    "roles": {role: "edlb-reference-fixture" for role in ROLES},
+    "models": {
+        "edlb-reference-fixture": {
+            "model_id": "edlb-reference-fixture",
+            "model_digest": stable_hash({"model": "edlb-reference-fixture"}),
+            "prompt_hash": stable_hash({"prompt": "edlb-reference-fixture"}),
+            "provider_settings": {},
+            "provider_defaults": False,
+        }
+    },
+}
+REFERENCE_TRACE_LIMITS = {
+    "tool_calls_per_checkpoint": None,
+    "turns_per_checkpoint": None,
+    "timeout_seconds": None,
+    "retries": 0,
+}
+
+
+def _reference_configuration_hash() -> str:
+    return stable_hash(
+        {
+            "agent_manifest": REFERENCE_AGENT_MANIFEST,
+            "limits": REFERENCE_TRACE_LIMITS,
+        }
+    )
 
 
 def _file_checksum(path: Path | Traversable) -> str:
@@ -2291,7 +2323,13 @@ def _build_reference_trace(
         "start",
         "system",
         world["start_at"],
-        payload={"world_id": world["world_id"], "track": "open_team"},
+        payload={
+            "world_id": world["world_id"],
+            "track": "open_team",
+            "agent_manifest": REFERENCE_AGENT_MANIFEST,
+            "limits": REFERENCE_TRACE_LIMITS,
+            "configuration_hash": _reference_configuration_hash(),
+        },
     )
     buyers = {
         _actor_role(actor): actor
@@ -2554,7 +2592,6 @@ def _build_reference_trace(
                 payload={
                     "checkpoint_advanced": {
                         "checkpoint": {"sequence": checkpoint["sequence"] + 1},
-                        "budget_exhausted": False,
                     }
                 },
                 observation_token=next_observation_token,
@@ -2592,8 +2629,6 @@ def _checkpoint_records(
                     if event["available_at"] == available_at
                 ],
                 "required_roles": list(ROLES),
-                "max_tool_calls": 32,
-                "max_turns": 64,
                 "terminal": index == len(world["checkpoints"]) - 1,
             }
         )

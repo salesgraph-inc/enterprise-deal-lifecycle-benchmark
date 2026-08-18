@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / "src"))
 grading_module = importlib.import_module("edlb.grading")
 engine_module = importlib.import_module("edlb.engine")
 models_module = importlib.import_module("edlb.models")
+runner_module = importlib.import_module("edlb.runner")
 scorecard_hash = models_module.scorecard_hash
 stable_hash = models_module.stable_hash
 aggregate_scorecard_hash = importlib.import_module(
@@ -142,6 +143,8 @@ def make_run(
     premature_close: bool = False,
     rubric: dict[str, object] | None = None,
     oracle: dict[str, object] | None = None,
+    agent_manifest: dict[str, object] | None = None,
+    environment: dict[str, object] | None = None,
 ) -> None:
     connection = sqlite3.connect(path)
     connection.executescript(
@@ -160,6 +163,36 @@ def make_run(
         "benchmark_version": "v1.0.0",
         "world_id": "world-1",
         "track": track,
+        "agent_manifest": agent_manifest
+        or {
+            "resolved": True,
+            "roles": {
+                role: "model-a"
+                for role in (
+                    "account_executive",
+                    "domain_specialist",
+                    "sales_manager",
+                    "revops",
+                )
+            },
+            "models": {
+                "model-a": {
+                    "model_id": "test-model",
+                    "model_digest": "sha256:" + "a" * 64,
+                    "prompt_hash": "sha256:" + "b" * 64,
+                    "provider_settings": {},
+                    "provider_defaults": False,
+                }
+            },
+        },
+        "environment": environment
+        or {
+            "resolved": True,
+            "runtime_version": "cpython-test",
+            "image_digest": "sha256:" + "d" * 64,
+            "git_revision": "e" * 40,
+            "executor_policy_digest": "sha256:" + "f" * 64,
+        },
         "rubric_hash": stable_hash(rubric_value),
         "oracle_hash": stable_hash(oracle) if oracle is not None else None,
     }
@@ -276,6 +309,7 @@ def official_row(
         "state_hash": "sha256:" + "4" * 64,
         "status": "valid",
         "critical_violation": False,
+        "configuration_resolved": True,
         "rubric_validation": {"valid": True},
         **row,
     }
@@ -284,6 +318,167 @@ def official_row(
 
 
 class GradingTest(unittest.TestCase):
+    def test_unresolved_environment_is_not_official(self) -> None:
+        environment = {
+            "resolved": False,
+            "runtime_version": "cpython-test",
+            "image_digest": None,
+            "git_revision": None,
+            "executor_policy_digest": None,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "run.sqlite"
+            make_run(path, environment=environment)
+            scorecard = grade_run(path, RUBRIC)
+        self.assertFalse(scorecard["configuration_resolved"])
+
+    def test_unpinned_executor_policy_is_not_official(self) -> None:
+        environment = {
+            "resolved": True,
+            "runtime_version": "cpython-test",
+            "image_digest": "sha256:" + "d" * 64,
+            "git_revision": "e" * 40,
+            "executor_policy_digest": None,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "run.sqlite"
+            make_run(path, environment=environment)
+            scorecard = grade_run(path, RUBRIC)
+        self.assertFalse(scorecard["configuration_resolved"])
+
+    def test_replay_marker_is_unofficial_with_resolved_manifests(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "run.sqlite"
+            make_run(path)
+            connection = sqlite3.connect(path)
+            connection.execute(
+                "INSERT INTO meta VALUES (?, ?)",
+                ("source_manifest", json.dumps({"environment": "source"})),
+            )
+            connection.commit()
+            connection.close()
+            scorecard = grade_run(path, RUBRIC)
+        self.assertFalse(scorecard["configuration_resolved"])
+
+    def test_fixed_harness_multi_model_manifest_is_unresolved(self) -> None:
+        manifest = runner_module.deterministic_agent_manifest("model-a")
+        manifest["models"]["model-b"] = {
+            **manifest["models"]["deterministic"],
+            "model_id": "model-b",
+            "model_digest": "sha256:" + "9" * 64,
+        }
+        manifest["roles"]["revops"] = "model-b"
+        with tempfile.TemporaryDirectory() as directory:
+            fixed = Path(directory) / "fixed.sqlite"
+            opened = Path(directory) / "open.sqlite"
+            make_run(fixed, track="fixed_harness", agent_manifest=manifest)
+            make_run(opened, track="open_team", agent_manifest=manifest)
+            fixed_score = grade_run(fixed, RUBRIC)
+            open_score = grade_run(opened, RUBRIC)
+        self.assertFalse(fixed_score["configuration_resolved"])
+        self.assertTrue(open_score["configuration_resolved"])
+
+    def test_resolved_configuration_requires_pinned_provider_defaults(self) -> None:
+        manifest = {
+            "resolved": True,
+            "roles": {
+                role: "model-a"
+                for role in (
+                    "account_executive",
+                    "domain_specialist",
+                    "sales_manager",
+                    "revops",
+                )
+            },
+            "models": {
+                "model-a": {
+                    "model_id": "test-model",
+                    "model_digest": "sha256:" + "a" * 64,
+                    "prompt_hash": "sha256:" + "b" * 64,
+                    "provider_settings": {},
+                    "provider_defaults": True,
+                }
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            scorecards = []
+            for seed in (11, 12, 13):
+                path = Path(directory) / f"run-{seed}.sqlite"
+                make_run(
+                    path,
+                    run_id=f"run-{seed}",
+                    trial_seed=seed,
+                    agent_manifest=manifest,
+                )
+                scorecards.append(grade_run(path, RUBRIC))
+        self.assertTrue(
+            all(not scorecard["configuration_resolved"] for scorecard in scorecards)
+        )
+        report = aggregate_scorecards(scorecards)
+        self.assertFalse(report["official"])
+        self.assertIn("unresolved_configuration", report["input_validation"]["errors"])
+
+    def test_provider_default_digest_changes_configuration_hash(self) -> None:
+        manifest = {
+            "resolved": True,
+            "roles": {
+                role: "model-a"
+                for role in (
+                    "account_executive",
+                    "domain_specialist",
+                    "sales_manager",
+                    "revops",
+                )
+            },
+            "models": {
+                "model-a": {
+                    "model_id": "test-model",
+                    "model_digest": "sha256:" + "a" * 64,
+                    "prompt_hash": "sha256:" + "b" * 64,
+                    "provider_settings": {},
+                    "provider_defaults": True,
+                    "provider_defaults_digest": "sha256:" + "c" * 64,
+                }
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            first = Path(directory) / "first.sqlite"
+            second = Path(directory) / "second.sqlite"
+            make_run(first, agent_manifest=manifest)
+            changed = json.loads(json.dumps(manifest))
+            changed["models"]["model-a"]["provider_defaults_digest"] = (
+                "sha256:" + "d" * 64
+            )
+            make_run(second, agent_manifest=changed)
+            first_score = grade_run(first, RUBRIC)
+            second_score = grade_run(second, RUBRIC)
+        self.assertTrue(first_score["configuration_resolved"])
+        self.assertTrue(second_score["configuration_resolved"])
+        self.assertNotEqual(
+            first_score["configuration_hash"], second_score["configuration_hash"]
+        )
+
+    def test_unresolved_configuration_is_never_official(self) -> None:
+        rows = [
+            official_row(
+                {
+                    "world_id": "world-a",
+                    "vertical": "manufacturing",
+                    "execution_index": 100.0,
+                    "strict_cycle_pass": True,
+                    "category_scores": {},
+                    "resource_usage": {},
+                    "configuration_resolved": False,
+                },
+                f"run-{seed}",
+                seed,
+            )
+            for seed in (11, 12, 13)
+        ]
+        report = aggregate_scorecards(rows)
+        self.assertFalse(report["official"])
+        self.assertIn("unresolved_configuration", report["input_validation"]["errors"])
+
     def test_grade_run_emits_safe_vertical_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "run.sqlite"

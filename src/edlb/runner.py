@@ -9,8 +9,9 @@ import secrets
 import selectors
 import shlex
 import subprocess
+import sys
+import tempfile
 import time
-from collections import deque
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
@@ -32,6 +33,7 @@ from .models import (
     to_json,
 )
 from .protocol import (
+    MAX_PROTOCOL_MESSAGE_BYTES,
     PROTOCOL_VERSION,
     Message,
     ProtocolError,
@@ -98,20 +100,245 @@ class WorldBundle:
 
 @dataclass(frozen=True, slots=True)
 class RunLimits:
-    tool_calls_per_checkpoint: int = 64
-    turns_per_checkpoint: int = 128
-    timeout_seconds: float = 30.0
-    retries: int = 2
+    tool_calls_per_checkpoint: int | None = None
+    turns_per_checkpoint: int | None = None
+    timeout_seconds: float | None = None
+    retries: int = 0
 
     def __post_init__(self) -> None:
-        if self.tool_calls_per_checkpoint < 1:
+        if self.tool_calls_per_checkpoint is not None and (
+            not isinstance(self.tool_calls_per_checkpoint, int)
+            or isinstance(self.tool_calls_per_checkpoint, bool)
+            or self.tool_calls_per_checkpoint < 1
+        ):
             raise ValueError("tool_calls_per_checkpoint must be positive")
-        if self.turns_per_checkpoint < 1:
+        if self.turns_per_checkpoint is not None and (
+            not isinstance(self.turns_per_checkpoint, int)
+            or isinstance(self.turns_per_checkpoint, bool)
+            or self.turns_per_checkpoint < 1
+        ):
             raise ValueError("turns_per_checkpoint must be positive")
-        if self.timeout_seconds <= 0:
+        if self.timeout_seconds is not None and (
+            not isinstance(self.timeout_seconds, (int, float))
+            or isinstance(self.timeout_seconds, bool)
+            or not math.isfinite(self.timeout_seconds)
+            or self.timeout_seconds <= 0
+        ):
             raise ValueError("timeout_seconds must be positive")
-        if not 0 <= self.retries <= 2:
-            raise ValueError("retries must be between zero and two")
+        if (
+            not isinstance(self.retries, int)
+            or isinstance(self.retries, bool)
+            or self.retries < 0
+        ):
+            raise ValueError("retries must be a non-negative integer")
+
+
+def _bound_run_limits(engine: RunEngine, limits: RunLimits | None) -> RunLimits:
+    manifest_limits = RunLimits(
+        engine.manifest.limits.get("tool_calls_per_checkpoint"),
+        engine.manifest.limits.get("turns_per_checkpoint"),
+        engine.manifest.limits.get("timeout_seconds"),
+        engine.manifest.limits.get("retries", 0),
+    )
+    if limits is not None and limits != manifest_limits:
+        raise BundleError("runner limits do not match the run manifest")
+    return manifest_limits
+
+
+def _valid_digest(value: Any) -> bool:
+    if not isinstance(value, str) or not value.startswith("sha256:"):
+        return False
+    digest = value.removeprefix("sha256:")
+    return len(digest) == 64 and all(item in "0123456789abcdef" for item in digest)
+
+
+def normalize_agent_manifest(
+    value: Mapping[str, Any] | None,
+    *,
+    require_resolved: bool = False,
+) -> dict[str, Any]:
+    if value is None:
+        value = {
+            "resolved": False,
+            "roles": {role: "unresolved" for role in ROLE_ORDER},
+            "models": {},
+        }
+    if set(value) != {"resolved", "roles", "models"}:
+        raise BundleError("agent manifest must contain resolved, roles, and models")
+    resolved = value.get("resolved")
+    roles = value.get("roles")
+    models = value.get("models")
+    if not isinstance(resolved, bool):
+        raise BundleError("agent manifest resolved marker must be boolean")
+    if not isinstance(roles, Mapping) or set(roles) != set(ROLE_ORDER):
+        raise BundleError("agent manifest must map all four seller roles")
+    if any(not isinstance(roles[role], str) or not roles[role] for role in ROLE_ORDER):
+        raise BundleError("agent manifest role model keys must be non-empty strings")
+    if not isinstance(models, Mapping):
+        raise BundleError("agent manifest models must be an object")
+    role_models = {role: roles[role] for role in ROLE_ORDER}
+    normalized_models: dict[str, Any] = {}
+    for key, raw in models.items():
+        if not isinstance(key, str) or not key or not isinstance(raw, Mapping):
+            raise BundleError("agent manifest model entries are invalid")
+        required_fields = {
+            "model_id",
+            "model_digest",
+            "prompt_hash",
+            "provider_settings",
+            "provider_defaults",
+        }
+        fields = set(raw)
+        if fields != required_fields and fields != required_fields | {
+            "provider_defaults_digest"
+        }:
+            raise BundleError("agent manifest model entry fields are invalid")
+        model_id = raw.get("model_id")
+        model_digest = raw.get("model_digest")
+        prompt_hash = raw.get("prompt_hash")
+        provider_settings = raw.get("provider_settings")
+        provider_defaults = raw.get("provider_defaults")
+        provider_defaults_digest = raw.get("provider_defaults_digest")
+        if not isinstance(model_id, str) or not model_id.strip():
+            raise BundleError("agent manifest model_id must be non-empty")
+        if model_digest is not None and not _valid_digest(model_digest):
+            raise BundleError("agent manifest model_digest is invalid")
+        if not _valid_digest(prompt_hash):
+            raise BundleError("agent manifest prompt_hash is invalid")
+        if not isinstance(provider_settings, Mapping):
+            raise BundleError("agent manifest provider_settings must be an object")
+        if not isinstance(provider_defaults, bool):
+            raise BundleError("agent manifest provider_defaults must be boolean")
+        if provider_defaults_digest is not None and not _valid_digest(
+            provider_defaults_digest
+        ):
+            raise BundleError("agent manifest provider_defaults_digest is invalid")
+        if provider_defaults and provider_defaults_digest is None:
+            raise BundleError(
+                "resolved provider defaults require a pinned configuration digest"
+            )
+        try:
+            settings = json.loads(
+                json.dumps(dict(provider_settings), allow_nan=False, sort_keys=True)
+            )
+        except (TypeError, ValueError) as exc:
+            raise BundleError("agent manifest provider_settings must be JSON") from exc
+        normalized_model = {
+            "model_id": model_id,
+            "model_digest": model_digest,
+            "prompt_hash": prompt_hash,
+            "provider_settings": settings,
+            "provider_defaults": provider_defaults,
+        }
+        if "provider_defaults_digest" in raw:
+            normalized_model["provider_defaults_digest"] = provider_defaults_digest
+        normalized_models[key] = normalized_model
+    if resolved and (
+        not normalized_models
+        or any(model_key not in normalized_models for model_key in role_models.values())
+    ):
+        raise BundleError("resolved agent manifest role models must exist")
+    if resolved and any(
+        model["model_digest"] is None for model in normalized_models.values()
+    ):
+        raise BundleError("resolved agent manifest model digests must be pinned")
+    if require_resolved and not resolved:
+        raise BundleError("external execution requires a resolved agent manifest")
+    return {"resolved": resolved, "roles": role_models, "models": normalized_models}
+
+
+def deterministic_agent_manifest(name: str) -> dict[str, Any]:
+    if not name:
+        raise ValueError("deterministic agent manifest name is required")
+    model_key = "deterministic"
+    return normalize_agent_manifest(
+        {
+            "resolved": True,
+            "roles": {role: model_key for role in ROLE_ORDER},
+            "models": {
+                model_key: {
+                    "model_id": name,
+                    "model_digest": stable_hash({"model": name}),
+                    "prompt_hash": stable_hash({"prompt": name}),
+                    "provider_settings": {},
+                    "provider_defaults": False,
+                    "provider_defaults_digest": None,
+                }
+            },
+        },
+        require_resolved=True,
+    )
+
+
+def normalize_environment_manifest(
+    value: Mapping[str, Any] | None,
+    *,
+    require_resolved: bool = False,
+) -> dict[str, Any]:
+    if value is None:
+        value = {
+            "resolved": False,
+            "runtime_version": (
+                f"{sys.implementation.name}-{sys.version_info.major}."
+                f"{sys.version_info.minor}.{sys.version_info.micro}"
+            ),
+            "image_digest": None,
+            "git_revision": None,
+            "executor_policy_digest": None,
+        }
+    if set(value) != {
+        "resolved",
+        "runtime_version",
+        "image_digest",
+        "git_revision",
+        "executor_policy_digest",
+    }:
+        raise BundleError("environment manifest fields are invalid")
+    resolved = value.get("resolved")
+    runtime_version = value.get("runtime_version")
+    image_digest = value.get("image_digest")
+    git_revision = value.get("git_revision")
+    executor_policy_digest = value.get("executor_policy_digest")
+    if not isinstance(resolved, bool):
+        raise BundleError("environment manifest resolved marker must be boolean")
+    if not isinstance(runtime_version, str) or not runtime_version.strip():
+        raise BundleError("environment runtime_version must be non-empty")
+    if image_digest is not None and not _valid_digest(image_digest):
+        raise BundleError("environment image_digest is invalid")
+    if git_revision is not None and not (
+        isinstance(git_revision, str)
+        and re.fullmatch(r"(?:[0-9a-f]{40}|[0-9a-f]{64})", git_revision)
+    ):
+        raise BundleError("environment git_revision must be an exact revision")
+    if executor_policy_digest is not None and not _valid_digest(executor_policy_digest):
+        raise BundleError("environment executor_policy_digest is invalid")
+    if resolved and (
+        image_digest is None or git_revision is None or executor_policy_digest is None
+    ):
+        raise BundleError(
+            "resolved environment requires immutable artifact and executor policy digests and an exact revision"
+        )
+    if require_resolved and not resolved:
+        raise BundleError("external execution requires a resolved environment manifest")
+    return {
+        "resolved": resolved,
+        "runtime_version": runtime_version,
+        "image_digest": image_digest,
+        "git_revision": git_revision,
+        "executor_policy_digest": executor_policy_digest,
+    }
+
+
+def validate_track_agent_manifest(
+    track: str, agent_manifest: Mapping[str, Any]
+) -> None:
+    if track not in {"fixed_harness", "open_team"}:
+        raise BundleError("track must be fixed_harness or open_team")
+    roles = agent_manifest.get("roles")
+    if track == "fixed_harness" and (
+        not isinstance(roles, Mapping) or len(set(roles.values())) != 1
+    ):
+        raise BundleError("fixed_harness requires one model configuration")
 
 
 @dataclass(slots=True)
@@ -134,6 +361,7 @@ class RunResult:
     output_dir: Path | None = None
     trace_path: Path | None = None
     manifest_path: Path | None = None
+    diagnostic_replay: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         token_usage = self.model_metadata.get("token_usage")
@@ -177,6 +405,7 @@ class RunResult:
             "output_dir": str(self.output_dir) if self.output_dir else None,
             "trace_path": str(self.trace_path) if self.trace_path else None,
             "manifest_path": str(self.manifest_path) if self.manifest_path else None,
+            "diagnostic_replay": self.diagnostic_replay,
         }
 
 
@@ -1041,8 +1270,6 @@ def _checkpoint_models(bundle: WorldBundle) -> tuple[Checkpoint, ...]:
                     required_roles=tuple(
                         str(item) for item in raw.get("required_roles", ROLE_ORDER)
                     ),
-                    max_tool_calls=int(raw.get("max_tool_calls", 64)),
-                    max_turns=int(raw.get("max_turns", 128)),
                     terminal=bool(raw.get("terminal", False)),
                     released_event_ids=tuple(
                         str(item) for item in raw.get("released_event_ids", ())
@@ -1096,8 +1323,6 @@ def _checkpoint_models(bundle: WorldBundle) -> tuple[Checkpoint, ...]:
                     if item.get("artifact_id")
                 ),
                 required_roles=ROLE_ORDER,
-                max_tool_calls=64,
-                max_turns=128,
                 terminal=index == len(ids) - 1,
                 released_event_ids=tuple(
                     str(item.get("event_id"))
@@ -1213,16 +1438,18 @@ def _manifest_values(
     team_id: str,
     seed: int,
     limits: RunLimits,
+    agent_manifest: Mapping[str, Any],
+    environment_manifest: Mapping[str, Any],
     stakeholder_seeds: Sequence[int],
     stakeholder_model_digest: str | None,
     stakeholder_prompt_hash: str | None,
+    stakeholder_timeout_seconds: float | None,
     stakeholder_seed: int | None = None,
 ) -> RunManifest:
     source = bundle.manifest
     digest = _digest_bundle(bundle)
     rubric_hash = stable_hash(_json(bundle.rubric_path))
     oracle_hash = stable_hash(_json(bundle.oracle_path)) if bundle.oracle_path else None
-    role_agents = {role: team_id for role in ROLE_ORDER}
     return RunManifest.from_dict(
         {
             "run_id": run_id,
@@ -1238,7 +1465,7 @@ def _manifest_values(
             "rubric_hash": rubric_hash,
             "oracle_hash": oracle_hash,
             "seed": seed,
-            "agent_manifest": {"roles": role_agents},
+            "agent_manifest": dict(agent_manifest),
             "stakeholder_manifest": {
                 "model_id": "subprocess"
                 if stakeholder_model_digest
@@ -1250,6 +1477,7 @@ def _manifest_values(
                 if stakeholder_seed is None
                 else stakeholder_seed,
                 "official_seeds": list(stakeholder_seeds),
+                "timeout_seconds": stakeholder_timeout_seconds,
             },
             "limits": {
                 "tool_calls_per_checkpoint": limits.tool_calls_per_checkpoint,
@@ -1257,11 +1485,7 @@ def _manifest_values(
                 "timeout_seconds": limits.timeout_seconds,
                 "retries": limits.retries,
             },
-            "environment": {
-                "runtime_version": "python-3.14",
-                "image_digest": _sha256(b"edlb-local"),
-                "git_revision": os.environ.get("EDLB_GIT_REVISION", "0000000"),
-            },
+            "environment": dict(environment_manifest),
             "started_at": _timestamp(
                 source.get(
                     "start_at", source.get("start_date", "1970-01-01T00:00:00+00:00")
@@ -1501,13 +1725,15 @@ def open_world(
     seed: int | None = None,
     stakeholder_seeds: Sequence[int] | None = None,
     limits: RunLimits | None = None,
+    agent_manifest: Mapping[str, Any] | None = None,
+    environment_manifest: Mapping[str, Any] | None = None,
     db_path: str | Path = ":memory:",
     trace_path: str | Path | None = None,
     allow_private: bool = False,
     stakeholder_realizer_command: Sequence[str] | None = None,
     stakeholder_model_digest: str | None = None,
     stakeholder_prompt_hash: str | None = None,
-    stakeholder_timeout_seconds: float = 30.0,
+    stakeholder_timeout_seconds: float | None = None,
     stakeholder_seed: int | None = None,
 ) -> RunEngine:
     world = (
@@ -1521,6 +1747,9 @@ def open_world(
         or f"run-{hashlib.sha256(world.world_id.encode('utf-8')).hexdigest()[:24]}"
     )
     actual_seed = int(seed if seed is not None else world.manifest.get("seed", 0))
+    actual_agent_manifest = normalize_agent_manifest(agent_manifest)
+    validate_track_agent_manifest(track, actual_agent_manifest)
+    actual_environment_manifest = normalize_environment_manifest(environment_manifest)
     official_seeds = normalize_official_seeds(stakeholder_seeds, actual_seed)
     if stakeholder_realizer_command is not None and (
         stakeholder_model_digest is None or stakeholder_prompt_hash is None
@@ -1535,9 +1764,12 @@ def open_world(
         team_id,
         actual_seed,
         actual_limits,
+        actual_agent_manifest,
+        actual_environment_manifest,
         official_seeds,
         stakeholder_model_digest,
         stakeholder_prompt_hash,
+        stakeholder_timeout_seconds,
         stakeholder_seed,
     )
     scenario = _scenario_model(world)
@@ -1566,6 +1798,17 @@ def _wire(message: Message, allow_system: bool = False) -> str:
         sort_keys=True,
         separators=(",", ":"),
     )
+
+
+def _decode_protocol_line(raw_line: bytes) -> Message:
+    if len(raw_line) > MAX_PROTOCOL_MESSAGE_BYTES:
+        raise ProtocolViolation(
+            f"JSONL message exceeds the {MAX_PROTOCOL_MESSAGE_BYTES}-byte transport ceiling"
+        )
+    try:
+        return decode(raw_line.decode("utf-8"))
+    except (UnicodeDecodeError, ProtocolError) as exc:
+        raise ProtocolViolation(str(exc)) from exc
 
 
 def _message(
@@ -1620,10 +1863,10 @@ def _error(value: Any) -> dict[str, str]:
     if isinstance(value, Mapping):
         return {
             "code": str(value.get("code", "tool_error")),
-            "message": str(value.get("message", "tool failed"))[:1000],
+            "message": str(value.get("message", "tool failed")),
         }
     text = str(value)
-    return {"code": "tool_error", "message": text[:1000] or "tool failed"}
+    return {"code": "tool_error", "message": text or "tool failed"}
 
 
 def _result_value(
@@ -1824,7 +2067,7 @@ def _direct_tool(
     if tool == "crm":
         if action == "search":
             return engine.crm_search(
-                role, str(args.get("query", "")), int(args.get("limit", 50))
+                role, str(args.get("query", "")), cast(int | None, args.get("limit"))
             )
         if action == "read":
             return engine.crm_read(role, str(args["record_id"]))
@@ -1844,7 +2087,7 @@ def _direct_tool(
                 role,
                 str(args.get("query", "")),
                 args.get("channel"),
-                int(args.get("limit", 50)),
+                cast(int | None, args.get("limit")),
             )
         if action == "read":
             return engine.communications_read(role, str(args["message_id"]))
@@ -1862,7 +2105,7 @@ def _direct_tool(
             )
     if tool == "calendar":
         if action == "list":
-            return engine.calendar_list(role, int(args.get("limit", 50)))
+            return engine.calendar_list(role, cast(int | None, args.get("limit")))
         if action == "schedule":
             return engine.calendar_schedule(
                 role,
@@ -1898,7 +2141,7 @@ def _direct_tool(
     if tool == "documents":
         if action == "search":
             return engine.documents_search(
-                role, str(args.get("query", "")), int(args.get("limit", 50))
+                role, str(args.get("query", "")), cast(int | None, args.get("limit"))
             )
         if action == "read":
             return engine.documents_read(role, str(args["document_id"]))
@@ -1930,7 +2173,7 @@ def _direct_tool(
     if tool == "approvals":
         if action == "list":
             return engine.approvals_list(
-                role, args.get("status"), int(args.get("limit", 50))
+                role, args.get("status"), cast(int | None, args.get("limit"))
             )
         if action == "request":
             return engine.approvals_request(
@@ -1951,15 +2194,15 @@ def _direct_tool(
     if tool == "web":
         if action == "search":
             return engine.web_search(
-                role, str(args.get("query", "")), int(args.get("limit", 50))
+                role, str(args.get("query", "")), cast(int | None, args.get("limit"))
             )
         return engine.web_open(role, str(args["record_id"]))
     if tool == "team":
         if action == "inbox":
-            return engine.team_inbox(role, int(args.get("limit", 50)))
+            return engine.team_inbox(role, cast(int | None, args.get("limit")))
         if action == "search":
             return engine.team_search(
-                role, str(args.get("query", "")), int(args.get("limit", 50))
+                role, str(args.get("query", "")), cast(int | None, args.get("limit"))
             )
         return engine.team_send(
             role,
@@ -2102,7 +2345,7 @@ def _complete_run(
 
 def _start_payload(engine: RunEngine, limits: RunLimits) -> dict[str, Any]:
     checkpoint = _checkpoint(engine)
-    tool_cap, turn_cap = _checkpoint_caps(engine, limits)
+    tool_cap, turn_cap = _run_caps(limits)
     return {
         "protocol_version": PROTOCOL_VERSION,
         "track": engine.manifest.track,
@@ -2117,19 +2360,22 @@ def _start_payload(engine: RunEngine, limits: RunLimits) -> dict[str, Any]:
         "limits": {
             "tool_calls_per_checkpoint": tool_cap,
             "turns_per_checkpoint": turn_cap,
+            "timeout_seconds": limits.timeout_seconds,
             "retries": limits.retries,
         },
     }
 
 
-def _checkpoint_caps(engine: RunEngine, limits: RunLimits) -> tuple[int, int]:
-    checkpoint = _checkpoint(engine) or {}
-    tool_cap = checkpoint.get("max_tool_calls", limits.tool_calls_per_checkpoint)
-    turn_cap = checkpoint.get("max_turns", limits.turns_per_checkpoint)
-    return (
-        min(limits.tool_calls_per_checkpoint, int(tool_cap)),
-        min(limits.turns_per_checkpoint, int(turn_cap)),
-    )
+def _run_caps(limits: RunLimits) -> tuple[int | None, int | None]:
+    return limits.tool_calls_per_checkpoint, limits.turns_per_checkpoint
+
+
+def _limit_exceeded(used: int, limit: int | None) -> bool:
+    return limit is not None and used > limit
+
+
+def _limit_reached(used: int, limit: int | None) -> bool:
+    return limit is not None and used >= limit
 
 
 def _observation(
@@ -2141,7 +2387,7 @@ def _observation(
     observation_token: str,
 ) -> Message:
     checkpoint = _checkpoint(engine) or {}
-    tool_cap, turn_cap = _checkpoint_caps(engine, limits)
+    tool_cap, turn_cap = _run_caps(limits)
     payload = {
         "current_time": engine.current_time,
         "checkpoint": {
@@ -2261,11 +2507,20 @@ class OpenTeamRunner:
         output_dir: str | Path | None = None,
         dispatcher: Any = None,
     ) -> None:
+        if engine.manifest.track != "open_team":
+            raise BundleError("OpenTeamRunner requires an open_team manifest")
+        normalize_agent_manifest(engine.manifest.agent_manifest, require_resolved=True)
+        validate_track_agent_manifest(
+            engine.manifest.track, engine.manifest.agent_manifest
+        )
+        normalize_environment_manifest(
+            engine.manifest.environment, require_resolved=True
+        )
         self.engine = engine
         self.command = tuple(
             shlex.split(command) if isinstance(command, str) else command
         )
-        self.limits = limits or RunLimits()
+        self.limits = _bound_run_limits(engine, limits)
         self.output_dir = output_dir
         self.dispatcher = dispatcher
         self.sequence = 0
@@ -2274,17 +2529,50 @@ class OpenTeamRunner:
         self.calls_this_checkpoint = 0
         self.turns_this_checkpoint = 0
         self.observation_token = secrets.token_urlsafe(24)
+        self.response_deadline: float | None = None
         self.result = RunResult(
             engine.manifest.run_id, engine.manifest.world_id, "open_team", "running"
         )
 
+    def _reset_response_deadline(self) -> None:
+        self.response_deadline = (
+            None
+            if self.limits.timeout_seconds is None
+            else time.monotonic() + self.limits.timeout_seconds
+        )
+
+    def _response_timeout(self) -> float | None:
+        return (
+            None
+            if self.response_deadline is None
+            else max(0.0, self.response_deadline - time.monotonic())
+        )
+
     def _send(self, stream: Any, message: Message, allow_system: bool = False) -> None:
         value = _wire(message, allow_system=allow_system) + "\n"
-        try:
-            stream.write(value)
-        except TypeError:
-            stream.write(value.encode("utf-8"))
-        stream.flush()
+        if self.limits.timeout_seconds is None:
+            try:
+                stream.write(value)
+            except TypeError:
+                stream.write(value.encode("utf-8"))
+            stream.flush()
+            return
+        payload = memoryview(value.encode("utf-8"))
+        file_descriptor = stream.fileno()
+        sent = 0
+        with selectors.DefaultSelector() as writer:
+            writer.register(file_descriptor, selectors.EVENT_WRITE)
+            while sent < len(payload):
+                try:
+                    written = os.write(file_descriptor, payload[sent:])
+                except BlockingIOError:
+                    written = 0
+                if written:
+                    sent += written
+                    continue
+                timeout = self._response_timeout()
+                if timeout == 0.0 or not writer.select(timeout):
+                    raise AgentProcessError("agent response timed out")
 
     def _next_system(
         self, kind: str, payload: Mapping[str, Any], role: str = "system"
@@ -2436,8 +2724,11 @@ class OpenTeamRunner:
                     else "agent process could not start"
                 )
             assert process.stdin is not None and process.stdout is not None
+            if self.limits.timeout_seconds is not None:
+                os.set_blocking(process.stdin.fileno(), False)
             selector = selectors.DefaultSelector()
             selector.register(process.stdout, selectors.EVENT_READ)
+            self._reset_response_deadline()
             self._send(
                 process.stdin,
                 self._next_system("start", _start_payload(self.engine, self.limits)),
@@ -2457,29 +2748,35 @@ class OpenTeamRunner:
                 )
                 self.sequence += 1
             while self.result.status == "running":
-                ready = selector.select(self.limits.timeout_seconds)
+                timeout = self._response_timeout()
+                if timeout == 0.0:
+                    raise AgentProcessError("agent response timed out")
+                ready = selector.select(timeout)
                 if not ready:
+                    if timeout is None:
+                        continue
                     raise AgentProcessError("agent response timed out")
                 for key, _ in ready:
                     fileobj = key.fileobj
                     fd = fileobj if isinstance(fileobj, int) else fileobj.fileno()
                     observation_epoch = self.engine.current_time
-                    chunk = os.read(fd, 65536)
+                    chunk = os.read(
+                        fd,
+                        min(65536, MAX_PROTOCOL_MESSAGE_BYTES + 1 - len(stdout_buffer)),
+                    )
                     if not chunk:
-                        if process.poll() is not None:
-                            raise AgentProcessError(
-                                "agent process exited before run_end"
-                            )
-                        continue
+                        remaining = self._response_timeout()
+                        try:
+                            process.wait(timeout=remaining)
+                        except subprocess.TimeoutExpired as exc:
+                            raise AgentProcessError("agent response timed out") from exc
+                        raise AgentProcessError("agent process exited before run_end")
                     stdout_buffer += chunk
                     while b"\n" in stdout_buffer:
                         raw_line, stdout_buffer = stdout_buffer.split(b"\n", 1)
                         if not raw_line.strip():
                             continue
-                        try:
-                            message = decode(raw_line.decode("utf-8"))
-                        except (UnicodeDecodeError, ProtocolError) as exc:
-                            raise ProtocolViolation(str(exc)) from exc
+                        message = _decode_protocol_line(raw_line)
                         if message.run_id != self.engine.manifest.run_id:
                             raise ProtocolViolation(
                                 "message run_id does not match the active run"
@@ -2528,18 +2825,21 @@ class OpenTeamRunner:
                             raise ProtocolViolation(
                                 "message belongs to an earlier observation epoch"
                             )
+                        response_window_reset = False
                         self.result.turns += 1
                         self.turns_this_checkpoint += 1
-                        call_cap, turn_cap = _checkpoint_caps(self.engine, self.limits)
-                        if self.turns_this_checkpoint > turn_cap:
+                        call_cap, turn_cap = _run_caps(self.limits)
+                        if _limit_exceeded(self.turns_this_checkpoint, turn_cap):
+                            self._reset_response_deadline()
                             self._budget_advance(process.stdin)
                             continue
                         checkpoint_index = self.engine.current_checkpoint_index
                         if message.kind == "tool_call":
                             self.result.tool_calls += 1
                             self.calls_this_checkpoint += 1
-                            if self.calls_this_checkpoint > call_cap:
+                            if _limit_exceeded(self.calls_this_checkpoint, call_cap):
                                 self.result.invalid_actions += 1
+                                self._reset_response_deadline()
                                 self._send(
                                     process.stdin,
                                     self._tool_result(
@@ -2557,6 +2857,8 @@ class OpenTeamRunner:
                             ok, value, error = dispatch_tool(
                                 self.engine, message.role, message, self.dispatcher
                             )
+                            self._reset_response_deadline()
+                            response_window_reset = True
                             self._send(
                                 process.stdin,
                                 self._tool_result(message, ok, value, error),
@@ -2585,6 +2887,8 @@ class OpenTeamRunner:
                                 f"complete-{message.checkpoint_id}-{message.role}",
                             )
                             self.completed_roles.add(message.role)
+                            self._reset_response_deadline()
+                            response_window_reset = True
                             if self._advance_if_ready(process.stdin):
                                 self.result.status = "completed"
                         elif message.kind == "team_message":
@@ -2608,13 +2912,22 @@ class OpenTeamRunner:
                             and self.engine.status == "running"
                             and self.engine.current_checkpoint_index == checkpoint_index
                             and (
-                                self.calls_this_checkpoint >= call_cap
-                                or self.turns_this_checkpoint >= turn_cap
+                                _limit_reached(self.calls_this_checkpoint, call_cap)
+                                or _limit_reached(self.turns_this_checkpoint, turn_cap)
                             )
                         ):
+                            if not response_window_reset:
+                                self._reset_response_deadline()
+                                response_window_reset = True
                             self._budget_advance(process.stdin)
+                        if not response_window_reset:
+                            self._reset_response_deadline()
                         if self.result.status != "running":
                             break
+                    if len(stdout_buffer) > MAX_PROTOCOL_MESSAGE_BYTES:
+                        raise ProtocolViolation(
+                            f"JSONL message exceeds the {MAX_PROTOCOL_MESSAGE_BYTES}-byte transport ceiling"
+                        )
             if self.result.status == "running":
                 raise AgentProcessError("agent process ended without run_end")
         except (
@@ -2651,16 +2964,25 @@ class FixedHarnessScheduler:
         limits: RunLimits | None = None,
         output_dir: str | Path | None = None,
     ) -> None:
+        if engine.manifest.track != "fixed_harness":
+            raise BundleError("FixedHarnessScheduler requires a fixed_harness manifest")
+        normalize_agent_manifest(engine.manifest.agent_manifest, require_resolved=True)
+        validate_track_agent_manifest(
+            engine.manifest.track, engine.manifest.agent_manifest
+        )
+        normalize_environment_manifest(
+            engine.manifest.environment, require_resolved=True
+        )
         self.engine = engine
         self.adapter_command = tuple(
             shlex.split(adapter_command)
             if isinstance(adapter_command, str)
             else adapter_command
         )
-        self.limits = limits or RunLimits()
+        self.limits = _bound_run_limits(engine, limits)
         self.output_dir = output_dir
-        self.contexts: dict[str, deque[dict[str, Any]]] = {
-            role: deque(maxlen=24) for role in ROLE_ORDER
+        self.contexts: dict[str, list[dict[str, Any]]] = {
+            role: [] for role in ROLE_ORDER
         }
         self.last_sequences: dict[str, int] = {role: -1 for role in ROLE_ORDER}
         self.seen_alerts: dict[str, set[str]] = {role: set() for role in ROLE_ORDER}
@@ -2679,7 +3001,7 @@ class FixedHarnessScheduler:
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         checkpoint = _checkpoint(self.engine) or {}
         released_ids = {str(item) for item in checkpoint.get("released_event_ids", ())}
-        events = self.engine.events(role, limit=1000)
+        events = self.engine.events(role)
         if released_ids:
             events = [
                 item for item in events if str(item.get("event_id")) in released_ids
@@ -2692,7 +3014,7 @@ class FixedHarnessScheduler:
         self.seen_alerts[role].update(
             str(item.get("event_id")) for item in alerts if item.get("event_id")
         )
-        team_messages = self.engine.team_inbox(role, limit=1000)
+        team_messages = self.engine.team_inbox(role)
         unread = [
             item
             for item in team_messages
@@ -2705,7 +3027,7 @@ class FixedHarnessScheduler:
 
     def _request(self, role: str) -> list[Message]:
         alerts, unread_team_messages = self._activation(role)
-        call_cap, turn_cap = _checkpoint_caps(self.engine, self.limits)
+        call_cap, turn_cap = _run_caps(self.limits)
         observation_token = secrets.token_urlsafe(24)
         request = {
             "protocol_version": PROTOCOL_VERSION,
@@ -2743,25 +3065,73 @@ class FixedHarnessScheduler:
         last_error: Exception | None = None
         for attempt in range(self.limits.retries + 1):
             started = time.monotonic()
+            process: subprocess.Popen[bytes] | None = None
+            selector: selectors.BaseSelector | None = None
             try:
-                completed = subprocess.run(
-                    self.adapter_command,
-                    input=json.dumps(request, ensure_ascii=False) + "\n",
-                    capture_output=True,
-                    text=True,
-                    timeout=self.limits.timeout_seconds,
-                    check=False,
-                )
-                self.result.latency_ms += int((time.monotonic() - started) * 1000)
-                if completed.returncode != 0:
-                    raise AgentProcessError(
-                        completed.stderr.strip()
-                        or f"adapter exited {completed.returncode}"
+                with tempfile.TemporaryFile() as request_stream:
+                    request_stream.write(
+                        (json.dumps(request, ensure_ascii=False) + "\n").encode("utf-8")
                     )
-                messages: list[Message] = []
-                for line in completed.stdout.splitlines():
-                    if line.strip():
-                        messages.append(decode(line))
+                    request_stream.seek(0)
+                    process = subprocess.Popen(
+                        self.adapter_command,
+                        stdin=request_stream,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,
+                    )
+                    assert process.stdout is not None
+                    selector = selectors.DefaultSelector()
+                    selector.register(process.stdout, selectors.EVENT_READ)
+                    deadline = (
+                        None
+                        if self.limits.timeout_seconds is None
+                        else started + self.limits.timeout_seconds
+                    )
+                    stdout_buffer = b""
+                    messages: list[Message] = []
+                    while True:
+                        timeout = (
+                            None
+                            if deadline is None
+                            else max(0.0, deadline - time.monotonic())
+                        )
+                        if timeout == 0.0:
+                            raise subprocess.TimeoutExpired(self.adapter_command, 0.0)
+                        if not selector.select(timeout):
+                            if timeout is None:
+                                continue
+                            raise subprocess.TimeoutExpired(
+                                self.adapter_command, timeout
+                            )
+                        chunk = os.read(
+                            process.stdout.fileno(),
+                            min(
+                                65536,
+                                MAX_PROTOCOL_MESSAGE_BYTES + 1 - len(stdout_buffer),
+                            ),
+                        )
+                        if not chunk:
+                            break
+                        stdout_buffer += chunk
+                        while b"\n" in stdout_buffer:
+                            raw_line, stdout_buffer = stdout_buffer.split(b"\n", 1)
+                            if raw_line.strip():
+                                messages.append(_decode_protocol_line(raw_line))
+                        if len(stdout_buffer) > MAX_PROTOCOL_MESSAGE_BYTES:
+                            raise ProtocolViolation(
+                                f"JSONL message exceeds the {MAX_PROTOCOL_MESSAGE_BYTES}-byte transport ceiling"
+                            )
+                    if stdout_buffer.strip():
+                        messages.append(_decode_protocol_line(stdout_buffer))
+                    timeout = (
+                        None
+                        if deadline is None
+                        else max(0.0, deadline - time.monotonic())
+                    )
+                    returncode = process.wait(timeout=timeout)
+                self.result.latency_ms += int((time.monotonic() - started) * 1000)
+                if returncode != 0:
+                    raise AgentProcessError(f"adapter exited {returncode}")
                 if not messages:
                     return []
                 for message in messages:
@@ -2788,12 +3158,25 @@ class FixedHarnessScheduler:
                 OSError,
                 ProtocolError,
                 RuntimeError,
+                subprocess.TimeoutExpired,
                 TypeError,
                 ValueError,
             ) as exc:
                 last_error = exc
                 if attempt < self.limits.retries:
                     self.result.retries += 1
+            finally:
+                if selector is not None:
+                    selector.close()
+                if process is not None:
+                    if process.poll() is None:
+                        process.kill()
+                    try:
+                        process.wait(timeout=2)
+                    except subprocess.TimeoutExpired:
+                        pass
+                    if process.stdout is not None:
+                        process.stdout.close()
         raise AgentProcessError(str(last_error) if last_error else "adapter failed")
 
     def _append(self, role: str, message: Mapping[str, Any]) -> None:
@@ -2802,35 +3185,14 @@ class FixedHarnessScheduler:
     def _process(
         self, role: str, messages: Iterable[Message], completed_roles: set[str]
     ) -> bool:
-        call_cap, turn_cap = _checkpoint_caps(self.engine, self.limits)
+        call_cap, turn_cap = _run_caps(self.limits)
         for message in messages:
             checkpoint_index = self.engine.current_checkpoint_index
-            self.result.turns += 1
-            self.turns_this_checkpoint += 1
             self._append(role, _context_message(message))
-            if self.turns_this_checkpoint > turn_cap:
-                if message.kind == "tool_call":
-                    result_message = _message(
-                        run_id=self.engine.manifest.run_id,
-                        sequence=self.sequence + 1,
-                        occurred_at=self.engine.current_time,
-                        kind="tool_result",
-                        role=role,
-                        message_id=f"{message.message_id}.result",
-                        call_id=message.message_id,
-                        ok=False,
-                        error={
-                            "code": "budget_exceeded",
-                            "message": "turn budget exhausted for this checkpoint",
-                        },
-                    )
-                    self.sequence += 1
-                    self._append(role, result_message.to_dict())
-                return True
             if message.kind == "tool_call":
                 self.result.tool_calls += 1
                 self.calls_this_checkpoint += 1
-                if self.calls_this_checkpoint > call_cap:
+                if _limit_exceeded(self.calls_this_checkpoint, call_cap):
                     result_message = _message(
                         run_id=self.engine.manifest.run_id,
                         sequence=self.sequence + 1,
@@ -2905,12 +3267,9 @@ class FixedHarnessScheduler:
                 or self.engine.status != "running"
             ):
                 return False
-            if (
-                self.calls_this_checkpoint >= call_cap
-                or self.turns_this_checkpoint >= turn_cap
-            ):
+            if _limit_reached(self.calls_this_checkpoint, call_cap):
                 return True
-        return False
+        return _limit_reached(self.turns_this_checkpoint, turn_cap)
 
     def run(self) -> RunResult:
         started = time.monotonic()
@@ -2922,37 +3281,53 @@ class FixedHarnessScheduler:
                 checkpoint = _checkpoint(self.engine)
                 if checkpoint is None:
                     raise RunnerError("world has no active checkpoint")
-                call_cap, turn_cap = _checkpoint_caps(self.engine, self.limits)
+                call_cap, turn_cap = _run_caps(self.limits)
                 completed_roles: set[str] = set()
                 self.calls_this_checkpoint = 0
                 self.turns_this_checkpoint = 0
                 budget_exhausted = False
-                for role in ROLE_ORDER:
-                    role_turns = 0
-                    while (
-                        role_turns < turn_cap
-                        and role not in completed_roles
-                        and self.turns_this_checkpoint < turn_cap
-                    ):
-                        role_turns += 1
-                        messages = self._request(role)
-                        if not messages:
-                            break
-                        before = len(completed_roles)
-                        if self._process(role, messages, completed_roles):
-                            budget_exhausted = True
-                            break
-                        if len(completed_roles) == before and all(
-                            message.kind in {"tool_call", "team_message"}
-                            for message in messages
-                        ):
-                            continue
-                        break
-                    if budget_exhausted:
-                        break
-                    if self.turns_this_checkpoint >= turn_cap:
-                        break
                 required = set(checkpoint.get("required_roles", ROLE_ORDER))
+                checkpoint_index = self.engine.current_checkpoint_index
+                while (
+                    not required.issubset(completed_roles)
+                    and self.engine.status == "running"
+                    and self.engine.current_checkpoint_index == checkpoint_index
+                    and not budget_exhausted
+                ):
+                    for role in ROLE_ORDER:
+                        if role in completed_roles:
+                            continue
+                        while role not in completed_roles:
+                            if _limit_reached(
+                                self.calls_this_checkpoint, call_cap
+                            ) or _limit_reached(self.turns_this_checkpoint, turn_cap):
+                                budget_exhausted = True
+                                break
+                            self.result.turns += 1
+                            self.turns_this_checkpoint += 1
+                            messages = self._request(role)
+                            if not messages:
+                                budget_exhausted = _limit_reached(
+                                    self.turns_this_checkpoint, turn_cap
+                                )
+                                break
+                            before = len(completed_roles)
+                            if self._process(role, messages, completed_roles):
+                                budget_exhausted = True
+                                break
+                            if len(completed_roles) == before and all(
+                                message.kind in {"tool_call", "team_message"}
+                                for message in messages
+                            ):
+                                continue
+                            break
+                        if (
+                            budget_exhausted
+                            or required.issubset(completed_roles)
+                            or self.engine.status != "running"
+                            or self.engine.current_checkpoint_index != checkpoint_index
+                        ):
+                            break
                 if required.issubset(completed_roles):
                     if checkpoint.get("terminal"):
                         _complete_run(
@@ -2973,8 +3348,8 @@ class FixedHarnessScheduler:
                     _advance(
                         self.engine,
                         budget_exhausted
-                        or self.calls_this_checkpoint >= call_cap
-                        or self.turns_this_checkpoint >= turn_cap,
+                        or _limit_reached(self.calls_this_checkpoint, call_cap)
+                        or _limit_reached(self.turns_this_checkpoint, turn_cap),
                         f"advance-budget-{self.engine.current_checkpoint_index + 1}",
                     )
                 if self.engine.status != "running":
@@ -3074,6 +3449,15 @@ def _validate_replay_rows(
                     raise ProtocolViolation(
                         "trace start manifest fingerprint is invalid"
                     )
+                source_environment = source.get("environment")
+                if not isinstance(source_environment, Mapping):
+                    raise ProtocolViolation("trace source environment is invalid")
+                try:
+                    normalize_environment_manifest(source_environment)
+                except BundleError as exc:
+                    raise ProtocolViolation(
+                        f"trace source environment is invalid: {exc}"
+                    ) from exc
                 if source != expected_manifest:
                     raise ProtocolViolation(
                         "trace source manifest does not match the active run"
@@ -3114,11 +3498,69 @@ def _validate_replay_rows(
                 raise ProtocolViolation(
                     "protocol source track does not match the active track"
                 )
+            configuration_fields = {
+                "agent_manifest",
+                "environment",
+                "limits",
+                "configuration_hash",
+            }
+            if configuration_fields & payload.keys():
+                agent_manifest = payload.get("agent_manifest")
+                environment = payload.get("environment")
+                limits = payload.get("limits")
+                if not isinstance(agent_manifest, Mapping) or not isinstance(
+                    limits, Mapping
+                ):
+                    raise ProtocolViolation(
+                        "protocol source configuration is incomplete"
+                    )
+                try:
+                    normalized_agent = normalize_agent_manifest(
+                        agent_manifest, require_resolved=True
+                    )
+                    normalized_environment = (
+                        normalize_environment_manifest(environment)
+                        if isinstance(environment, Mapping)
+                        else None
+                    )
+                    RunLimits(
+                        limits.get("tool_calls_per_checkpoint"),
+                        limits.get("turns_per_checkpoint"),
+                        limits.get("timeout_seconds"),
+                        limits.get("retries", 0),
+                    )
+                except (BundleError, ValueError) as exc:
+                    raise ProtocolViolation(
+                        f"invalid protocol source configuration: {exc}"
+                    ) from exc
+                source_configuration = {
+                    "agent_manifest": normalized_agent,
+                    "limits": dict(limits),
+                }
+                if normalized_environment is not None:
+                    source_configuration["environment"] = normalized_environment
+                expected_hash = stable_hash(source_configuration)
+                if payload.get("configuration_hash") != expected_hash:
+                    raise ProtocolViolation(
+                        "protocol source configuration hash is invalid"
+                    )
+                if (
+                    normalized_agent != engine.manifest.agent_manifest
+                    or dict(limits) != dict(engine.manifest.limits)
+                    or (
+                        normalized_environment is not None
+                        and normalized_environment != engine.manifest.environment
+                    )
+                ):
+                    raise ProtocolViolation(
+                        "protocol source configuration does not match the active run"
+                    )
             source_manifest = {
                 "run_id": message.run_id,
                 "world_id": world_id,
                 "track": track,
                 "protocol_version": message.protocol_version,
+                **{key: payload[key] for key in configuration_fields if key in payload},
             }
         validated_messages.append(dict(row))
         previous_sequence = message.sequence
@@ -3155,6 +3597,7 @@ def replay_trace(
         engine.manifest.world_id,
         engine.manifest.track,
         "running",
+        diagnostic_replay=True,
     )
     completed_roles: set[str] = set()
     derived_checkpoint_keys = {
@@ -3420,15 +3863,22 @@ def run_replicates(
     seed: int | None = None,
     stakeholder_seeds: Sequence[int] | None = None,
     limits: RunLimits | None = None,
+    agent_manifest: Mapping[str, Any] | None = None,
+    environment_manifest: Mapping[str, Any] | None = None,
     output_dir: str | Path | None = None,
     allow_private: bool = False,
 ) -> tuple[RunResult, ...]:
     if trials < 1:
         raise ValueError("trials must be positive")
-    if trials > 3:
-        raise ValueError("official replicates support at most three trials")
     if track not in {"open_team", "fixed_harness"}:
         raise ValueError("track must be open_team or fixed_harness")
+    actual_agent_manifest = normalize_agent_manifest(
+        agent_manifest, require_resolved=True
+    )
+    validate_track_agent_manifest(track, actual_agent_manifest)
+    actual_environment_manifest = normalize_environment_manifest(
+        environment_manifest, require_resolved=True
+    )
     world = (
         bundle
         if isinstance(bundle, WorldBundle)
@@ -3437,6 +3887,9 @@ def run_replicates(
     actual_limits = limits or RunLimits()
     base_seed = int(seed if seed is not None else world.manifest.get("seed", 0))
     official_seeds = normalize_official_seeds(stakeholder_seeds, base_seed)
+    replicate_seeds = official_seeds + tuple(
+        max(official_seeds) + index for index in range(1, max(0, trials - 3) + 1)
+    )
     root = Path(output_dir) if output_dir is not None else None
     results: list[RunResult] = []
     for trial in range(1, trials + 1):
@@ -3454,13 +3907,15 @@ def run_replicates(
             run_id=run_id,
             track=track,
             team_id=team_id,
-            seed=official_seeds[trial - 1],
+            seed=replicate_seeds[trial - 1],
             limits=actual_limits,
+            agent_manifest=actual_agent_manifest,
+            environment_manifest=actual_environment_manifest,
             db_path=db_path,
             trace_path=trace_path,
             allow_private=allow_private,
             stakeholder_seeds=official_seeds,
-            stakeholder_seed=official_seeds[trial - 1],
+            stakeholder_seed=official_seeds[(trial - 1) % len(official_seeds)],
         )
         try:
             if track == "fixed_harness":
@@ -3489,8 +3944,11 @@ __all__ = [
     "RunResult",
     "RunnerError",
     "WorldBundle",
+    "deterministic_agent_manifest",
     "dispatch_tool",
     "load_world_bundle",
+    "normalize_agent_manifest",
+    "normalize_environment_manifest",
     "open_world",
     "replay_trace",
     "run_fixed_harness",
@@ -3498,5 +3956,6 @@ __all__ = [
     "run_replicates",
     "tool_schemas",
     "validate_dataset",
+    "validate_track_agent_manifest",
     "validate_world_bundle",
 ]

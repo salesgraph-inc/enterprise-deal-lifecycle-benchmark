@@ -9,7 +9,7 @@ gates, not benchmark results.
 | Gate | Status | Evidence |
 | --- | --- | --- |
 | Contract and schema review | in_progress | Normative schemas and Draft 2020-12 schema tests exist; formal reviewer sign-off is absent |
-| Human review of pilot worlds | pending | Expert recruitment and the 12-world model budget pilot are not complete |
+| Human review of pilot worlds | pending | Expert recruitment and the 12-world resource characterization pilot are not complete |
 | Human review of 72 release worlds | pending | Two blinded expert reviews per world are not complete |
 | Automated invariant checks | passed | Authoring and private validation records report no generation errors; runtime and schema tests are available |
 | Public-boundary and privacy checks | in_progress | Generator checks public projections and synthetic fields; complete release scan is pending |

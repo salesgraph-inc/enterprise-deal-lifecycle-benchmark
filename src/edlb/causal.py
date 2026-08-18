@@ -463,7 +463,7 @@ def template_realization(packet: Mapping[str, Any]) -> str:
 def realize(
     packet: Mapping[str, Any],
     command: Sequence[str] | None = None,
-    timeout_seconds: float = 30.0,
+    timeout_seconds: float | None = None,
 ) -> str:
     if command is None:
         return template_realization(packet)

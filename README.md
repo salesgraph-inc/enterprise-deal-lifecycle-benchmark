@@ -44,17 +44,18 @@ Lossless trace paths for `team_message` and `yield`, snapshot and state-diff
 exports, replay payload and hash validation, state and score hashes, and
 aggregate dataset validation are implemented.
 
-The schemas in src/edlb/schemas/ are normative for v1. Fields not defined by a schema
-are not part of the public contract. Dates use RFC 3339 date-time strings.
-Money uses integer minor units and an ISO 4217 currency code. IDs are stable,
-lowercase strings.
+The schemas in src/edlb/schemas/ are normative for v1. Fields not defined by a
+schema are not part of the public contract. Dates use RFC 3339 date-time
+strings. Money uses integer minor units and an ISO 4217 currency code. IDs are
+stable, lowercase strings.
 
 ## Runtime and CLI
 
 src/edlb/cli.py exposes validate, generate, run, replay, grade, report, and
 podman commands. src/edlb/runner.py provides fixed-harness and open-team
-execution, limits, trace capture, and replay. src/edlb/causal.py provides
-event-first causal interventions and constrained realization checks.
+execution, optional operator controls, trace capture, and replay.
+src/edlb/causal.py provides event-first causal interventions and constrained
+realization checks.
 src/edlb/grading.py, src/edlb/statistics.py, and src/edlb/reporting.py provide
 deterministic grading, reliability calculations, and reports.
 
@@ -63,6 +64,46 @@ exact-byte SHA-256 manifest hashing, HMAC result signing, immutable
 network-disabled Podman isolation, and RevOps-only CRM merge. Focused tests
 cover these controls. End-to-end blind evaluator security evidence and
 container endpoint allowlisting remain pending.
+
+## Resource policy
+
+EDLB has no implicit model or execution budget. By default it sets no token
+caps or temperature, top-p, reasoning-effort, or cost settings, and has no
+default checkpoint tool-call, turn, response-time, total wall-time,
+context-history, or retrieval-result cap. Open Team launch retries and Fixed
+Harness activation retries default to zero. A resolved external manifest pins
+each model digest and prompt hash, declares provider settings, and states whether
+unspecified settings use provider defaults. EDLB binds that declaration to
+configuration and manifest hashes. Adapter-reported usage, latency, and cost are
+recorded only when supplied.
+
+External execution also requires `--environment-manifest`. Its resolved JSON
+record contains the exact `runtime_version`, immutable `image_digest`, and full
+`git_revision`. It also contains an `executor_policy_digest` covering effective
+inherited rlimits and other evaluator host and job policies. The digest records
+policy and creates no resource cap. The environment is configuration-bound.
+Local runs without that provenance remain runnable but unofficial.
+
+When a system relies on provider defaults, its resolved manifest must pin a
+SHA-256 digest of the canonical provider-default and API configuration. A
+changed default configuration therefore changes the EDLB configuration hash.
+If no provider defaults are used, the digest may be null.
+
+The implemented operator controls are per-checkpoint tool calls, per-checkpoint
+turns, per-response timeout, and track-scoped retries. For nullable controls,
+null means unlimited. Direct `open_world` setup defaults to unresolved
+configuration. External execution requires resolved agent and environment
+manifests, and aggregates containing unresolved runs are marked unofficial.
+Compare results only when the execution policy and configuration are
+identical. Official fixed-harness and open-team scoring still uses exactly
+three trials per system and world. This follows the
+[Tau2 CLI reference](https://github.com/sierra-research/tau2-bench/blob/main/docs/cli-reference.md),
+which treats run controls as explicit operator settings.
+
+Business, authorization, and temporal rules remain part of the benchmark.
+Protocol trust-boundary validation, blind submission quotas and canaries,
+network isolation, and declared evaluator safety policy remain security
+controls, not model or execution budgets.
 
 The generated packs are stored at:
 
@@ -96,7 +137,7 @@ Automated privacy fixtures reject live domains, non-reserved phone numbers,
 configured copied phrases and entities, and duplicate person identities. These
 fixtures are list-based and do not establish a global real-person or copy scan.
 
-The final machine gate passes 137 functional tests. All 48 checked
+The final machine gate passes the functional test suite. All 48 checked
 reference traces match their oracle and score EI 100.0 with Strict Cycle Pass;
 all 16 closed-won traces ablate to `no_decision`.
 
@@ -126,7 +167,7 @@ machine checks:
 - Formal trademark and legal clearance.
 - Expert recruitment and two blinded expert reviews per world.
 - Stakeholder-model selection and model/judge calibration.
-- The 12-world model budget pilot.
+- The 12-world resource characterization pilot.
 - Official three-trial model runs.
 - Container endpoint allowlisting.
 - End-to-end blind evaluator security evidence against the release evaluator.

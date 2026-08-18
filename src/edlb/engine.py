@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import sqlite3
+import sys
 import tempfile
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import UTC, datetime
@@ -127,6 +129,14 @@ def _parse_time(value: str) -> datetime:
 
 def _time_value(value: str) -> float:
     return _parse_time(value).timestamp()
+
+
+def _validated_limit(limit: int | None) -> int | None:
+    if limit is None:
+        return None
+    if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1:
+        raise EngineError("limit must be a positive integer or null")
+    return limit
 
 
 def _iso(value: datetime) -> str:
@@ -271,7 +281,7 @@ class RunEngine:
         grants: Iterable[RoleGrant] = (),
         trace_path: str | Path | None = None,
         stakeholder_realizer_command: Sequence[str] | None = None,
-        stakeholder_timeout_seconds: float = 30.0,
+        stakeholder_timeout_seconds: float | None = None,
     ) -> None:
         self.db_path = str(db_path)
         self.trace_path = Path(trace_path) if trace_path is not None else None
@@ -286,7 +296,12 @@ class RunEngine:
             if stakeholder_realizer_command is not None
             else None
         )
-        if stakeholder_timeout_seconds <= 0:
+        if stakeholder_timeout_seconds is not None and (
+            not isinstance(stakeholder_timeout_seconds, (int, float))
+            or isinstance(stakeholder_timeout_seconds, bool)
+            or not math.isfinite(stakeholder_timeout_seconds)
+            or stakeholder_timeout_seconds <= 0
+        ):
             raise EngineError("stakeholder timeout must be positive")
         self.stakeholder_timeout_seconds = stakeholder_timeout_seconds
         self._create_schema()
@@ -325,22 +340,33 @@ class RunEngine:
             digest,
             None,
             0,
-            {"roles": {role: "reference" for role in SELLER_ROLES}},
+            {
+                "resolved": False,
+                "roles": {role: "unresolved" for role in SELLER_ROLES},
+                "models": {},
+            },
             {
                 "model_id": "deterministic",
                 "model_digest": digest,
                 "prompt_hash": digest,
                 "seed": 0,
+                "timeout_seconds": None,
             },
             {
-                "tool_calls_per_checkpoint": 64,
-                "turns_per_checkpoint": 128,
-                "retries": 2,
+                "tool_calls_per_checkpoint": None,
+                "turns_per_checkpoint": None,
+                "timeout_seconds": None,
+                "retries": 0,
             },
             {
-                "runtime_version": "python-3.14",
-                "image_digest": digest,
-                "git_revision": "0000000",
+                "resolved": False,
+                "runtime_version": (
+                    f"{sys.implementation.name}-{sys.version_info.major}."
+                    f"{sys.version_info.minor}.{sys.version_info.micro}"
+                ),
+                "image_digest": None,
+                "git_revision": None,
+                "executor_policy_digest": None,
             },
             "1970-01-01T00:00:00+00:00",
             "created",
@@ -475,11 +501,6 @@ class RunEngine:
         value = self.manifest.to_dict()
         value.pop("status", None)
         value.pop("ended_at", None)
-        limits = value.get("limits")
-        if isinstance(limits, Mapping):
-            limits = dict(limits)
-            limits.setdefault("timeout_seconds", 30.0)
-            value["limits"] = limits
         return value
 
     def trace_manifest_fingerprint(self) -> str:
@@ -1174,8 +1195,18 @@ class RunEngine:
                 (checkpoint_id,),
             ).fetchone()[0]
         )
-        limit = int(checkpoint["max_tool_calls"])
-        if attempts > limit:
+        raw_limit = self.manifest.limits.get("tool_calls_per_checkpoint")
+        if raw_limit is None:
+            limit = None
+        elif (
+            isinstance(raw_limit, int)
+            and not isinstance(raw_limit, bool)
+            and raw_limit > 0
+        ):
+            limit = raw_limit
+        else:
+            raise EngineError("tool_calls_per_checkpoint must be positive or null")
+        if limit is not None and attempts > limit:
             raise ToolLimitError(f"checkpoint tool-call cap of {limit} exceeded")
         return {"checkpoint_id": checkpoint_id, "attempts": attempts, "limit": limit}
 
@@ -1477,8 +1508,9 @@ class RunEngine:
         ]
 
     def _rows(
-        self, table: str, role: str, query: str = "", limit: int = 50
+        self, table: str, role: str, query: str = "", limit: int | None = None
     ) -> list[dict[str, Any]]:
+        actual_limit = _validated_limit(limit)
         rows = self.connection.execute(
             f"SELECT * FROM {table} ORDER BY rowid"
         ).fetchall()
@@ -1518,17 +1550,18 @@ class RunEngine:
             if needle and needle not in haystack:
                 continue
             result.append(data)
-            if len(result) >= max(1, min(limit, 1000)):
+            if actual_limit is not None and len(result) >= actual_limit:
                 break
         return result
 
     def events(
-        self, role: str = "system", query: str = "", limit: int = 50
+        self, role: str = "system", query: str = "", limit: int | None = None
     ) -> list[dict[str, Any]]:
         self._authorize(role, "run", "read")
         if role == "system":
             return self._rows("events", role, query, limit)
-        rows = self._rows("events", role, "", 1000)
+        actual_limit = _validated_limit(limit)
+        rows = self._rows("events", role)
         visible = []
         for event in rows:
             payload = event.get("payload")
@@ -1550,10 +1583,10 @@ class RunEngine:
                 if needle
                 in json.dumps(event, ensure_ascii=False, sort_keys=True).casefold()
             ]
-        return visible[: max(1, min(limit, 1000))]
+        return visible if actual_limit is None else visible[:actual_limit]
 
     def artifacts(
-        self, role: str = "system", query: str = "", limit: int = 50
+        self, role: str = "system", query: str = "", limit: int | None = None
     ) -> list[dict[str, Any]]:
         self._authorize(role, "documents", "read")
         return self._rows("artifacts", role, query, limit)
@@ -1753,7 +1786,7 @@ class RunEngine:
         return value
 
     def crm_search(
-        self, role: str, query: str = "", limit: int = 50
+        self, role: str, query: str = "", limit: int | None = None
     ) -> list[dict[str, Any]]:
         self._authorize(role, "crm", "search")
         return self._rows("crm_records", role, query, limit)
@@ -1905,9 +1938,14 @@ class RunEngine:
         return value
 
     def communications_search(
-        self, role: str, query: str = "", channel: str | None = None, limit: int = 50
+        self,
+        role: str,
+        query: str = "",
+        channel: str | None = None,
+        limit: int | None = None,
     ) -> list[dict[str, Any]]:
         self._authorize(role, "communications", "search")
+        actual_limit = _validated_limit(limit)
         clauses: list[str] = []
         params: list[Any] = []
         if channel:
@@ -1944,7 +1982,7 @@ class RunEngine:
             ):
                 continue
             result.append(value)
-            if len(result) >= max(1, min(limit, 1000)):
+            if actual_limit is not None and len(result) >= actual_limit:
                 break
         return result
 
@@ -2029,7 +2067,9 @@ class RunEngine:
         )
         return value
 
-    def calendar_list(self, role: str, limit: int = 50) -> list[dict[str, Any]]:
+    def calendar_list(
+        self, role: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         self._authorize(role, "calendar", "list")
         return self._rows("calendar_events", role, limit=limit)
 
@@ -2190,7 +2230,7 @@ class RunEngine:
         return value
 
     def documents_search(
-        self, role: str, query: str = "", limit: int = 50
+        self, role: str, query: str = "", limit: int | None = None
     ) -> list[dict[str, Any]]:
         self._authorize(role, "documents", "search")
         return self._rows("documents", role, query, limit)
@@ -2331,13 +2371,14 @@ class RunEngine:
         return value
 
     def approvals_list(
-        self, role: str, status: str | None = None, limit: int = 50
+        self, role: str, status: str | None = None, limit: int | None = None
     ) -> list[dict[str, Any]]:
         self._authorize(role, "approvals", "list")
-        result = self._rows("approvals", role, limit=limit)
+        actual_limit = _validated_limit(limit)
+        result = self._rows("approvals", role)
         if status:
             result = [item for item in result if item.get("status") == status]
-        return result
+        return result if actual_limit is None else result[:actual_limit]
 
     def approvals_request(
         self,
@@ -2463,7 +2504,7 @@ class RunEngine:
         return value
 
     def web_search(
-        self, role: str, query: str = "", limit: int = 50
+        self, role: str, query: str = "", limit: int | None = None
     ) -> list[dict[str, Any]]:
         self._authorize(role, "web", "search")
         return self._rows("web_records", role, query, limit)
@@ -2497,12 +2538,12 @@ class RunEngine:
         return value
 
     def team_search(
-        self, role: str, query: str = "", limit: int = 50
+        self, role: str, query: str = "", limit: int | None = None
     ) -> list[dict[str, Any]]:
         self._authorize(role, "team", "search")
         return self._rows("team_messages", role, query, limit)
 
-    def team_inbox(self, role: str, limit: int = 50) -> list[dict[str, Any]]:
+    def team_inbox(self, role: str, limit: int | None = None) -> list[dict[str, Any]]:
         self._authorize(role, "team", "read")
         return self._rows("team_messages", role, limit=limit)
 

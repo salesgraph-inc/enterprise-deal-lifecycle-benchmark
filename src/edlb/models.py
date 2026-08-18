@@ -61,6 +61,7 @@ def scorecard_hash(value: Mapping[str, Any] | Any) -> str:
         "execution_index",
         "strict_cycle_pass",
         "critical_violation",
+        "configuration_resolved",
         "category_scores",
         "secondary_metrics",
         "reliability",
@@ -426,8 +427,6 @@ class Checkpoint(JsonModel):
     objective_ids: tuple[str, ...]
     visible_artifact_ids: tuple[str, ...]
     required_roles: tuple[str, ...]
-    max_tool_calls: int
-    max_turns: int
     terminal: bool
     released_event_ids: tuple[str, ...] = ()
 
@@ -444,8 +443,6 @@ class Checkpoint(JsonModel):
             objective_ids=_tuple(value["objective_ids"]),
             visible_artifact_ids=_tuple(value.get("visible_artifact_ids")),
             required_roles=_tuple(value["required_roles"]),
-            max_tool_calls=int(value["max_tool_calls"]),
-            max_turns=int(value["max_turns"]),
             terminal=bool(value["terminal"]),
             released_event_ids=_tuple(value.get("released_event_ids")),
         )
@@ -582,6 +579,7 @@ class Scorecard(JsonModel):
     execution_index: float
     strict_cycle_pass: bool
     critical_violation: bool
+    configuration_resolved: bool
     category_scores: Mapping[str, float]
     secondary_metrics: Mapping[str, Any]
     reliability: Mapping[str, Any]
@@ -618,6 +616,7 @@ class Scorecard(JsonModel):
             execution_index=float(value["execution_index"]),
             strict_cycle_pass=bool(value["strict_cycle_pass"]),
             critical_violation=bool(value["critical_violation"]),
+            configuration_resolved=bool(value["configuration_resolved"]),
             category_scores={
                 str(k): float(v) for k, v in value["category_scores"].items()
             },

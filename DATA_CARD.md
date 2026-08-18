@@ -45,9 +45,9 @@ Generation follows an event-first process:
    from these blueprints; expert authoring and review remain release gates.
 2. A deterministic compiler creates the event ledger, time windows, identities,
    CRM projection, artifact inventory, and shared-document index.
-3. A constrained language model may realize bounded dialogue or document prose
-   from an allowed-facts packet. It cannot alter causal state, permissions,
-   approvals, or terminal outcome.
+3. A language model may realize fact-bounded dialogue or document prose from an
+   allowed-facts packet. It cannot alter causal state, permissions, approvals,
+   or terminal outcome.
 4. Realizations are cached by world state, input, prompt, model digest, and
    seed. Stakeholder-model selection and model calibration remain pending.
 5. Automated invariants, schema checks, and blinded expert review gate
@@ -57,6 +57,34 @@ This separates dense state transitions from sparse language realization, as in
 the event-first approach described by [ESL-Bench](https://arxiv.org/html/2604.02834).
 The approach also preserves expert-authored work products, a principle used in
 [GDPval](https://openai.com/index/gdpval/).
+
+## Execution-resource policy
+
+EDLB sets no model or execution budget by default. It injects no token caps or
+temperature, top-p, reasoning-effort, or cost settings, and has no default
+checkpoint tool-call, turn, response-time, total wall-time, context-history, or
+retrieval-result cap. Runner retries default to zero and are explicit operator
+controls. External systems declare model IDs, digests, prompt hashes, and
+provider settings in a resolved agent manifest before execution. EDLB records
+that declaration and binds it to configuration and manifest hashes.
+External execution also pins runtime, artifact, revision, and effective host
+and job policy provenance in a resolved environment manifest. The
+executor-policy digest records inherited rlimits and other policy and adds no
+resource cap. Adapter-reported usage, latency, and cost are recorded only when
+supplied. Provider defaults and endpoint ceilings remain external to EDLB.
+
+The implemented operator controls are per-checkpoint tool calls, per-checkpoint
+turns, per-response timeout, and runner retries. For nullable controls, null
+means unlimited. Direct `open_world` setup defaults to unresolved
+configuration, external execution requires a resolved pre-run manifest, and
+aggregates containing unresolved runs are marked unofficial. Results are
+comparable only under identical execution policy and configuration. Official
+scoring still uses exactly three trials per system and world.
+
+Business, authorization, and temporal rules, protocol trust-boundary
+validation, blind submission quotas and canaries, network isolation, and
+declared evaluator safety policy remain in force. These are semantic or
+security controls, not model or execution budgets.
 
 ## Validation
 
@@ -78,7 +106,7 @@ manifest hashing, HMAC result signing, immutable network-disabled Podman
 isolation, and RevOps-only CRM merge. End-to-end blind evaluator security
 evidence and container endpoint allowlisting remain pending.
 
-The final machine gate passes 137 functional tests. Lossless
+The final machine gate passes the functional test suite. Lossless
 `team_message` and `yield` trace paths, snapshot and state-diff exports, replay
 payload and hash validation, state and score hashes, aggregate dataset
 validation, and the 48 reference-trace checks are implemented. All 48 checked
@@ -124,8 +152,8 @@ labels. Failures require revision and re-review.
 
 The automated checks and generated validation records exist. Expert recruitment
 and both reviews per world have not been completed. Stakeholder-model
-selection, model and judge calibration, the 12-world model budget pilot,
-official three-trial model runs, endpoint allowlisting, end-to-end blind
+selection, model and judge calibration, the 12-world resource characterization
+pilot, official three-trial model runs, endpoint allowlisting, end-to-end blind
 evaluator security evidence, and public release are also pending. Canary
 scanning, quota enforcement, exact-byte manifest hashing, HMAC result signing,
 immutable Podman isolation, and RevOps-only CRM merge are implemented and

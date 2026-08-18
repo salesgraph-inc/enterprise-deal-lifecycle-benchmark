@@ -11,6 +11,13 @@ comparable only when its run manifest records all of these versions.
   contract major or minor version as appropriate.
 - Runtime and grader versions are independent and must be recorded in the run
   manifest.
+- External systems declare execution policy and provider settings in a resolved
+  pre-run agent manifest. They separately declare the exact runtime version,
+  immutable image or package digest, full Git revision, and SHA-256 digest of
+  effective inherited rlimits and other evaluator host and job policies in a
+  resolved environment manifest. The digest records policy and creates no
+  resource cap. EDLB binds both to configuration and manifest hashes.
+  Nullable controls use null for unlimited.
 - A benchmark release names the world set, split assignment, tool schema,
   stakeholder configuration, judge configuration, and grader together.
 - The current generated world and schema version is v1.0.0.
@@ -47,9 +54,15 @@ released as CC BY 4.0 data.
 ## Reproducibility
 
 Every official run must record contract, benchmark, runtime, tool, stakeholder,
-judge, and model versions, plus scenario hash, prompt hash, image digest, and
-random seeds. A replay is valid only when these inputs and the action trace
-match the recorded manifest.
+judge, and model versions, plus scenario hash, prompt hash, image digest,
+random seeds, execution policy, and provider settings. A replay is valid only
+when these inputs and the action trace match the recorded manifest. EDLB
+supplies no model or execution budget by default, no token caps, no total
+wall-time cap, and no default checkpoint tool-call, turn, or response-time cap.
+Open Team launch retries and Fixed Harness activation retries default to zero.
+The implemented operator controls are per-checkpoint tool calls, turns,
+response timeout, and track-scoped retries; comparisons require identical
+execution policy and configuration. Unresolved aggregates are unofficial.
 
 The current implementation records run manifests, traces, state hashes,
 resource usage, and protocol versions. Blind-evaluator support records
@@ -68,8 +81,9 @@ unverified run.
 
 Formal trademark and legal clearance, expert recruitment, two expert reviews
 per world, stakeholder-model selection, model and judge calibration, the
-12-world model budget pilot, container endpoint allowlisting, end-to-end blind
-evaluator security evidence, and public release remain pending. Canary
+12-world resource characterization pilot, container endpoint allowlisting,
+end-to-end blind evaluator security evidence, and public release remain pending.
+Canary
 scanning, quota enforcement, exact-byte manifest hashing, HMAC result signing,
 immutable Podman isolation, and RevOps-only CRM merge are implemented and
 focused-tested.

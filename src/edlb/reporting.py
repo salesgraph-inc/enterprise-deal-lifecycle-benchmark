@@ -50,6 +50,7 @@ def _schema_scorecard(value: Mapping[str, Any]) -> dict[str, Any]:
         "execution_index",
         "strict_cycle_pass",
         "critical_violation",
+        "configuration_resolved",
         "trial_seed",
         "configuration_hash",
         "manifest_hash",

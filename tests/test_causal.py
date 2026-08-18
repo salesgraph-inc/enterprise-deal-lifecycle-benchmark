@@ -55,11 +55,15 @@ class CausalEngineTest(unittest.TestCase):
             stakeholder_realizer_command=command,
             stakeholder_model_digest=model_digest,
             stakeholder_prompt_hash=prompt_hash,
+            stakeholder_timeout_seconds=7.5,
         ) as engine:
             self.assertEqual(engine.official_stakeholder_seeds, (11, 12, 13))
             self.assertEqual(engine.stakeholder_realizer_command, command)
             self.assertEqual(
                 engine.manifest.stakeholder_manifest["model_digest"], model_digest
+            )
+            self.assertEqual(
+                engine.manifest.stakeholder_manifest["timeout_seconds"], 7.5
             )
 
     def test_public_scenario_omits_private_optional_fields(self) -> None:

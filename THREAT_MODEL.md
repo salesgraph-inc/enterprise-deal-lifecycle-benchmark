@@ -18,7 +18,7 @@ evidence that the release gate has passed.
 | Public world artifacts | Preserve timing, visibility, provenance, and license metadata |
 | Role permissions | Enforce in the broker, independent of prompts |
 | Run traces and scorecards | Preserve lossless sequence, hashes, and version context |
-| Model and judge configuration | Pin by digest, prompt hash, and seed |
+| Model and judge configuration | Pin by digest, prompt hash, seed, and available provider settings |
 | Process reference material | Use as guidance, not copied dataset content |
 
 ## Threats and controls
@@ -34,10 +34,52 @@ evidence that the release gate has passed.
 | Real PII or live company data | Privacy or legal exposure | Fictional entities, reserved domains, configured phrase and entity lists, phone checks, duplicate-identity checks | Targeted privacy fixtures focused-tested, release-evaluator boundary checks pending |
 | Copyright or trademark contamination | Unlicensed dataset content | Cite process references, generate original text, retain provenance, review license | Provenance and citations present, legal clearance pending |
 | Model realization changes causal truth | Non-reproducible or invalid worlds | Structured causal engine owns truth, constrained realization, cache and digest | Runtime controls present, model calibration pending |
-| Judge overreach or criterion cascade | Unreliable scores | Deterministic majority, bounded evidence slices, two judge passes, human calibration | Judge path present, calibration pending |
-| Runtime or model outage | Misclassified infrastructure failure | Distinguish invalid infrastructure from agent failure, bounded retries, run status | Runner controls present, official run pending |
+| Judge overreach or criterion cascade | Unreliable scores | Deterministic majority, criterion-scoped evidence slices, two judge passes, human calibration | Judge path present, calibration pending |
+| Implicit resource budget | Unfair truncation or incomparable results | No default model settings or execution caps, explicit per-checkpoint controls, resolved pre-run agent manifest, manifest and configuration hashes, no total wall-time or container process cap | Contracted, runtime verification pending |
+| Untrusted tool payload or fan-out | Evaluator memory, storage, or side-effect exhaustion | Broker input ceilings for text, queries, lists, recipients, and explicit retrieval requests | Implemented and focused-tested |
+| Submission storage exhaustion | Evaluator disk exhaustion | Rootless read-only container, ignored image volumes, no writable host mount, one 64 MiB temporary filesystem | Command construction focused-tested |
+| Runtime or model outage | Misclassified infrastructure failure | Distinguish invalid infrastructure from agent failure, optional launch or activation retries, run status, declared evaluator safety policy | Runner controls present, official run pending |
 | Test-pack extraction or replay | Blind leaderboard contamination | Rootless execution, canaries, quotas, exact manifests, private evaluator | Lossless `team_message` and `yield` traces, snapshot and diff exports, replay payload and hash validation, state and score hashes, aggregate validation, canary scans, quota ledger, exact-byte manifest hashes, HMAC signatures, and immutable Podman isolation are focused-tested; end-to-end evaluator evidence pending |
 | Dependency or image drift | Results cannot be reproduced | Versioned schemas, hashes, image digest, tool and model manifests | Run-manifest fields and immutable image checks present, release image controls pending |
+
+EDLB sets no model or execution budget by default. It injects no token caps or
+temperature, top-p, reasoning-effort, or cost settings, and has no default
+checkpoint tool-call, turn, response-time, total wall-time, context-history, or
+retrieval-result cap. Open Team launch retries and Fixed Harness activation
+retries default to zero. The implemented operator controls are per-checkpoint
+tool calls, turns, response timeout, and track-scoped retries;
+nullable controls use null for unlimited. External systems declare model IDs,
+digests, prompt hashes, and provider settings in a resolved pre-run agent
+manifest. They separately declare the exact runtime version, immutable image or
+package digest, full Git revision, and a SHA-256 digest of effective inherited
+rlimits and other evaluator host and job policies in a resolved environment
+manifest. The digest records policy and creates no resource cap. EDLB binds both
+to configuration and manifest hashes. Direct `open_world` setup may
+remain unresolved, external execution requires both manifests, and aggregates
+with unresolved runs are unofficial. Business, authorization, and temporal
+rules, protocol trust-boundary validation, blind submission quotas and canaries,
+network isolation, and declared evaluator safety policy remain required
+controls.
+
+The tool broker accepts at most 100,000 characters in a free-text field, 1,000
+characters in a query or semantic-list item, 100 semantic-list items, 50
+external recipients or meeting participants, and an explicit retrieval request
+of 100 records. Omitting a retrieval limit remains unlimited. These are input
+and side-effect safety ceilings, not model, context, checkpoint, or total-run
+budgets. Blind containers have a read-only root, ignore image-declared volumes,
+mount no writable host path, and receive one 64 MiB temporary filesystem at
+`/tmp`. Results travel through the JSONL standard streams. These storage
+controls protect evaluator availability and do not set a run wall time, model
+memory, token budget, or model setting. The isolation flags follow the
+[Podman run contract](https://docs.podman.io/en/stable/markdown/podman-run.1.html).
+The command also sets `--pids-limit=-1`, which Podman's
+[current flag definition](https://github.com/containers/podman/blob/main/cmd/podman/common/create.go)
+defines as unlimited. It sets `--ulimit=host`, which Podman's
+[rlimit implementation](https://github.com/containers/podman/blob/main/pkg/specgenutil/specgen.go)
+maps to an empty OCI rlimit list instead of injected `nofile` or `nproc`
+values. The inherited host rlimits remain executor-environment policy, not an
+EDLB limit. Official evaluators must pin and record that environment before
+claiming comparable results.
 
 Lossless `team_message` and `yield` trace paths, snapshot and diff exports,
 replay payload and hash validation, state and score hashes, aggregate dataset

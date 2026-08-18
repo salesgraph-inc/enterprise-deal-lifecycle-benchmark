@@ -237,22 +237,22 @@ def build_podman_command(config: PodmanConfig) -> list[str]:
         raise ValueError("container command is required")
     if config.allow_network:
         raise ValueError("blind batch execution must use a disabled network")
-    config.output_path.mkdir(parents=True, exist_ok=True)
     command = [
         "podman",
         "run",
         "--rm",
+        "--interactive",
         "--userns=keep-id",
         "--read-only",
+        "--read-only-tmpfs=false",
+        "--image-volume=ignore",
+        "--pids-limit=-1",
+        "--ulimit=host",
         "--cap-drop=ALL",
         "--security-opt=no-new-privileges",
         "--network=none",
         "--tmpfs",
-        "/tmp:rw,noexec,nosuid,size=64m",
-        "--ulimit",
-        "fsize=268435456:268435456",
-        "-v",
-        f"{config.output_path.resolve()}:/output:rw",
+        "/tmp:rw,noexec,nosuid,nodev,size=64m",
         config.image,
     ]
     command.extend(config.command)

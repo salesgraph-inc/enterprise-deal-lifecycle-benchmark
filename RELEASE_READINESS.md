@@ -15,7 +15,7 @@ authorship and review remain pending release gates.
       reporting paths present.
 - [x] Draft 2020-12 schemas and generated-record validation implemented.
 - [x] Explicit RFC 3339 date-time checking in the schema test.
-- [x] 137 functional tests pass in the final machine gate.
+- [x] The functional test suite passes in the final machine gate.
 - [x] Generated validation and runtime test commands documented.
 - [x] Lossless `team_message` and `yield` trace paths, snapshot and diff
       exports, replay payload and hash validation, state and score hashes, and
@@ -30,13 +30,35 @@ authorship and review remain pending release gates.
       signing, immutable network-disabled Podman isolation, and RevOps-only CRM
       merge have focused tests.
 
+## Resource policy
+
+EDLB has no implicit model or execution budget. It sets no token caps or
+temperature, top-p, reasoning-effort, or cost settings, and no default
+checkpoint tool-call, turn, response-time, total wall-time, context-history, or
+retrieval-result cap.
+Open Team launch retries and Fixed Harness activation retries default to zero.
+The implemented operator controls are per-checkpoint tool calls, turns,
+response timeout, and track-scoped retries. For nullable controls, null means
+unlimited. External systems declare model IDs, digests, prompt hashes, and
+provider settings in a resolved pre-run agent manifest. They also declare the
+runtime version, immutable image or package digest, full Git revision, and
+SHA-256 digest of effective inherited rlimits and other evaluator host and job
+policies in a resolved environment manifest. The digest records policy and
+creates no resource cap. EDLB binds both declarations to configuration and
+manifest hashes. Comparisons require identical execution policy and configuration.
+Unresolved aggregates are unofficial.
+
+Business, authorization, and temporal rules, protocol trust-boundary
+validation, blind submission quotas and canaries, network isolation, and
+declared evaluator safety policy remain required controls.
+
 ## Pending owner action
 
 - [ ] Complete formal contract and schema review.
 - [ ] Recruit experts and complete two blinded reviews per world.
 - [ ] Complete stakeholder-model selection and schema-adherence review.
 - [ ] Calibrate the language-model judge against blinded human labels.
-- [ ] Run the 12-world model budget pilot.
+- [ ] Run the 12-world resource characterization pilot.
 - [ ] Run official three-trial fixed-harness and open-team evaluations.
 - [ ] Implement and test container endpoint allowlisting.
 - [ ] Complete release-evaluator privacy, public-boundary, replay, and

@@ -71,8 +71,11 @@
     "agent_manifest": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["roles"],
+      "required": ["resolved", "roles", "models"],
       "properties": {
+        "resolved": {
+          "type": "boolean"
+        },
         "roles": {
           "type": "object",
           "additionalProperties": false,
@@ -85,31 +88,109 @@
           "properties": {
             "account_executive": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 200
+              "minLength": 1
             },
             "domain_specialist": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 200
+              "minLength": 1
             },
             "sales_manager": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 200
+              "minLength": 1
             },
             "revops": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 200
+              "minLength": 1
             }
           }
         },
-        "prompt_hash": {
-          "type": "string",
-          "pattern": "^sha256:[0-9a-f]{64}$"
+        "models": {
+          "type": "object",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "model_id",
+              "model_digest",
+              "prompt_hash",
+              "provider_settings",
+              "provider_defaults"
+            ],
+            "properties": {
+              "model_id": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "model_digest": {
+                "type": ["string", "null"],
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "prompt_hash": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "provider_settings": {
+                "type": "object"
+              },
+              "provider_defaults": {
+                "type": "boolean",
+                "description": "Whether unspecified model settings use provider defaults."
+              },
+              "provider_defaults_digest": {
+                "type": ["string", "null"],
+                "pattern": "^sha256:[0-9a-f]{64}$",
+                "description": "Digest of the canonical provider-default and API configuration."
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "provider_defaults": {"const": true}
+                  }
+                },
+                "then": {
+                  "required": ["provider_defaults_digest"],
+                  "properties": {
+                    "provider_defaults_digest": {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-f]{64}$"
+                    }
+                  }
+                }
+              }
+            ]
+          }
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "resolved": {"const": true}
+            }
+          },
+          "then": {
+            "properties": {
+              "models": {
+                "minProperties": 1,
+                "additionalProperties": {
+                  "properties": {
+                    "model_digest": {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-f]{64}$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "stakeholder_manifest": {
       "type": "object",
@@ -118,8 +199,7 @@
       "properties": {
         "model_id": {
           "type": "string",
-          "minLength": 1,
-          "maxLength": 200
+          "minLength": 1
         },
         "model_digest": {
           "type": "string",
@@ -140,54 +220,90 @@
             "type": "integer",
             "minimum": 0
           }
+        },
+        "timeout_seconds": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0
         }
       }
     },
     "limits": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["tool_calls_per_checkpoint", "turns_per_checkpoint", "retries"],
+      "required": ["tool_calls_per_checkpoint", "turns_per_checkpoint", "timeout_seconds", "retries"],
       "properties": {
         "tool_calls_per_checkpoint": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 64
+          "type": ["integer", "null"],
+          "minimum": 1
         },
         "turns_per_checkpoint": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 128
+          "type": ["integer", "null"],
+          "minimum": 1
         },
         "timeout_seconds": {
-          "type": "number",
+          "type": ["number", "null"],
           "exclusiveMinimum": 0
         },
         "retries": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 2
+          "description": "Open Team launch retries or Fixed Harness activation retries."
         }
       }
     },
     "environment": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["runtime_version", "image_digest", "git_revision"],
+      "required": ["resolved", "runtime_version", "image_digest", "git_revision", "executor_policy_digest"],
       "properties": {
+        "resolved": {
+          "type": "boolean"
+        },
         "runtime_version": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 200
+          "pattern": "\\S"
         },
         "image_digest": {
-          "type": "string",
+          "type": ["string", "null"],
+          "description": "Immutable OCI image or package artifact digest when resolved.",
           "pattern": "^sha256:[0-9a-f]{64}$"
         },
         "git_revision": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{7,64}$"
+          "type": ["string", "null"],
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+        },
+        "executor_policy_digest": {
+          "type": ["string", "null"],
+          "description": "SHA-256 digest of effective evaluator host and job policy, including inherited rlimits.",
+          "pattern": "^sha256:[0-9a-f]{64}$"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "resolved": {"const": true}
+            }
+          },
+          "then": {
+            "properties": {
+              "image_digest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "git_revision": {
+                "type": "string",
+                "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+              },
+              "executor_policy_digest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      ]
     },
     "started_at": {
       "type": "string",

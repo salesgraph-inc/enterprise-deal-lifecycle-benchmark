@@ -11,6 +11,12 @@ from typing import Any
 
 from .engine import canonical_database_hash, canonical_trace_hash
 from .models import aggregate_scorecard_hash, scorecard_hash, stable_hash
+from .runner import (
+    BundleError,
+    normalize_agent_manifest,
+    normalize_environment_manifest,
+    validate_track_agent_manifest,
+)
 from .statistics import (
     absolute_error,
     brier_score,
@@ -1386,6 +1392,24 @@ def _manifest_hash(value: Mapping[str, Any]) -> str:
     return stable_hash(_without_trial_fields(value))
 
 
+def _configuration_resolved(value: Mapping[str, Any]) -> bool:
+    agent_manifest = value.get("agent_manifest")
+    environment_manifest = value.get("environment")
+    if not isinstance(agent_manifest, Mapping) or not isinstance(
+        environment_manifest, Mapping
+    ):
+        return False
+    try:
+        normalized_agent = normalize_agent_manifest(
+            agent_manifest, require_resolved=True
+        )
+        validate_track_agent_manifest(str(value.get("track", "")), normalized_agent)
+        normalize_environment_manifest(environment_manifest, require_resolved=True)
+    except BundleError:
+        return False
+    return True
+
+
 def _metadata_signature(row: Mapping[str, Any], field: str) -> str | None:
     direct = row.get(field)
     if direct is None and field == "configuration_hash":
@@ -1444,6 +1468,8 @@ def _input_validation(scorecards: Sequence[Mapping[str, Any]]) -> dict[str, Any]
         world_rows[world_id].append(row)
         if row.get("status") != "valid":
             errors.append("invalid_status")
+        if row.get("configuration_resolved") is not True:
+            errors.append("unresolved_configuration")
         rubric_validation = row.get("rubric_validation")
         if not isinstance(rubric_validation, Mapping) or not rubric_validation.get(
             "valid"
@@ -2035,6 +2061,10 @@ def grade_run(
     vertical = _infer_vertical(
         {"vertical": scenario.get("vertical") or run_manifest.get("vertical")}
     )
+    replay = (
+        isinstance(state.get("meta"), Mapping)
+        and state["meta"].get("source_manifest") is not None
+    )
     scorecard = {
         "run_id": str(run_manifest.get("run_id", state.get("run_id", "run"))),
         "benchmark_version": benchmark_version,
@@ -2048,6 +2078,7 @@ def grade_run(
         and not critical_failures
         and not inferred_critical,
         "critical_violation": bool(critical_failures or inferred_critical),
+        "configuration_resolved": not replay and _configuration_resolved(run_manifest),
         "category_scores": {
             category: round(score, 6) for category, score in category_scores.items()
         },

@@ -4,12 +4,17 @@ import argparse
 import hashlib
 import json
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 from .baselines import podman_command, run_baseline
-from .generate import generate_dataset
+from .generate import (
+    REFERENCE_AGENT_MANIFEST,
+    REFERENCE_TRACE_LIMITS,
+    _reference_configuration_hash,
+    generate_dataset,
+)
 from .grading import aggregate_scorecards, grade_run
 from .reporting import scorecard_json, write_report
 from .runner import (
@@ -18,10 +23,14 @@ from .runner import (
     OpenTeamRunner,
     RunLimits,
     _write_outputs,
+    deterministic_agent_manifest,
     load_world_bundle,
+    normalize_agent_manifest,
+    normalize_environment_manifest,
     open_world,
     replay_trace,
     validate_dataset,
+    validate_track_agent_manifest,
 )
 
 
@@ -78,7 +87,24 @@ def _trace_open_options(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         payload = {}
     if "manifest_fingerprint" not in payload:
-        return {"track": payload.get("track", "open_team")}
+        options: dict[str, Any] = {"track": payload.get("track", "open_team")}
+        agent_manifest = payload.get("agent_manifest")
+        limits = payload.get("limits")
+        if isinstance(agent_manifest, Mapping) and isinstance(limits, Mapping):
+            if agent_manifest != REFERENCE_AGENT_MANIFEST:
+                raise ValueError("trace reference agent manifest is invalid")
+            if dict(limits) != REFERENCE_TRACE_LIMITS:
+                raise ValueError("trace reference limits are invalid")
+            if payload.get("configuration_hash") != _reference_configuration_hash():
+                raise ValueError("trace reference configuration hash is invalid")
+            options["agent_manifest"] = REFERENCE_AGENT_MANIFEST
+            options["limits"] = RunLimits(
+                REFERENCE_TRACE_LIMITS["tool_calls_per_checkpoint"],
+                REFERENCE_TRACE_LIMITS["turns_per_checkpoint"],
+                REFERENCE_TRACE_LIMITS["timeout_seconds"],
+                int(REFERENCE_TRACE_LIMITS["retries"] or 0),
+            )
+        return options
     stakeholder = payload.get("stakeholder_manifest")
     stakeholder = stakeholder if isinstance(stakeholder, dict) else {}
     official = stakeholder.get("official_seeds")
@@ -97,24 +123,57 @@ def _trace_open_options(path: Path) -> dict[str, Any]:
     return {
         "track": payload.get("track", "open_team"),
         "team_id": payload.get("team_id", "reference"),
+        "agent_manifest": payload.get("agent_manifest"),
+        "environment_manifest": payload.get("environment"),
         "seed": int(payload["seed"]),
         "stakeholder_model_digest": model_digest,
         "stakeholder_prompt_hash": stakeholder.get("prompt_hash"),
+        "stakeholder_timeout_seconds": stakeholder.get("timeout_seconds"),
         "stakeholder_seeds": stakeholder_seeds,
         "stakeholder_seed": int(stakeholder["seed"])
         if stakeholder.get("seed") is not None
         else None,
         "limits": RunLimits(
-            int(limits.get("tool_calls_per_checkpoint", 64)),
-            int(limits.get("turns_per_checkpoint", 128)),
-            float(limits.get("timeout_seconds", 30.0)),
-            int(limits.get("retries", 2)),
+            int(limits["tool_calls_per_checkpoint"])
+            if limits.get("tool_calls_per_checkpoint") is not None
+            else None,
+            int(limits["turns_per_checkpoint"])
+            if limits.get("turns_per_checkpoint") is not None
+            else None,
+            float(limits["timeout_seconds"])
+            if limits.get("timeout_seconds") is not None
+            else None,
+            int(limits.get("retries", 0)),
         ),
     }
 
 
 def _limits(args: argparse.Namespace) -> RunLimits:
     return RunLimits(args.max_tool_calls, args.max_turns, args.timeout, args.retries)
+
+
+def _external_agent_manifest(path: Path | None) -> dict[str, Any]:
+    if path is None:
+        raise ValueError("--agent-manifest is required for external execution")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot read agent manifest {path}: {exc}") from exc
+    if not isinstance(value, Mapping):
+        raise BundleError("agent manifest must be a JSON object")
+    return normalize_agent_manifest(value, require_resolved=True)
+
+
+def _external_environment_manifest(path: Path | None) -> dict[str, Any]:
+    if path is None:
+        raise ValueError("--environment-manifest is required for external execution")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot read environment manifest {path}: {exc}") from exc
+    if not isinstance(value, Mapping):
+        raise BundleError("environment manifest must be a JSON object")
+    return normalize_environment_manifest(value, require_resolved=True)
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
@@ -137,6 +196,19 @@ def cmd_run(args: argparse.Namespace) -> int:
         run_id
         or f"run-{hashlib.sha256(bundle.world_id.encode('utf-8')).hexdigest()[:24]}"
     )
+    agent_manifest = (
+        REFERENCE_AGENT_MANIFEST
+        if args.baseline in {"oracle", "scripted_oracle"}
+        else deterministic_agent_manifest(f"edlb-baseline:{args.baseline}")
+        if args.baseline
+        else _external_agent_manifest(args.agent_manifest)
+    )
+    environment_manifest = (
+        _external_environment_manifest(args.environment_manifest)
+        if args.environment_manifest is not None or not args.baseline
+        else None
+    )
+    validate_track_agent_manifest(args.track, agent_manifest)
     output = _output_path(args, output_key, fresh=True)
     limits = _limits(args)
     engine = open_world(
@@ -146,6 +218,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         team_id=args.team_id,
         seed=args.seed,
         limits=limits,
+        agent_manifest=agent_manifest,
+        environment_manifest=environment_manifest,
         db_path=output / "run.sqlite",
         trace_path=output / "trace.jsonl",
         allow_private=args.allow_private,
@@ -180,6 +254,8 @@ def cmd_replay(args: argparse.Namespace) -> int:
         track=options.get("track", "open_team"),
         team_id=options.get("team_id", "reference"),
         seed=options.get("seed"),
+        agent_manifest=options.get("agent_manifest"),
+        environment_manifest=options.get("environment_manifest"),
         stakeholder_seeds=options.get("stakeholder_seeds"),
         stakeholder_seed=options.get("stakeholder_seed"),
         limits=options.get("limits"),
@@ -188,6 +264,7 @@ def cmd_replay(args: argparse.Namespace) -> int:
         allow_private=args.allow_private,
         stakeholder_model_digest=options.get("stakeholder_model_digest"),
         stakeholder_prompt_hash=options.get("stakeholder_prompt_hash"),
+        stakeholder_timeout_seconds=options.get("stakeholder_timeout_seconds"),
     )
     try:
         result = replay_trace(engine, args.trace)
@@ -261,16 +338,43 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--agent-command")
     run.add_argument("--adapter-command")
     run.add_argument(
+        "--agent-manifest",
+        type=Path,
+        help="resolved JSON manifest for the external agent configuration",
+    )
+    run.add_argument(
+        "--environment-manifest",
+        type=Path,
+        help="resolved JSON manifest for the execution environment",
+    )
+    run.add_argument(
         "--baseline", choices=("oracle", "scripted_oracle", "do_nothing", "flawed")
     )
     run.add_argument("--team-id", default="reference")
     run.add_argument("--run-id")
     run.add_argument("--seed", type=int)
     run.add_argument("--output", type=Path)
-    run.add_argument("--max-tool-calls", type=int, default=64)
-    run.add_argument("--max-turns", type=int, default=128)
-    run.add_argument("--timeout", type=float, default=30.0)
-    run.add_argument("--retries", type=int, default=2)
+    run.add_argument(
+        "--max-tool-calls",
+        type=int,
+        help="optional per-checkpoint tool-call cap, omitted is unlimited",
+    )
+    run.add_argument(
+        "--max-turns",
+        type=int,
+        help="optional per-checkpoint model-turn cap, omitted is unlimited",
+    )
+    run.add_argument(
+        "--timeout",
+        type=float,
+        help="optional agent response timeout in seconds, omitted is none",
+    )
+    run.add_argument(
+        "--retries",
+        type=int,
+        default=0,
+        help="Open Team launch or Fixed Harness activation retries, default is zero",
+    )
     run.add_argument("--allow-private", action="store_true")
     run.set_defaults(handler=cmd_run)
 

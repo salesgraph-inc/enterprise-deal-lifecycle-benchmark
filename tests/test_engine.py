@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 engine_module = importlib.import_module("edlb.engine")
+baselines_module = importlib.import_module("edlb.baselines")
 models_module = importlib.import_module("edlb.models")
 protocol_module = importlib.import_module("edlb.protocol")
 tools_module = importlib.import_module("edlb.tools")
@@ -19,6 +20,8 @@ AuthorizationError = engine_module.AuthorizationError
 EngineError = engine_module.EngineError
 ImmutableError = engine_module.ImmutableError
 RunEngine = engine_module.RunEngine
+PodmanConfig = baselines_module.PodmanConfig
+build_podman_command = baselines_module.build_podman_command
 Actor = models_module.Actor
 Artifact = models_module.Artifact
 Checkpoint = models_module.Checkpoint
@@ -88,7 +91,9 @@ def grants() -> tuple[RoleGrant, ...]:
     )
 
 
-def make_engine(trace_path: Path | None = None, max_tool_calls: int = 64) -> RunEngine:
+def make_engine(
+    trace_path: Path | None = None, max_tool_calls: int | None = None
+) -> RunEngine:
     manifest = RunManifest(
         "run-1",
         "v1.0.0",
@@ -108,11 +113,18 @@ def make_engine(trace_path: Path | None = None, max_tool_calls: int = 64) -> Run
             "prompt_hash": DIGEST,
             "seed": 7,
         },
-        {"tool_calls_per_checkpoint": 64, "turns_per_checkpoint": 128, "retries": 2},
         {
-            "runtime_version": "python-3.14",
-            "image_digest": DIGEST,
-            "git_revision": "0000000",
+            "tool_calls_per_checkpoint": max_tool_calls,
+            "turns_per_checkpoint": None,
+            "timeout_seconds": None,
+            "retries": 0,
+        },
+        {
+            "resolved": False,
+            "runtime_version": "cpython-test",
+            "image_digest": None,
+            "git_revision": None,
+            "executor_policy_digest": None,
         },
         START,
         "created",
@@ -167,8 +179,6 @@ def make_engine(trace_path: Path | None = None, max_tool_calls: int = 64) -> Run
             ("objective-0",),
             ("artifact-now",),
             ROLES,
-            max_tool_calls,
-            128,
             False,
         ),
         Checkpoint(
@@ -182,8 +192,6 @@ def make_engine(trace_path: Path | None = None, max_tool_calls: int = 64) -> Run
             ("objective-1",),
             (),
             ROLES,
-            max_tool_calls,
-            128,
             True,
         ),
     )
@@ -415,8 +423,59 @@ class ProtocolTest(unittest.TestCase):
         value["observation_token"] = TOKEN
         self.assertEqual(decode(json.dumps(value)).observation_token, TOKEN)
 
+    def test_protocol_accepts_unbounded_free_text(self) -> None:
+        text = "x" * 200_000
+        for kind, fields in (
+            (
+                "checkpoint_complete",
+                {"checkpoint_id": "cp-1", "summary": text},
+            ),
+            ("yield", {"reason": text}),
+        ):
+            value = {
+                "protocol_version": "v1.0.0",
+                "run_id": "run-1",
+                "sequence": 1,
+                "message_id": f"message-{kind}",
+                "occurred_at": START,
+                "kind": kind,
+                "role": "account_executive",
+                "observation_token": TOKEN,
+                **fields,
+            }
+            self.assertEqual(decode(json.dumps(value)).kind, kind)
+
 
 class EngineTest(unittest.TestCase):
+    def test_blind_container_has_only_bounded_ephemeral_storage(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            world = root / "private" / "blind" / "world"
+            output = root / "output"
+            world.mkdir(parents=True)
+            command = build_podman_command(
+                PodmanConfig(
+                    "edlb:test@sha256:" + "a" * 64,
+                    world,
+                    output,
+                    ("edlb", "run"),
+                )
+            )
+            self.assertIn("--read-only-tmpfs=false", command)
+            self.assertIn("--image-volume=ignore", command)
+            self.assertEqual(command.count("--pids-limit=-1"), 1)
+            self.assertEqual(command.count("--ulimit=host"), 1)
+            self.assertEqual(sum(item.startswith("--ulimit") for item in command), 1)
+            self.assertIn("/tmp:rw,noexec,nosuid,nodev,size=64m", command)
+            self.assertEqual(command.count("--tmpfs"), 1)
+            self.assertNotIn("-v", command)
+            self.assertNotIn("--mount", command)
+            self.assertNotIn("--volume", command)
+            self.assertFalse(any("nofile=" in item for item in command))
+            self.assertFalse(any("nproc=" in item for item in command))
+            self.assertNotIn(str(output), " ".join(command))
+            self.assertFalse(output.exists())
+
     def test_scoped_records_are_visible_only_to_explicit_roles(self) -> None:
         with make_engine() as engine:
             scoped_event = Event(
@@ -628,6 +687,79 @@ class EngineTest(unittest.TestCase):
                 )
             )
             self.assertFalse(legacy.ok)
+
+    def test_searches_are_unbounded_by_default_and_bound_explicit_limits(self) -> None:
+        with make_engine() as engine:
+            engine.advance_checkpoint(idempotency_key="advance-unbounded-search")
+            for index in range(1005):
+                engine.seed_crm_record(
+                    f"deal-{index:04d}", {"name": f"Deal {index:04d}"}
+                )
+            dispatcher = ToolDispatcher(engine)
+            all_records = dispatcher.execute(
+                "account_executive", "crm.search", {"query": "Deal"}
+            )
+            self.assertEqual(len(all_records), 1005)
+            with self.assertRaises(EngineError):
+                dispatcher.execute(
+                    "account_executive",
+                    "crm.search",
+                    {"query": "Deal", "limit": 101},
+                )
+            with self.assertRaises(EngineError):
+                engine.crm_search("account_executive", limit=0)
+
+    def test_approval_limit_is_applied_after_status_filter(self) -> None:
+        with make_engine() as engine:
+            engine.advance_checkpoint(idempotency_key="advance-approval-filter")
+            engine.seed_approval("approval-rejected", {"status": "rejected"})
+            engine.seed_approval("approval-approved", {"status": "approved"})
+            result = engine.approvals_list("sales_manager", status="approved", limit=1)
+            self.assertEqual(
+                [item["approval_id"] for item in result], ["approval-approved"]
+            )
+
+    def test_tool_schemas_bound_untrusted_payloads(self) -> None:
+        schemas = {item["tool_name"]: item for item in ToolDispatcher.schemas()}
+        self.assertEqual(
+            schemas["crm.search"]["arguments"]["properties"]["limit"]["maximum"],
+            100,
+        )
+        self.assertEqual(
+            schemas["documents.create"]["arguments"]["properties"]["content"][
+                "maxLength"
+            ],
+            100_000,
+        )
+        self.assertEqual(
+            schemas["communications.send"]["arguments"]["properties"]["recipients"][
+                "maxItems"
+            ],
+            50,
+        )
+        self.assertEqual(
+            schemas["communications.send"]["arguments"]["properties"][
+                "semantic_envelope"
+            ]["properties"]["commitments"]["maxItems"],
+            100,
+        )
+        self.assertEqual(
+            schemas["crm.search"]["arguments"]["properties"]["query"]["maxLength"],
+            1000,
+        )
+        with make_engine() as engine:
+            engine.advance_checkpoint(idempotency_key="advance-long-content")
+            result = ToolDispatcher(engine).dispatch(
+                ToolCall(
+                    "long-document",
+                    "documents.create",
+                    "account_executive",
+                    {"title": "Long document", "content": "x" * 200_000},
+                    "long-document",
+                )
+            )
+            self.assertFalse(result.ok)
+            self.assertEqual(result.error["code"], "protocol_error")
 
     def test_external_writes_require_roster_permissions_and_envelopes(self) -> None:
         with make_engine() as engine:
@@ -914,6 +1046,25 @@ class EngineTest(unittest.TestCase):
                     protocol_module.KINDS | {"system_error"}
                 )
             )
+
+    def test_unlimited_tool_attempts_are_counted_without_checkpoint_caps(self) -> None:
+        with make_engine() as engine:
+            engine.advance_checkpoint(idempotency_key="advance-unlimited-attempts")
+            dispatcher = ToolDispatcher(engine)
+            for index in range(70):
+                result = dispatcher.dispatch(
+                    ToolCall(
+                        f"attempt-{index}",
+                        "run.status",
+                        "account_executive",
+                        {},
+                    )
+                )
+                self.assertTrue(result.ok)
+            usage = engine.connection.execute(
+                "SELECT attempts FROM checkpoint_tool_usage WHERE checkpoint_id = 'cp-0'"
+            ).fetchone()
+            self.assertEqual(usage[0], 70)
 
     def test_tool_latency_and_trace_metric_fields(self) -> None:
         with make_engine() as engine:

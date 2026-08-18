@@ -27,6 +27,11 @@ from edlb.models import (
     TraceEvent,
 )
 from edlb.protocol import Message
+from edlb.runner import (
+    BundleError,
+    normalize_agent_manifest,
+    normalize_environment_manifest,
+)
 
 DATE_TIME = re.compile(
     r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
@@ -358,8 +363,6 @@ class SchemaTest(unittest.TestCase):
                 ("objective-schema",),
                 (),
                 ("account_executive",),
-                1,
-                1,
                 False,
             ).to_dict(),
             "event": Event(
@@ -399,28 +402,43 @@ class SchemaTest(unittest.TestCase):
                 None,
                 1,
                 {
+                    "resolved": True,
                     "roles": {
-                        "account_executive": "agent-a",
-                        "domain_specialist": "agent-b",
-                        "sales_manager": "agent-c",
-                        "revops": "agent-d",
-                    }
+                        "account_executive": "model-a",
+                        "domain_specialist": "model-a",
+                        "sales_manager": "model-a",
+                        "revops": "model-a",
+                    },
+                    "models": {
+                        "model-a": {
+                            "model_id": "model-schema",
+                            "model_digest": "sha256:" + "b" * 64,
+                            "prompt_hash": "sha256:" + "c" * 64,
+                            "provider_settings": {"temperature": 0.2},
+                            "provider_defaults": True,
+                            "provider_defaults_digest": "sha256:" + "d" * 64,
+                        }
+                    },
                 },
                 {
                     "model_id": "model-schema",
                     "model_digest": "sha256:" + "b" * 64,
                     "prompt_hash": "sha256:" + "c" * 64,
                     "seed": 1,
+                    "timeout_seconds": None,
                 },
                 {
-                    "tool_calls_per_checkpoint": 1,
-                    "turns_per_checkpoint": 1,
+                    "tool_calls_per_checkpoint": None,
+                    "turns_per_checkpoint": None,
+                    "timeout_seconds": None,
                     "retries": 0,
                 },
                 {
+                    "resolved": True,
                     "runtime_version": "v1.0.0",
                     "image_digest": "sha256:" + "d" * 64,
-                    "git_revision": "a" * 7,
+                    "git_revision": "a" * 40,
+                    "executor_policy_digest": "sha256:" + "e" * 64,
                 },
                 "2025-01-01T00:00:00Z",
                 "created",
@@ -444,6 +462,7 @@ class SchemaTest(unittest.TestCase):
                 1.0,
                 True,
                 False,
+                True,
                 {
                     category: 1.0
                     for category in (
@@ -488,6 +507,109 @@ class SchemaTest(unittest.TestCase):
         )
         for schema_name, value in fixtures.items():
             self.assert_valid(schema_name, value, schema_name)
+
+        manifest = fixtures["run-manifest"]["agent_manifest"]
+        unpinned = json.loads(json.dumps(manifest))
+        unpinned["models"]["model-a"]["model_digest"] = None
+        self.assertTrue(
+            list(
+                self.validators["run-manifest"].iter_errors(
+                    {
+                        **fixtures["run-manifest"],
+                        "agent_manifest": unpinned,
+                    }
+                )
+            )
+        )
+        with self.assertRaises(BundleError):
+            normalize_agent_manifest(unpinned, require_resolved=True)
+        undeclared_defaults = json.loads(json.dumps(manifest))
+        undeclared_defaults["models"]["model-a"].pop("provider_defaults")
+        self.assertTrue(
+            list(
+                self.validators["run-manifest"].iter_errors(
+                    {
+                        **fixtures["run-manifest"],
+                        "agent_manifest": undeclared_defaults,
+                    }
+                )
+            )
+        )
+        with self.assertRaises(BundleError):
+            normalize_agent_manifest(undeclared_defaults, require_resolved=True)
+        unpinned_defaults = json.loads(json.dumps(manifest))
+        unpinned_defaults["models"]["model-a"]["provider_defaults_digest"] = None
+        self.assertTrue(
+            list(
+                self.validators["run-manifest"].iter_errors(
+                    {
+                        **fixtures["run-manifest"],
+                        "agent_manifest": unpinned_defaults,
+                    }
+                )
+            )
+        )
+        with self.assertRaises(BundleError):
+            normalize_agent_manifest(unpinned_defaults, require_resolved=True)
+        unresolved_defaults = json.loads(json.dumps(unpinned_defaults))
+        unresolved_defaults["resolved"] = False
+        self.assertTrue(
+            list(
+                self.validators["run-manifest"].iter_errors(
+                    {
+                        **fixtures["run-manifest"],
+                        "agent_manifest": unresolved_defaults,
+                    }
+                )
+            )
+        )
+        with self.assertRaises(BundleError):
+            normalize_agent_manifest(unresolved_defaults)
+
+        explicit_settings = json.loads(json.dumps(manifest))
+        explicit_settings["models"]["model-a"]["provider_defaults"] = False
+        explicit_settings["models"]["model-a"]["provider_defaults_digest"] = None
+        self.assertFalse(
+            list(
+                self.validators["run-manifest"].iter_errors(
+                    {
+                        **fixtures["run-manifest"],
+                        "agent_manifest": explicit_settings,
+                    }
+                )
+            )
+        )
+        normalize_agent_manifest(explicit_settings, require_resolved=True)
+
+        unresolved_environment = {
+            "resolved": False,
+            "runtime_version": "cpython-test",
+            "image_digest": None,
+            "git_revision": None,
+            "executor_policy_digest": None,
+        }
+        normalize_environment_manifest(unresolved_environment)
+        unresolved_run = {
+            **fixtures["run-manifest"],
+            "environment": unresolved_environment,
+        }
+        self.assert_valid("run-manifest", unresolved_run, "unresolved environment")
+        resolved_environment = {
+            **unresolved_environment,
+            "resolved": True,
+        }
+        self.assertTrue(
+            list(
+                self.validators["run-manifest"].iter_errors(
+                    {
+                        **fixtures["run-manifest"],
+                        "environment": resolved_environment,
+                    }
+                )
+            )
+        )
+        with self.assertRaises(BundleError):
+            normalize_environment_manifest(resolved_environment, require_resolved=True)
 
 
 if __name__ == "__main__":

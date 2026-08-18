@@ -40,7 +40,7 @@ manifest hashing, HMAC result signing, immutable network-disabled Podman
 isolation, and RevOps-only CRM merge. End-to-end blind evaluator security
 evidence and container endpoint allowlisting remain pending.
 
-The final machine gate passes 137 functional tests. Automated
+The final machine gate passes the functional test suite. Automated
 privacy fixtures reject live domains, non-reserved phone numbers, configured
 copied phrases and entities, and duplicate person identities. These are
 configured-list checks, not a global real-person or copy scan.
@@ -58,12 +58,60 @@ Use the CLI run command with either the fixed-harness or open-team track, then
 grade the run and write a report. Replay only with the matching world,
 manifest inputs, and trace.
 
+EDLB sets no model or execution budget by default. It injects no token caps or
+temperature, top-p, reasoning-effort, or cost settings, and has no default
+checkpoint tool-call, turn, response-time, total wall-time, context-history, or
+retrieval-result cap. Open Team launch retries and Fixed Harness activation
+retries default to zero. The implemented operator controls are per-checkpoint
+tool calls, turns, response timeout, and track-scoped retries; nullable controls
+use null for unlimited. External systems declare model IDs,
+digests, prompt hashes, and provider settings in a resolved pre-run agent
+manifest. EDLB records that declaration and binds it to configuration and
+manifest hashes. Direct `open_world` setup defaults to unresolved
+configuration. External execution also requires `--environment-manifest` with
+the exact runtime version, immutable image or package digest, full Git revision,
+and SHA-256 executor-policy digest. That digest covers effective inherited
+rlimits and other evaluator host and job policies. It records policy and creates
+no resource cap. Both manifests are configuration-bound, and unresolved runs
+are unofficial. Comparisons require identical execution policy and configuration.
+Official scoring uses exactly three trials per system and world.
+
+Business, authorization, and temporal rules, protocol trust-boundary
+validation, blind submission quotas and canaries, network isolation, and
+declared evaluator safety policy remain in force as semantic or security
+controls.
+
+Blind container execution explicitly sets `--pids-limit=-1`, so Podman's
+default process ceiling does not become benchmark policy. This adds no scored
+CPU, memory, wall-time, or model limit. Podman's
+[current flag definition](https://github.com/containers/podman/blob/main/cmd/podman/common/create.go)
+defines `-1` as unlimited.
+
+Blind execution also passes `--ulimit=host`. Podman's
+[rlimit implementation](https://github.com/containers/podman/blob/main/pkg/specgenutil/specgen.go)
+then emits no OCI rlimit overrides, so values such as `nofile` and `nproc`
+come from the evaluator process. EDLB does not choose those values. Official
+evaluators must pin and record their executor environment for comparable runs.
+
+The evaluator enforces an 8 MiB per-message JSONL transport ceiling, sized
+above the broker's bounded semantic envelope after worst-case JSON escaping.
+Crossing it invalidates the protocol exchange. The evaluator does not truncate
+or score the content.
+
+Public train reference traces are deterministic action fixtures, not model
+results. Their start message carries the resolved `REFERENCE_AGENT_MANIFEST`,
+null execution limits, and a configuration hash over those fields. Replay
+uses that binding and rejects a changed fixture configuration.
+
+Replay carries the exact source environment to reproduce the source state hash.
+It records `diagnostic_replay: true` and is always unofficial.
+
 All 48 checked reference traces match their oracle and score EI 100.0 with
 Strict Cycle Pass. All 16 closed-won traces ablate to `no_decision`.
 
-No official three-trial model run, 12-world model budget pilot, calibration
-record, or leaderboard result exists yet. The fixed-harness and open-team
-leaderboard JSON files therefore contain empty result arrays.
+No official three-trial model run, 12-world resource characterization pilot,
+calibration record, or leaderboard result exists yet. The fixed-harness and
+open-team leaderboard JSON files therefore contain empty result arrays.
 
 ## Data boundary
 

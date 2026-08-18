@@ -407,6 +407,34 @@ class GenerationTest(unittest.TestCase):
             self.assertEqual(categories, set(CANONICAL_CATEGORIES))
             self.assertGreaterEqual(deterministic_weight, 0.75)
 
+    def test_checkpoints_do_not_declare_execution_caps(self) -> None:
+        forbidden = {"max_tool_calls", "max_turns"}
+        for world in _rows(self.public_roots[0] / "authoring" / "worlds.jsonl"):
+            for checkpoint in world.get("checkpoints", ()):
+                self.assertFalse(forbidden & checkpoint.keys())
+        for bundle, _ in self.bundles():
+            for checkpoint in _rows(bundle / "checkpoints.jsonl"):
+                self.assertFalse(forbidden & checkpoint.keys())
+            reference_trace = bundle / "reference_trace.jsonl"
+            if reference_trace.exists():
+                self.assertNotIn("budget_exhausted", reference_trace.read_text())
+
+    def test_reference_fixtures_bind_resolved_configuration(self) -> None:
+        for bundle, _ in self.bundles():
+            reference_trace = bundle / "reference_trace.jsonl"
+            if not reference_trace.exists():
+                continue
+            start = _rows(reference_trace)[0]
+            payload = start["payload"]
+            self.assertEqual(
+                payload["agent_manifest"], generate_module.REFERENCE_AGENT_MANIFEST
+            )
+            self.assertEqual(payload["limits"], generate_module.REFERENCE_TRACE_LIMITS)
+            self.assertEqual(
+                payload["configuration_hash"],
+                generate_module._reference_configuration_hash(),
+            )
+
     def test_selected_rich_renderings(self) -> None:
         pdf_mime = "application/pdf"
         xlsx_mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -948,7 +976,12 @@ class GenerationTest(unittest.TestCase):
                 approval_count,
                 0 if oracle["causal_family"] == "budget_shock" else 1,
             )
-            engine = open_world(bundle, run_id=rows[0]["run_id"], allow_private=private)
+            engine = open_world(
+                bundle,
+                run_id=rows[0]["run_id"],
+                agent_manifest=generate_module.REFERENCE_AGENT_MANIFEST,
+                allow_private=private,
+            )
             try:
                 result = replay_trace(engine, bundle / "reference_trace.jsonl")
                 score = grade_run(

@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any, TextIO
 
 PROTOCOL_VERSION = "v1.0.0"
+MAX_PROTOCOL_MESSAGE_BYTES = 8 * 1024 * 1024
 EXTERNAL_ROLES = frozenset(
     {"account_executive", "domain_specialist", "sales_manager", "revops"}
 )
@@ -288,11 +289,7 @@ def _validate(value: Mapping[str, Any], allow_system: bool = False) -> dict[str,
                 r"^[a-z0-9_]+$", error["code"]
             ):
                 raise ProtocolError("tool error code has an invalid format")
-            if (
-                not isinstance(error.get("message"), str)
-                or not error["message"]
-                or len(error["message"]) > 1000
-            ):
+            if not isinstance(error.get("message"), str) or not error["message"]:
                 raise ProtocolError("tool error message is invalid")
             if "result" in data:
                 raise ProtocolError("failed tool_result cannot include result")
@@ -301,23 +298,17 @@ def _validate(value: Mapping[str, Any], allow_system: bool = False) -> dict[str,
     if (
         kind == "yield"
         and data.get("reason") is not None
-        and (not isinstance(data["reason"], str) or len(data["reason"]) > 1000)
+        and not isinstance(data["reason"], str)
     ):
         raise ProtocolError("yield reason is invalid")
     if kind == "checkpoint_complete":
         _identifier(data.get("checkpoint_id"), "checkpoint_id")
-        if (
-            not isinstance(data.get("summary"), str)
-            or not data["summary"]
-            or len(data["summary"]) > 4000
-        ):
+        if not isinstance(data.get("summary"), str) or not data["summary"]:
             raise ProtocolError("checkpoint summary is invalid")
     if kind == "run_end":
         if data.get("status") not in {"completed", "failed", "invalid"}:
             raise ProtocolError("run_end status is invalid")
-        if data.get("reason") is not None and (
-            not isinstance(data["reason"], str) or len(data["reason"]) > 1000
-        ):
+        if data.get("reason") is not None and (not isinstance(data["reason"], str)):
             raise ProtocolError("run_end reason is invalid")
     return data
 
@@ -425,6 +416,14 @@ def encode(message: Message) -> str:
 
 def decode(line: str) -> Message:
     try:
+        size = len(line.encode("utf-8"))
+    except UnicodeEncodeError as exc:
+        raise ProtocolError("JSONL message is not valid UTF-8") from exc
+    if size > MAX_PROTOCOL_MESSAGE_BYTES:
+        raise ProtocolError(
+            f"JSONL message exceeds the {MAX_PROTOCOL_MESSAGE_BYTES}-byte transport ceiling"
+        )
+    try:
         value = json.loads(line)
     except json.JSONDecodeError as exc:
         raise ProtocolError(f"invalid JSONL message: {exc.msg}") from exc
@@ -452,6 +451,7 @@ __all__ = [
     "ALL_ROLES",
     "EXTERNAL_ROLES",
     "KINDS",
+    "MAX_PROTOCOL_MESSAGE_BYTES",
     "PROTOCOL_VERSION",
     "Message",
     "ProtocolError",

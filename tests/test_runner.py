@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import json
 import shutil
+import sqlite3
 import sys
 import tempfile
+import time
 import unittest
+from contextlib import closing
 from dataclasses import replace
 from importlib import import_module
 from pathlib import Path
@@ -14,9 +17,13 @@ sys.path.insert(0, str(ROOT / "src"))
 
 baselines = import_module("edlb.baselines")
 grade_run = import_module("edlb.grading").grade_run
+configuration_hash = import_module("edlb.grading")._configuration_hash
 runner = import_module("edlb.runner")
-Message = import_module("edlb.protocol").Message
-ToolCall = import_module("edlb.protocol").ToolCall
+protocol = import_module("edlb.protocol")
+Message = protocol.Message
+ToolCall = protocol.ToolCall
+ToolResult = protocol.ToolResult
+MAX_PROTOCOL_MESSAGE_BYTES = protocol.MAX_PROTOCOL_MESSAGE_BYTES
 ToolDispatcher = import_module("edlb.tools").ToolDispatcher
 PodmanConfig = baselines.PodmanConfig
 build_podman_command = baselines.build_podman_command
@@ -25,7 +32,23 @@ FixedHarnessScheduler = runner.FixedHarnessScheduler
 OpenTeamRunner = runner.OpenTeamRunner
 ProtocolViolation = runner.ProtocolViolation
 RunLimits = runner.RunLimits
-open_world = runner.open_world
+raw_open_world = runner.open_world
+TEST_AGENT_MANIFEST = runner.deterministic_agent_manifest("test-agent")
+TEST_ENVIRONMENT_MANIFEST = {
+    "resolved": True,
+    "runtime_version": "cpython-test",
+    "image_digest": "sha256:" + "6" * 64,
+    "git_revision": "7" * 40,
+    "executor_policy_digest": "sha256:" + "8" * 64,
+}
+
+
+def open_world(*args, **kwargs):
+    kwargs.setdefault("agent_manifest", TEST_AGENT_MANIFEST)
+    kwargs.setdefault("environment_manifest", TEST_ENVIRONMENT_MANIFEST)
+    return raw_open_world(*args, **kwargs)
+
+
 load_world_bundle = runner.load_world_bundle
 replay_trace = runner.replay_trace
 run_replicates = runner.run_replicates
@@ -49,6 +72,63 @@ DEV_WORLD = next(
 
 
 class RunnerTest(unittest.TestCase):
+    def test_programmatic_world_is_unresolved_until_execution_manifest_is_supplied(
+        self,
+    ) -> None:
+        with raw_open_world(
+            WORLD, run_id="unresolved-agent-test", track="fixed_harness"
+        ) as engine:
+            self.assertFalse(engine.manifest.agent_manifest["resolved"])
+            self.assertFalse(engine.manifest.environment["resolved"])
+            with self.assertRaisesRegex(BundleError, "resolved agent manifest"):
+                FixedHarnessScheduler(engine, (sys.executable, "-c", "pass"))
+
+    def test_external_runner_requires_resolved_environment(self) -> None:
+        with (
+            raw_open_world(
+                WORLD,
+                run_id="unresolved-environment-test",
+                agent_manifest=TEST_AGENT_MANIFEST,
+            ) as engine,
+            self.assertRaisesRegex(BundleError, "resolved environment manifest"),
+        ):
+            OpenTeamRunner(engine, (sys.executable, "-c", "pass"))
+
+    def test_runner_implementations_require_matching_manifest_tracks(self) -> None:
+        with (
+            open_world(WORLD, track="fixed_harness") as fixed,
+            self.assertRaisesRegex(BundleError, "open_team manifest"),
+        ):
+            OpenTeamRunner(fixed, (sys.executable, "-c", "pass"))
+        with (
+            open_world(WORLD, track="open_team") as opened,
+            self.assertRaisesRegex(BundleError, "fixed_harness manifest"),
+        ):
+            FixedHarnessScheduler(opened, (sys.executable, "-c", "pass"))
+
+    def test_replicates_reject_unresolved_manifest_before_output_creation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "replicates"
+            with self.assertRaisesRegex(BundleError, "resolved agent manifest"):
+                run_replicates(
+                    WORLD,
+                    (sys.executable, "-c", "pass"),
+                    trials=1,
+                    output_dir=output,
+                )
+            self.assertFalse(output.exists())
+
+    def test_runner_rejects_limits_that_differ_from_manifest(self) -> None:
+        with (
+            open_world(WORLD, run_id="limit-binding-test") as engine,
+            self.assertRaisesRegex(BundleError, "do not match"),
+        ):
+            OpenTeamRunner(
+                engine,
+                (sys.executable, "-c", "pass"),
+                RunLimits(timeout_seconds=1),
+            )
+
     def test_blind_access_uses_manifest_split_for_copies_and_symlinks(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -77,7 +157,11 @@ class RunnerTest(unittest.TestCase):
         with (
             tempfile.TemporaryDirectory() as directory,
             open_world(
-                WORLD, run_id="fixed-cap-test", db_path=Path(directory) / "run.sqlite"
+                WORLD,
+                run_id="fixed-cap-test",
+                track="fixed_harness",
+                limits=RunLimits(tool_calls_per_checkpoint=1, turns_per_checkpoint=4),
+                db_path=Path(directory) / "run.sqlite",
             ) as engine,
         ):
             scheduler = FixedHarnessScheduler(
@@ -121,6 +205,8 @@ class RunnerTest(unittest.TestCase):
             open_world(
                 WORLD,
                 run_id="fixed-token-test",
+                track="fixed_harness",
+                limits=RunLimits(timeout_seconds=5, retries=0),
                 db_path=Path(directory) / "run.sqlite",
             ) as engine,
         ):
@@ -159,6 +245,9 @@ class RunnerTest(unittest.TestCase):
                 limits=RunLimits(tool_calls_per_checkpoint=3, turns_per_checkpoint=5),
                 db_path=Path(directory) / "replay.sqlite",
             ) as target:
+                self.assertEqual(
+                    target.manifest.agent_manifest, source.manifest.agent_manifest
+                )
                 replay_trace(target, rows)
                 replay_hash = target.state_hash()
                 target.persist_resource_usage({"latency_ms": 999, "turns": 4})
@@ -187,6 +276,105 @@ class RunnerTest(unittest.TestCase):
                 self.assertRaises(ProtocolViolation),
             ):
                 replay_trace(target, tampered)
+
+    def test_model_provider_settings_change_configuration_hash(self) -> None:
+        first = runner.deterministic_agent_manifest("configuration-test")
+        second = json.loads(json.dumps(first))
+        second["models"]["deterministic"]["provider_settings"] = {
+            "temperature": 0.3,
+            "max_output_tokens": 9000,
+        }
+        with (
+            open_world(
+                WORLD,
+                run_id="configuration-first",
+                agent_manifest=first,
+            ) as first_engine,
+            open_world(
+                WORLD,
+                run_id="configuration-second",
+                agent_manifest=second,
+            ) as second_engine,
+        ):
+            self.assertNotEqual(
+                configuration_hash(first_engine.manifest.to_dict()),
+                configuration_hash(second_engine.manifest.to_dict()),
+            )
+
+    def test_environment_changes_configuration_hash(self) -> None:
+        changed = {
+            **TEST_ENVIRONMENT_MANIFEST,
+            "executor_policy_digest": "sha256:" + "9" * 64,
+        }
+        with (
+            open_world(WORLD, run_id="environment-first") as first,
+            open_world(
+                WORLD,
+                run_id="environment-second",
+                environment_manifest=changed,
+            ) as second,
+        ):
+            self.assertNotEqual(
+                configuration_hash(first.manifest.to_dict()),
+                configuration_hash(second.manifest.to_dict()),
+            )
+
+    def test_fixed_harness_requires_one_model_configuration(self) -> None:
+        manifest = json.loads(json.dumps(TEST_AGENT_MANIFEST))
+        manifest["models"]["model-b"] = {
+            **manifest["models"]["deterministic"],
+            "model_id": "model-b",
+            "model_digest": "sha256:" + "9" * 64,
+        }
+        manifest["roles"]["revops"] = "model-b"
+        with self.assertRaisesRegex(BundleError, "one model configuration"):
+            raw_open_world(
+                WORLD,
+                track="fixed_harness",
+                agent_manifest=manifest,
+                environment_manifest=TEST_ENVIRONMENT_MANIFEST,
+            )
+        with raw_open_world(
+            WORLD,
+            track="open_team",
+            agent_manifest=manifest,
+            environment_manifest=TEST_ENVIRONMENT_MANIFEST,
+        ) as engine:
+            self.assertEqual(
+                engine.manifest.agent_manifest["roles"]["revops"], "model-b"
+            )
+
+    def test_replay_records_source_environment_but_remains_unresolved(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            with open_world(
+                WORLD,
+                run_id="cross-environment-replay",
+                db_path=Path(directory) / "source.sqlite",
+            ) as source:
+                runner._activate_first(source)
+                rows = [event.to_dict() for event in source.trace_events()]
+                source_hash = source.state_hash()
+            with raw_open_world(
+                WORLD,
+                run_id="cross-environment-replay",
+                agent_manifest=TEST_AGENT_MANIFEST,
+                environment_manifest=TEST_ENVIRONMENT_MANIFEST,
+                db_path=Path(directory) / "target.sqlite",
+            ) as target:
+                result = replay_trace(target, rows)
+                source_manifest = json.loads(target._meta("source_manifest") or "{}")
+                self.assertEqual(
+                    source_manifest["environment"], TEST_ENVIRONMENT_MANIFEST
+                )
+                self.assertEqual(target.state_hash(), source_hash)
+                self.assertEqual(result.state_hash, source_hash)
+                self.assertTrue(result.diagnostic_replay)
+                scorecard = grade_run(
+                    target,
+                    WORLD / "rubric.json",
+                    oracle=WORLD / "oracle.json",
+                )
+                self.assertFalse(scorecard["configuration_resolved"])
 
     def test_model_backed_trace_replay_requires_recorded_realizations(self) -> None:
         model_digest = "sha256:" + "3" * 64
@@ -259,7 +447,17 @@ class RunnerTest(unittest.TestCase):
             self.assertEqual(engine.current_checkpoint_index, -1)
 
     def test_scripted_oracle_replays_reference_and_strictly_passes(self) -> None:
-        with open_world(WORLD, run_id="scripted-oracle-test") as engine:
+        start = json.loads(
+            (WORLD / "reference_trace.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()[0]
+        )["payload"]
+        with open_world(
+            WORLD,
+            run_id="scripted-oracle-test",
+            agent_manifest=start["agent_manifest"],
+            limits=RunLimits(**start["limits"]),
+        ) as engine:
             result = baselines.ScriptedOracle().run(engine)
             score = grade_run(
                 engine,
@@ -355,7 +553,11 @@ class RunnerTest(unittest.TestCase):
         with (
             tempfile.TemporaryDirectory() as directory,
             open_world(
-                WORLD, run_id="fixed-test", db_path=Path(directory) / "run.sqlite"
+                WORLD,
+                run_id="fixed-test",
+                track="fixed_harness",
+                limits=RunLimits(timeout_seconds=5),
+                db_path=Path(directory) / "run.sqlite",
             ) as engine,
         ):
             result = FixedHarnessScheduler(
@@ -392,12 +594,59 @@ class RunnerTest(unittest.TestCase):
                 self.assertEqual(diff["previous_state_hash"], previous["state_hash"])
                 self.assertEqual(diff["state_hash"], current["state_hash"])
 
+    def test_fixed_harness_reactivates_yielded_roles_without_limits(self) -> None:
+        code = """import json,sys
+request=json.loads(sys.stdin.readline())
+checkpoint=request['checkpoint']
+history=request.get('messages',[])
+activations=sum(item.get('kind')=='observation' and item.get('checkpoint',{}).get('checkpoint_id')==checkpoint['checkpoint_id'] for item in history)
+sequence=max([int(item.get('sequence',-1)) for item in history if isinstance(item,dict)]+[-1])+1
+message={'protocol_version':'v1.0.0','run_id':request['run_id'],'sequence':sequence,'message_id':f"activation-{checkpoint['checkpoint_id']}-{request['role']}-{activations}",'occurred_at':request['occurred_at'],'kind':'yield' if activations==0 else 'checkpoint_complete','role':request['role'],'observation_token':request['observation_token']}
+if activations==0: message['reason']='waiting'
+else: message.update({'checkpoint_id':checkpoint['checkpoint_id'],'summary':'complete'})
+print(json.dumps(message))
+"""
+        with open_world(
+            WORLD, run_id="fixed-yield-reactivation", track="fixed_harness"
+        ) as engine:
+            result = FixedHarnessScheduler(
+                engine, (sys.executable, "-c", code), RunLimits()
+            ).run()
+        checkpoint_count = len(
+            json.loads((WORLD / "manifest.json").read_text(encoding="utf-8"))[
+                "checkpoint_ids"
+            ]
+        )
+        self.assertEqual(result.status, "completed")
+        self.assertEqual(result.turns, checkpoint_count * len(runner.ROLE_ORDER) * 2)
+
+    def test_fixed_harness_empty_activation_consumes_explicit_turn(self) -> None:
+        limits = RunLimits(turns_per_checkpoint=1)
+        with open_world(
+            WORLD,
+            run_id="fixed-empty-activation",
+            track="fixed_harness",
+            limits=limits,
+        ) as engine:
+            result = FixedHarnessScheduler(
+                engine, (sys.executable, "-c", "pass"), limits
+            ).run()
+        checkpoint_count = len(
+            json.loads((WORLD / "manifest.json").read_text(encoding="utf-8"))[
+                "checkpoint_ids"
+            ]
+        )
+        self.assertEqual(result.turns, checkpoint_count)
+
     def test_open_team_process(self) -> None:
         code = "import json,sys; n=0; roles={};\nfor line in sys.stdin:\n m=json.loads(line);\n if m.get('kind')=='observation':\n  n+=1; p=m['payload']; c=p['checkpoint']; roles.setdefault(c['checkpoint_id'],set()).add(m['role']); print(json.dumps({'protocol_version':'v1.0.0','run_id':m['run_id'],'sequence':n,'message_id':'m'+str(n),'occurred_at':m['occurred_at'],'kind':'checkpoint_complete','role':m['role'],'checkpoint_id':c['checkpoint_id'],'summary':'reviewed','observation_token':m['observation_token']}),flush=True);\n  if c.get('terminal') and len(roles[c['checkpoint_id']])==4: print(json.dumps({'protocol_version':'v1.0.0','run_id':m['run_id'],'sequence':n+1,'message_id':'end','occurred_at':m['occurred_at'],'kind':'run_end','role':'system','status':'completed','observation_token':m['observation_token']}),flush=True)"
         with (
             tempfile.TemporaryDirectory() as directory,
             open_world(
-                WORLD, run_id="open-test", db_path=Path(directory) / "run.sqlite"
+                WORLD,
+                run_id="open-test",
+                limits=RunLimits(timeout_seconds=5),
+                db_path=Path(directory) / "run.sqlite",
             ) as engine,
         ):
             result = OpenTeamRunner(
@@ -408,7 +657,43 @@ class RunnerTest(unittest.TestCase):
             ).run()
             self.assertEqual(result.status, "completed")
 
-    def test_default_runner_limits_respect_world_checkpoint_caps(self) -> None:
+    def test_protocol_decoder_rejects_oversized_message_before_json(self) -> None:
+        with self.assertRaisesRegex(protocol.ProtocolError, "transport ceiling"):
+            protocol.decode("x" * (MAX_PROTOCOL_MESSAGE_BYTES + 1))
+
+    def test_fixed_harness_rejects_oversized_unterminated_message(self) -> None:
+        code = f"import sys; sys.stdout.write('x'*{MAX_PROTOCOL_MESSAGE_BYTES + 1}); sys.stdout.flush()"
+        with open_world(
+            WORLD,
+            run_id="fixed-message-ceiling-test",
+            track="fixed_harness",
+            limits=RunLimits(timeout_seconds=5),
+        ) as engine:
+            runner._activate_first(engine)
+            scheduler = FixedHarnessScheduler(
+                engine,
+                (sys.executable, "-c", code),
+                RunLimits(timeout_seconds=5),
+            )
+            with self.assertRaisesRegex(runner.AgentProcessError, "transport ceiling"):
+                scheduler._request("account_executive")
+
+    def test_open_team_rejects_oversized_unterminated_message(self) -> None:
+        code = f"import sys; [sys.stdin.readline() for _ in range(5)]; sys.stdout.write('x'*{MAX_PROTOCOL_MESSAGE_BYTES + 1}); sys.stdout.flush()"
+        with open_world(
+            WORLD,
+            run_id="open-message-ceiling-test",
+            limits=RunLimits(timeout_seconds=5),
+        ) as engine:
+            result = OpenTeamRunner(
+                engine,
+                (sys.executable, "-c", code),
+                RunLimits(timeout_seconds=5),
+            ).run()
+            self.assertEqual(result.status, "failed")
+            self.assertIn("transport ceiling", result.errors[0])
+
+    def test_default_runner_limits_are_unbounded_and_ignore_world_caps(self) -> None:
         with open_world(WORLD, run_id="checkpoint-cap-test") as engine:
             runner._activate_first(engine)
             checkpoint = engine.current_checkpoint()
@@ -421,13 +706,166 @@ class RunnerTest(unittest.TestCase):
                 "observation-cap-test",
                 "a" * 32,
             )
+            start_payload = runner._start_payload(engine, RunLimits())
         assert checkpoint is not None and observation.payload is not None
-        self.assertEqual(checkpoint["max_tool_calls"], 32)
-        self.assertEqual(checkpoint["max_turns"], 64)
+        self.assertNotIn("max_tool_calls", checkpoint)
+        self.assertNotIn("max_turns", checkpoint)
         self.assertEqual(
             observation.payload["budget"],
-            {"tool_calls_remaining": 32, "turns_remaining": 64},
+            {"tool_calls_remaining": None, "turns_remaining": None},
         )
+        self.assertEqual(
+            start_payload["limits"],
+            {
+                "tool_calls_per_checkpoint": None,
+                "turns_per_checkpoint": None,
+                "timeout_seconds": None,
+                "retries": 0,
+            },
+        )
+        self.assertEqual(
+            engine.manifest.limits,
+            {
+                "tool_calls_per_checkpoint": None,
+                "turns_per_checkpoint": None,
+                "timeout_seconds": None,
+                "retries": 0,
+            },
+        )
+
+    def test_fixed_harness_retains_full_role_context(self) -> None:
+        with open_world(
+            WORLD, run_id="full-context-test", track="fixed_harness"
+        ) as engine:
+            scheduler = FixedHarnessScheduler(engine, (sys.executable, "-c", "pass"))
+            for index in range(40):
+                scheduler._append(
+                    "account_executive", {"kind": "message", "index": index}
+                )
+            self.assertEqual(len(scheduler.contexts["account_executive"]), 40)
+
+    def test_fixed_harness_retries_explicit_response_timeouts(self) -> None:
+        with open_world(
+            WORLD,
+            run_id="timeout-retry-test",
+            track="fixed_harness",
+            limits=RunLimits(timeout_seconds=0.01, retries=3),
+        ) as engine:
+            scheduler = FixedHarnessScheduler(
+                engine,
+                (sys.executable, "-c", "import time; time.sleep(1)"),
+                RunLimits(timeout_seconds=0.01, retries=3),
+            )
+            runner._activate_first(engine)
+            with self.assertRaises(runner.AgentProcessError):
+                scheduler._request("account_executive")
+            self.assertEqual(scheduler.result.retries, 3)
+
+    def test_fixed_harness_timeout_covers_process_after_stdout_eof(self) -> None:
+        code = "import os,time; os.close(1); time.sleep(10)"
+        limits = RunLimits(timeout_seconds=0.05)
+        with open_world(
+            WORLD,
+            run_id="fixed-eof-timeout",
+            track="fixed_harness",
+            limits=limits,
+        ) as engine:
+            scheduler = FixedHarnessScheduler(
+                engine, (sys.executable, "-c", code), limits
+            )
+            runner._activate_first(engine)
+            with self.assertRaisesRegex(runner.AgentProcessError, "timed out"):
+                scheduler._request("account_executive")
+
+    def test_open_team_timeout_covers_process_after_stdout_eof(self) -> None:
+        code = "import os,sys,time; [sys.stdin.readline() for _ in range(5)]; os.close(1); time.sleep(10)"
+        limits = RunLimits(timeout_seconds=0.05)
+        with open_world(WORLD, run_id="open-eof-timeout", limits=limits) as engine:
+            result = OpenTeamRunner(engine, (sys.executable, "-c", code), limits).run()
+        self.assertEqual(result.status, "failed")
+        self.assertIn("agent response timed out", result.errors[0])
+
+    def test_open_team_partial_output_does_not_reset_timeout(self) -> None:
+        programs = {
+            "blank": "import sys,time; [sys.stdin.readline() for _ in range(5)]; [(sys.stdout.write('\\n'),sys.stdout.flush(),time.sleep(.02)) for _ in range(20)]",
+            "partial": "import sys,time; [sys.stdin.readline() for _ in range(5)]; [(sys.stdout.write('x'),sys.stdout.flush(),time.sleep(.02)) for _ in range(20)]",
+        }
+        limits = RunLimits(timeout_seconds=0.05)
+        for name, code in programs.items():
+            with (
+                self.subTest(name=name),
+                open_world(WORLD, run_id=f"open-{name}-drip", limits=limits) as engine,
+            ):
+                result = OpenTeamRunner(
+                    engine, (sys.executable, "-c", code), limits
+                ).run()
+                self.assertEqual(result.status, "failed")
+                self.assertIn("agent response timed out", result.errors[0])
+
+    def test_open_team_timeout_excludes_tool_processing(self) -> None:
+        code = """import json,sys
+messages=[json.loads(sys.stdin.readline()) for _ in range(5)]
+observation=next(message for message in messages if message.get('kind')=='observation')
+call={'protocol_version':'v1.0.0','run_id':observation['run_id'],'sequence':1,'message_id':'slow-tool','occurred_at':observation['occurred_at'],'kind':'tool_call','role':observation['role'],'tool_name':'run.status','arguments':{},'observation_token':observation['observation_token']}
+print(json.dumps(call),flush=True)
+json.loads(sys.stdin.readline())
+end={'protocol_version':'v1.0.0','run_id':observation['run_id'],'sequence':2,'message_id':'after-slow-tool','occurred_at':observation['occurred_at'],'kind':'run_end','role':'system','status':'failed','observation_token':observation['observation_token']}
+print(json.dumps(end),flush=True)
+"""
+
+        class SlowDispatcher:
+            def __init__(self, engine):
+                self.delegate = ToolDispatcher(engine)
+
+            def schemas(self):
+                return self.delegate.schemas()
+
+            def dispatch(self, call):
+                time.sleep(0.1)
+                return self.delegate.dispatch(call)
+
+        limits = RunLimits(timeout_seconds=0.05)
+        with open_world(WORLD, run_id="open-slow-tool", limits=limits) as engine:
+            result = OpenTeamRunner(
+                engine,
+                (sys.executable, "-c", code),
+                limits,
+                dispatcher=SlowDispatcher(engine),
+            ).run()
+        self.assertEqual(result.status, "failed")
+        self.assertEqual(result.errors, [])
+
+    def test_open_team_timeout_bounds_tool_result_delivery(self) -> None:
+        code = """import json,sys,time
+messages=[json.loads(sys.stdin.readline()) for _ in range(5)]
+observation=next(message for message in messages if message.get('kind')=='observation')
+call={'protocol_version':'v1.0.0','run_id':observation['run_id'],'sequence':1,'message_id':'large-result','occurred_at':observation['occurred_at'],'kind':'tool_call','role':observation['role'],'tool_name':'run.status','arguments':{},'observation_token':observation['observation_token']}
+print(json.dumps(call),flush=True)
+time.sleep(10)
+"""
+
+        class LargeResultDispatcher:
+            def __init__(self, engine):
+                self.delegate = ToolDispatcher(engine)
+
+            def schemas(self):
+                return self.delegate.schemas()
+
+            def dispatch(self, call):
+                return ToolResult(
+                    call.call_id, True, {"payload": "x" * (2 * 1024 * 1024)}
+                )
+
+        limits = RunLimits(timeout_seconds=0.1)
+        with open_world(WORLD, run_id="open-large-result", limits=limits) as engine:
+            result = OpenTeamRunner(
+                engine,
+                (sys.executable, "-c", code),
+                limits,
+                dispatcher=LargeResultDispatcher(engine),
+            ).run()
+        self.assertEqual(result.status, "failed")
+        self.assertIn("agent response timed out", result.errors[0])
 
     def test_both_runners_trace_protocol_team_message_and_yield(self) -> None:
         fixed_code = "import json,sys; r=json.loads(sys.stdin.readline()); c=r['checkpoint']; t=r['observation_token']; n=max([int(item.get('sequence',-1)) for item in r.get('messages',[]) if isinstance(item,dict)]+[-1])+1; out=[];\nif r['role']=='account_executive': out.append({'protocol_version':'v1.0.0','run_id':r['run_id'],'sequence':n,'message_id':'team-'+c['checkpoint_id'],'occurred_at':r['occurred_at'],'kind':'team_message','role':r['role'],'recipient_role':'domain_specialist','payload':{'body':'Review the evidence.'},'observation_token':t}); n+=1\nout.append({'protocol_version':'v1.0.0','run_id':r['run_id'],'sequence':n,'message_id':'yield-'+c['checkpoint_id']+'-'+r['role'],'occurred_at':r['occurred_at'],'kind':'yield','role':r['role'],'reason':'Waiting for evidence.','observation_token':t}); n+=1\nout.append({'protocol_version':'v1.0.0','run_id':r['run_id'],'sequence':n,'message_id':'complete-'+c['checkpoint_id']+'-'+r['role'],'occurred_at':r['occurred_at'],'kind':'checkpoint_complete','role':r['role'],'checkpoint_id':c['checkpoint_id'],'summary':'reviewed','observation_token':t}); [print(json.dumps(item)) for item in out]"
@@ -435,7 +873,11 @@ class RunnerTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             with open_world(
-                WORLD, run_id="fixed-protocol", db_path=root / "fixed.sqlite"
+                WORLD,
+                run_id="fixed-protocol",
+                track="fixed_harness",
+                limits=RunLimits(timeout_seconds=5),
+                db_path=root / "fixed.sqlite",
             ) as engine:
                 result = FixedHarnessScheduler(
                     engine,
@@ -445,11 +887,22 @@ class RunnerTest(unittest.TestCase):
                 ).run()
                 kinds = [event.kind for event in engine.trace_events()]
                 self.assertEqual(result.status, "completed")
+                checkpoint_count = len(
+                    json.loads((WORLD / "manifest.json").read_text(encoding="utf-8"))[
+                        "checkpoint_ids"
+                    ]
+                )
+                self.assertEqual(
+                    result.turns, checkpoint_count * len(runner.ROLE_ORDER)
+                )
                 self.assertIn("team_message", kinds)
                 self.assertIn("yield", kinds)
                 self.assertGreaterEqual(len(engine.team_inbox("domain_specialist")), 2)
             with open_world(
-                WORLD, run_id="open-protocol", db_path=root / "open.sqlite"
+                WORLD,
+                run_id="open-protocol",
+                limits=RunLimits(timeout_seconds=5, retries=0),
+                db_path=root / "open.sqlite",
             ) as engine:
                 initial_count = len(engine.team_inbox("domain_specialist"))
                 result = OpenTeamRunner(
@@ -494,6 +947,7 @@ for line in sys.stdin:
             open_world(
                 WORLD,
                 run_id="open-burst-cap-test",
+                limits=RunLimits(tool_calls_per_checkpoint=1, turns_per_checkpoint=8),
                 db_path=Path(directory) / "run.sqlite",
             ) as engine,
         ):
@@ -541,6 +995,7 @@ for line in sys.stdin:
                 open_world(
                     WORLD,
                     run_id=f"open-exact-cap-{limits.tool_calls_per_checkpoint}",
+                    limits=limits,
                     db_path=Path(directory) / "run.sqlite",
                 ) as engine,
             ):
@@ -637,7 +1092,9 @@ for line in sys.stdin:
         trace = WORLD / "reference_trace.jsonl"
         rubric = WORLD / "rubric.json"
         oracle = WORLD / "oracle.json"
-        run_id = json.loads(trace.read_text(encoding="utf-8").splitlines()[0])["run_id"]
+        start = json.loads(trace.read_text(encoding="utf-8").splitlines()[0])
+        run_id = start["run_id"]
+        configuration = start["payload"]
         scores = []
         persisted_scores = []
         states = []
@@ -647,6 +1104,8 @@ for line in sys.stdin:
                 with open_world(
                     WORLD,
                     run_id=run_id,
+                    agent_manifest=configuration["agent_manifest"],
+                    limits=RunLimits(**configuration["limits"]),
                     db_path=database,
                 ) as engine:
                     replay_trace(engine, trace)
@@ -661,12 +1120,43 @@ for line in sys.stdin:
         self.assertEqual(scores[0], scores[1])
         self.assertEqual(persisted_scores[0], persisted_scores[1])
 
+    def test_reference_replay_rejects_rebound_configuration(self) -> None:
+        start = json.loads(
+            (WORLD / "reference_trace.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()[0]
+        )
+        configuration = start["payload"]
+        tampered = json.loads(json.dumps(start))
+        tampered_configuration = tampered["payload"]
+        model = next(iter(tampered_configuration["agent_manifest"]["models"].values()))
+        model["provider_settings"] = {"temperature": 0.5}
+        tampered_configuration["configuration_hash"] = runner.stable_hash(
+            {
+                "agent_manifest": tampered_configuration["agent_manifest"],
+                "limits": tampered_configuration["limits"],
+            }
+        )
+        with (
+            open_world(
+                WORLD,
+                run_id=start["run_id"],
+                agent_manifest=configuration["agent_manifest"],
+                limits=RunLimits(**configuration["limits"]),
+            ) as engine,
+            self.assertRaisesRegex(ProtocolViolation, "does not match the active run"),
+        ):
+            replay_trace(engine, [tampered])
+
     def test_open_team_tool_completion_advances_checkpoints(self) -> None:
         code = "import json,sys; n=0\nfor line in sys.stdin:\n m=json.loads(line)\n if m.get('kind')=='observation':\n  n+=1; p=m['payload']; c=p['checkpoint']; print(json.dumps({'protocol_version':'v1.0.0','run_id':m['run_id'],'sequence':n,'message_id':'m'+str(n),'occurred_at':m['occurred_at'],'kind':'tool_call','role':m['role'],'tool_name':'run.complete_checkpoint','arguments':{'checkpoint_id':c['checkpoint_id'],'summary':'reviewed'},'idempotency_key':'complete-'+c['checkpoint_id']+'-'+m['role'],'observation_token':m['observation_token']}),flush=True)"
         with (
             tempfile.TemporaryDirectory() as directory,
             open_world(
-                WORLD, run_id="open-tool-test", db_path=Path(directory) / "run.sqlite"
+                WORLD,
+                run_id="open-tool-test",
+                limits=RunLimits(timeout_seconds=5),
+                db_path=Path(directory) / "run.sqlite",
             ) as engine,
         ):
             result = OpenTeamRunner(
@@ -695,8 +1185,18 @@ for line in sys.stdin:
             text = " ".join(command)
             self.assertNotIn(str(world), text)
             self.assertNotIn("/world", text)
+            self.assertNotIn(str(output), text)
+            self.assertNotIn("/output", text)
+            self.assertFalse(output.exists())
             self.assertIn("--network=none", command)
-            self.assertIn("fsize=268435456:268435456", command)
+            self.assertIn("--interactive", command)
+            self.assertIn("--read-only-tmpfs=false", command)
+            self.assertIn("--image-volume=ignore", command)
+            self.assertEqual(command.count("--pids-limit=-1"), 1)
+            self.assertEqual(command.count("--ulimit=host"), 1)
+            self.assertIn("/tmp:rw,noexec,nosuid,nodev,size=64m", command)
+            self.assertFalse(any("nofile=" in item for item in command))
+            self.assertFalse(any("nproc=" in item for item in command))
 
     def test_podman_requires_immutable_image(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -760,43 +1260,71 @@ for line in sys.stdin:
             )
 
     def test_replicates_use_fresh_runs(self) -> None:
-        code = "import json,sys; r=json.loads(sys.stdin.readline()); c=r['checkpoint']; n=len(r.get('messages',[]))+1; print(json.dumps({'protocol_version':'v1.0.0','run_id':r['run_id'],'sequence':n,'message_id':'m'+str(n),'occurred_at':r['occurred_at'],'kind':'checkpoint_complete','role':r['role'],'checkpoint_id':c['checkpoint_id'],'summary':'reviewed','observation_token':r['observation_token']}))"
+        buyer = next(
+            json.loads(line)["email"]
+            for line in (WORLD / "actors.jsonl").read_text().splitlines()
+            if json.loads(line)["kind"] == "buyer"
+        )
+        code = f"""import json,sys
+r=json.loads(sys.stdin.readline())
+c=r['checkpoint']
+n=max([int(item.get('sequence',-1)) for item in r.get('messages',[]) if isinstance(item,dict)]+[-1])+1
+sent=any(item.get('tool_name')=='communications.send' for item in r.get('messages',[]) if isinstance(item,dict))
+if r['role']=='account_executive' and not sent:
+ message={{'protocol_version':'v1.0.0','run_id':r['run_id'],'sequence':n,'message_id':'buyer-send','occurred_at':r['occurred_at'],'kind':'tool_call','role':r['role'],'tool_name':'communications.send','arguments':{{'channel':'email','recipients':[{buyer!r}],'subject':'Evidence review','body':'Please review the evidence.','semantic_envelope':{{'purpose':'Request evidence review','related_records':[],'requested_decisions':['Review the evidence'],'commitments':[],'attachments':[]}}}},'idempotency_key':'buyer-send','observation_token':r['observation_token']}}
+else:
+ message={{'protocol_version':'v1.0.0','run_id':r['run_id'],'sequence':n,'message_id':'m'+str(n),'occurred_at':r['occurred_at'],'kind':'checkpoint_complete','role':r['role'],'checkpoint_id':c['checkpoint_id'],'summary':'reviewed','observation_token':r['observation_token']}}
+print(json.dumps(message))"""
         with tempfile.TemporaryDirectory() as directory:
             results = run_replicates(
                 WORLD,
                 (sys.executable, "-c", code),
                 track="fixed_harness",
-                trials=3,
+                trials=4,
                 limits=RunLimits(timeout_seconds=5),
+                agent_manifest=TEST_AGENT_MANIFEST,
+                environment_manifest=TEST_ENVIRONMENT_MANIFEST,
                 output_dir=directory,
             )
-            self.assertEqual(len(results), 3)
+            self.assertEqual(len(results), 4)
             self.assertTrue(all(result.status == "completed" for result in results))
-            self.assertEqual(len({result.run_id for result in results}), 3)
+            self.assertEqual(len({result.run_id for result in results}), 4)
             manifests = [
                 json.loads(
                     (
                         Path(directory) / f"trial-{trial}" / "run-manifest.json"
                     ).read_text()
                 )
-                for trial in range(1, 4)
+                for trial in range(1, 5)
             ]
             official = tuple(manifests[0]["stakeholder_manifest"]["official_seeds"])
             self.assertEqual(len(official), 3)
             self.assertEqual(
-                [manifest["seed"] for manifest in manifests], list(official)
+                [manifest["seed"] for manifest in manifests[:3]], list(official)
             )
             self.assertEqual(
-                [manifest["stakeholder_manifest"]["seed"] for manifest in manifests],
+                [
+                    manifest["stakeholder_manifest"]["seed"]
+                    for manifest in manifests[:3]
+                ],
                 list(official),
             )
+            self.assertEqual(manifests[3]["seed"], max(official) + 1)
+            self.assertEqual(manifests[3]["stakeholder_manifest"]["seed"], official[0])
             self.assertEqual(
                 [
                     tuple(manifest["stakeholder_manifest"]["official_seeds"])
                     for manifest in manifests
                 ],
-                [official] * 3,
+                [official] * 4,
             )
+            with closing(
+                sqlite3.connect(Path(directory) / "trial-4" / "run.sqlite")
+            ) as db:
+                realized_seed = db.execute(
+                    "SELECT seed FROM stakeholder_realizations"
+                ).fetchone()
+            self.assertEqual(realized_seed, (official[0],))
 
 
 if __name__ == "__main__":

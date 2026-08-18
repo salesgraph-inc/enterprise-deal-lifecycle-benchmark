@@ -6,16 +6,33 @@ import shutil
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from importlib import import_module
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-main = import_module("edlb.cli").main
+cli = import_module("edlb.cli")
+main = cli.main
 runner = import_module("edlb.runner")
-open_world = runner.open_world
+raw_open_world = runner.open_world
+TEST_AGENT_MANIFEST = runner.deterministic_agent_manifest("cli-test-agent")
+TEST_ENVIRONMENT_MANIFEST = {
+    "resolved": True,
+    "runtime_version": "cpython-test",
+    "image_digest": "sha256:" + "6" * 64,
+    "git_revision": "7" * 40,
+    "executor_policy_digest": "sha256:" + "8" * 64,
+}
+
+
+def open_world(*args, **kwargs):
+    kwargs.setdefault("agent_manifest", TEST_AGENT_MANIFEST)
+    kwargs.setdefault("environment_manifest", TEST_ENVIRONMENT_MANIFEST)
+    return raw_open_world(*args, **kwargs)
+
+
 RunLimits = runner.RunLimits
 
 
@@ -33,8 +50,123 @@ WORLD = _manufacturing_world()
 
 
 class CliTest(unittest.TestCase):
+    def test_run_cli_defaults_to_unbounded_limits(self) -> None:
+        args = cli.build_parser().parse_args(["run", str(WORLD)])
+        self.assertEqual(cli._limits(args), RunLimits())
+
+    def test_external_run_requires_resolved_agent_manifest(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            self.assertEqual(main(["run", str(WORLD), "--agent-command", "agent"]), 2)
+        self.assertIn("--agent-manifest is required", stderr.getvalue())
+
+    def test_external_agent_manifest_path_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "agent-manifest.json"
+            path.write_text(json.dumps(TEST_AGENT_MANIFEST), encoding="utf-8")
+            self.assertEqual(cli._external_agent_manifest(path), TEST_AGENT_MANIFEST)
+
+    def test_external_run_requires_resolved_environment_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            agent_path = Path(directory) / "agent-manifest.json"
+            agent_path.write_text(json.dumps(TEST_AGENT_MANIFEST), encoding="utf-8")
+            stderr = io.StringIO()
+            with redirect_stderr(stderr):
+                self.assertEqual(
+                    main(
+                        [
+                            "run",
+                            str(WORLD),
+                            "--agent-command",
+                            "agent",
+                            "--agent-manifest",
+                            str(agent_path),
+                        ]
+                    ),
+                    2,
+                )
+            self.assertIn("--environment-manifest is required", stderr.getvalue())
+
+    def test_external_environment_manifest_path_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "environment-manifest.json"
+            path.write_text(json.dumps(TEST_ENVIRONMENT_MANIFEST), encoding="utf-8")
+            self.assertEqual(
+                cli._external_environment_manifest(path), TEST_ENVIRONMENT_MANIFEST
+            )
+
+    def test_external_environment_requires_executor_policy_digest(self) -> None:
+        manifest = {**TEST_ENVIRONMENT_MANIFEST, "executor_policy_digest": None}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "environment-manifest.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaisesRegex(runner.BundleError, "executor policy digests"):
+                cli._external_environment_manifest(path)
+
     def test_help_and_validate(self) -> None:
         self.assertEqual(main(["validate", str(WORLD)]), 0)
+
+    def test_run_help_describes_optional_limits(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output), self.assertRaises(SystemExit) as context:
+            main(["run", "--help"])
+        self.assertEqual(context.exception.code, 0)
+        help_text = " ".join(output.getvalue().split())
+        self.assertIn("omitted is unlimited", help_text)
+        self.assertIn("omitted is none", help_text)
+        self.assertIn("default is zero", help_text)
+
+    def test_reference_replay_rejects_configuration_tampering(self) -> None:
+        trace_path = WORLD / "reference_trace.jsonl"
+        rows = [json.loads(line) for line in trace_path.read_text().splitlines()]
+        rows[0]["payload"]["configuration_hash"] = "sha256:" + "0" * 64
+        with tempfile.TemporaryDirectory() as directory:
+            tampered = Path(directory) / "reference-trace.jsonl"
+            tampered.write_text(
+                "\n".join(json.dumps(row) for row in rows), encoding="utf-8"
+            )
+            self.assertEqual(
+                main(
+                    [
+                        "replay",
+                        str(WORLD),
+                        str(tampered),
+                        "--output",
+                        str(Path(directory) / "replay"),
+                    ]
+                ),
+                2,
+            )
+
+    def test_reference_replay_rejects_rehashed_provider_settings_tampering(
+        self,
+    ) -> None:
+        trace_path = WORLD / "reference_trace.jsonl"
+        rows = [json.loads(line) for line in trace_path.read_text().splitlines()]
+        payload = rows[0]["payload"]
+        payload["agent_manifest"]["models"]["edlb-reference-fixture"][
+            "provider_settings"
+        ]["temperature"] = 0.2
+        payload["configuration_hash"] = runner.stable_hash(
+            {"agent_manifest": payload["agent_manifest"], "limits": payload["limits"]}
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            tampered = Path(directory) / "reference-trace.jsonl"
+            tampered.write_text(
+                "\n".join(json.dumps(row) for row in rows), encoding="utf-8"
+            )
+            self.assertEqual(
+                main(
+                    [
+                        "replay",
+                        str(WORLD),
+                        str(tampered),
+                        "--output",
+                        str(Path(directory) / "replay"),
+                    ]
+                ),
+                2,
+            )
 
     def test_validate_aggregate_dataset_manifest(self) -> None:
         output = io.StringIO()
@@ -301,6 +433,9 @@ class CliTest(unittest.TestCase):
             self.assertEqual(manifest["seed"], 7)
             self.assertEqual(manifest["limits"]["tool_calls_per_checkpoint"], 3)
             self.assertEqual(manifest["limits"]["turns_per_checkpoint"], 5)
+            self.assertEqual(manifest["environment"], TEST_ENVIRONMENT_MANIFEST)
+            result = json.loads((output / "result.json").read_text(encoding="utf-8"))
+            self.assertTrue(result["diagnostic_replay"])
 
     def test_replay_scripted_oracle_engine_trace(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
