@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import sys
 import time
@@ -26,14 +27,25 @@ SECRET_KEYS = frozenset(
         "access_token",
         "api_key",
         "authorization",
+        "auth",
+        "authentication",
         "bearer_token",
+        "client_secret",
+        "cookie",
+        "credential",
+        "credentials",
         "headers",
         "password",
+        "private_key",
+        "refresh_token",
+        "set_cookie",
+        "session_cookie",
         "secret",
         "token",
         "x_api_key",
     }
 )
+SECRET_KEY_NAMES = frozenset(key.replace("_", "") for key in SECRET_KEYS)
 
 
 class ProviderError(RuntimeError):
@@ -50,6 +62,10 @@ class ProviderConfig:
     api_key: str = field(repr=False)
     prompt_hash: str = PROMPT_HASH
     api_version: str | None = None
+    expected_models: tuple[str, ...] = ()
+    expected_providers: tuple[str, ...] = ()
+    expected_routed_models: tuple[str, ...] = ()
+    router_metadata: bool = False
 
 
 def _provider_name(name: str) -> str:
@@ -97,18 +113,31 @@ def _settings(value: str) -> dict[str, Any]:
     return settings
 
 
-def _reject_credentials(value: Any) -> None:
+def _reject_credentials(value: Any, api_key: str | None = None) -> None:
     if isinstance(value, Mapping):
         for key, item in value.items():
             normalized = str(key).lower().replace("-", "_")
-            if normalized in SECRET_KEYS:
+            if (
+                normalized in SECRET_KEYS
+                or normalized.replace("_", "") in SECRET_KEY_NAMES
+            ):
                 raise ProviderError(
                     "credentials are only allowed through the environment"
                 )
-            _reject_credentials(item)
+            _reject_credentials(item, api_key)
     elif isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
         for item in value:
-            _reject_credentials(item)
+            _reject_credentials(item, api_key)
+    elif api_key and isinstance(value, str) and api_key in value:
+        raise ProviderError("provider response contains credential material")
+
+
+def _safe_json(value: Any, api_key: str) -> Any:
+    _reject_credentials(value, api_key)
+    try:
+        return json.loads(json.dumps(value, allow_nan=False))
+    except (TypeError, ValueError) as exc:
+        raise ProviderError("provider response contains invalid JSON values") from exc
 
 
 def _config_from_request(request: Mapping[str, Any], api_key: str) -> ProviderConfig:
@@ -127,7 +156,7 @@ def _config_from_request(request: Mapping[str, Any], api_key: str) -> ProviderCo
         or not isinstance(provider_settings, Mapping)
     ):
         raise ProviderError("adapter request model configuration is invalid")
-    _reject_credentials(provider_settings)
+    _reject_credentials(provider_settings, api_key)
     if (
         raw.get("provider_defaults") is not True
         or not isinstance(provider_defaults_digest, str)
@@ -147,6 +176,10 @@ def _config_from_request(request: Mapping[str, Any], api_key: str) -> ProviderCo
     base_url = provider_settings.get("base_url")
     request_settings = provider_settings.get("request")
     api_version = provider_settings.get("api_version")
+    expected_models = provider_settings.get("expected_response_models")
+    expected_providers = provider_settings.get("expected_response_providers", ())
+    expected_routed_models = provider_settings.get("expected_routed_models", ())
+    router_metadata = provider_settings.get("router_metadata", False)
     if provider not in PROVIDERS or not isinstance(base_url, str):
         raise ProviderError(
             "provider and base URL must be explicit in the run manifest"
@@ -155,6 +188,31 @@ def _config_from_request(request: Mapping[str, Any], api_key: str) -> ProviderCo
         raise ProviderError(
             "provider request settings must be explicit in the run manifest"
         )
+    if (
+        not isinstance(expected_models, Sequence)
+        or isinstance(expected_models, (str, bytes))
+        or not expected_models
+        or not all(isinstance(value, str) and value for value in expected_models)
+    ):
+        raise ProviderError("expected response models must be explicit")
+    if (
+        not isinstance(expected_providers, Sequence)
+        or isinstance(expected_providers, (str, bytes))
+        or not all(isinstance(value, str) and value for value in expected_providers)
+    ):
+        raise ProviderError("expected response providers are invalid")
+    if (
+        not isinstance(expected_routed_models, Sequence)
+        or isinstance(expected_routed_models, (str, bytes))
+        or not all(isinstance(value, str) and value for value in expected_routed_models)
+    ):
+        raise ProviderError("expected routed models are invalid")
+    if not isinstance(router_metadata, bool):
+        raise ProviderError("router_metadata must be boolean")
+    if provider != "openai-compatible" and (
+        expected_providers or expected_routed_models or router_metadata
+    ):
+        raise ProviderError("routing identity is only valid for compatible providers")
     settings = _settings(json.dumps(dict(request_settings), allow_nan=False))
     if provider == "anthropic-messages":
         max_tokens = settings.get("max_tokens")
@@ -187,6 +245,13 @@ def _config_from_request(request: Mapping[str, Any], api_key: str) -> ProviderCo
             raise ProviderError(
                 "chat providers require single-tool settings in the run manifest"
             )
+        if provider == "openai-compatible":
+            if not expected_providers:
+                raise ProviderError(
+                    "compatible providers require expected response providers"
+                )
+            if router_metadata and not expected_routed_models:
+                raise ProviderError("router metadata requires expected routed models")
     return ProviderConfig(
         provider,
         model,
@@ -196,6 +261,10 @@ def _config_from_request(request: Mapping[str, Any], api_key: str) -> ProviderCo
         api_key,
         prompt_hash,
         api_version,
+        tuple(expected_models),
+        tuple(expected_providers),
+        tuple(expected_routed_models),
+        router_metadata,
     )
 
 
@@ -236,6 +305,128 @@ def _safe_context(value: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _continuation(
+    raw: Mapping[str, Any], config: ProviderConfig, kind: str
+) -> dict[str, Any] | None:
+    metadata = raw.get("model_metadata")
+    if not isinstance(metadata, Mapping):
+        return None
+    value = metadata.get("provider_continuation")
+    if value is None:
+        return None
+    if any(
+        metadata.get(key) != expected
+        for key, expected in (
+            ("provider", config.provider),
+            ("model_id", config.model),
+            ("model_digest", config.model_digest),
+            ("prompt_hash", config.prompt_hash),
+        )
+    ):
+        raise ProviderError("provider continuation does not match the model manifest")
+    safe = _safe_json(value, config.api_key)
+    if not isinstance(safe, Mapping) or safe.get("kind") != kind:
+        raise ProviderError("provider continuation is invalid")
+    return dict(safe)
+
+
+def _chat_assistant(
+    raw: Mapping[str, Any], config: ProviderConfig
+) -> tuple[dict[str, Any], str]:
+    continuation = _continuation(raw, config, "chat")
+    if continuation is None:
+        call_id = str(raw["message_id"])
+        return (
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": call_id,
+                        "type": "function",
+                        "function": {
+                            "name": _provider_name(str(raw["tool_name"])),
+                            "arguments": json.dumps(
+                                raw.get("arguments") or {},
+                                ensure_ascii=False,
+                                sort_keys=True,
+                                separators=(",", ":"),
+                            ),
+                        },
+                    }
+                ],
+            },
+            call_id,
+        )
+    assistant = continuation.get("assistant")
+    if not isinstance(assistant, Mapping):
+        raise ProviderError("chat provider continuation is invalid")
+    calls = assistant.get("tool_calls")
+    if (
+        not isinstance(calls, Sequence)
+        or isinstance(calls, (str, bytes))
+        or len(calls) != 1
+        or not isinstance(calls[0], Mapping)
+        or not isinstance(calls[0].get("function"), Mapping)
+    ):
+        raise ProviderError("chat provider continuation tool call is invalid")
+    call = calls[0]
+    function = call["function"]
+    native_call_id = call.get("id")
+    arguments = function.get("arguments")
+    if (
+        not isinstance(native_call_id, str)
+        or function.get("name") != _provider_name(str(raw["tool_name"]))
+        or not isinstance(arguments, str)
+    ):
+        raise ProviderError("chat provider continuation tool call is invalid")
+    try:
+        parsed_arguments = json.loads(arguments)
+    except json.JSONDecodeError as exc:
+        raise ProviderError("chat provider continuation arguments are invalid") from exc
+    if parsed_arguments != dict(raw.get("arguments") or {}):
+        raise ProviderError("chat provider continuation arguments changed")
+    return dict(assistant), native_call_id
+
+
+def _anthropic_assistant(
+    raw: Mapping[str, Any], config: ProviderConfig
+) -> tuple[list[Any], str]:
+    continuation = _continuation(raw, config, "anthropic")
+    if continuation is None:
+        call_id = str(raw["message_id"])
+        return (
+            [
+                {
+                    "type": "tool_use",
+                    "id": call_id,
+                    "name": _provider_name(str(raw["tool_name"])),
+                    "input": dict(raw.get("arguments") or {}),
+                }
+            ],
+            call_id,
+        )
+    content = continuation.get("content")
+    if not isinstance(content, list):
+        raise ProviderError("Anthropic provider continuation is invalid")
+    calls = [
+        item
+        for item in content
+        if isinstance(item, Mapping) and item.get("type") == "tool_use"
+    ]
+    if len(calls) != 1:
+        raise ProviderError("Anthropic provider continuation tool call is invalid")
+    call = calls[0]
+    native_call_id = call.get("id")
+    if (
+        not isinstance(native_call_id, str)
+        or call.get("name") != _provider_name(str(raw["tool_name"]))
+        or call.get("input") != dict(raw.get("arguments") or {})
+    ):
+        raise ProviderError("Anthropic provider continuation tool call is invalid")
+    return content, native_call_id
+
+
 def _current_context(request: Mapping[str, Any]) -> str:
     return json.dumps(
         {
@@ -252,8 +443,11 @@ def _current_context(request: Mapping[str, Any]) -> str:
     )
 
 
-def _openai_messages(request: Mapping[str, Any]) -> list[dict[str, Any]]:
+def _openai_messages(
+    config: ProviderConfig, request: Mapping[str, Any]
+) -> list[dict[str, Any]]:
     messages: list[dict[str, Any]] = [{"role": "system", "content": SYSTEM_PROMPT}]
+    call_ids: dict[str, str] = {}
     history = request.get("messages")
     if not isinstance(history, Sequence) or isinstance(history, (str, bytes)):
         raise ProviderError("adapter request messages are invalid")
@@ -262,32 +456,16 @@ def _openai_messages(request: Mapping[str, Any]) -> list[dict[str, Any]]:
             raise ProviderError("adapter request message is invalid")
         kind = raw.get("kind")
         if kind == "tool_call":
-            messages.append(
-                {
-                    "role": "assistant",
-                    "content": None,
-                    "tool_calls": [
-                        {
-                            "id": str(raw["message_id"]),
-                            "type": "function",
-                            "function": {
-                                "name": _provider_name(str(raw["tool_name"])),
-                                "arguments": json.dumps(
-                                    raw.get("arguments") or {},
-                                    ensure_ascii=False,
-                                    sort_keys=True,
-                                    separators=(",", ":"),
-                                ),
-                            },
-                        }
-                    ],
-                }
-            )
+            assistant, call_id = _chat_assistant(raw, config)
+            messages.append(assistant)
+            call_ids[str(raw["message_id"])] = call_id
         elif kind == "tool_result":
             messages.append(
                 {
                     "role": "tool",
-                    "tool_call_id": str(raw["call_id"]),
+                    "tool_call_id": call_ids.get(
+                        str(raw["call_id"]), str(raw["call_id"])
+                    ),
                     "content": json.dumps(
                         {
                             "ok": raw.get("ok"),
@@ -316,8 +494,11 @@ def _openai_messages(request: Mapping[str, Any]) -> list[dict[str, Any]]:
     return messages
 
 
-def _anthropic_messages(request: Mapping[str, Any]) -> list[dict[str, Any]]:
+def _anthropic_messages(
+    config: ProviderConfig, request: Mapping[str, Any]
+) -> list[dict[str, Any]]:
     messages: list[dict[str, Any]] = []
+    call_ids: dict[str, str] = {}
     history = request.get("messages")
     if not isinstance(history, Sequence) or isinstance(history, (str, bytes)):
         raise ProviderError("adapter request messages are invalid")
@@ -326,19 +507,14 @@ def _anthropic_messages(request: Mapping[str, Any]) -> list[dict[str, Any]]:
             raise ProviderError("adapter request message is invalid")
         kind = raw.get("kind")
         if kind == "tool_call":
+            content, call_id = _anthropic_assistant(raw, config)
             messages.append(
                 {
                     "role": "assistant",
-                    "content": [
-                        {
-                            "type": "tool_use",
-                            "id": str(raw["message_id"]),
-                            "name": _provider_name(str(raw["tool_name"])),
-                            "input": dict(raw.get("arguments") or {}),
-                        }
-                    ],
+                    "content": content,
                 }
             )
+            call_ids[str(raw["message_id"])] = call_id
         elif kind == "tool_result":
             messages.append(
                 {
@@ -346,7 +522,9 @@ def _anthropic_messages(request: Mapping[str, Any]) -> list[dict[str, Any]]:
                     "content": [
                         {
                             "type": "tool_result",
-                            "tool_use_id": str(raw["call_id"]),
+                            "tool_use_id": call_ids.get(
+                                str(raw["call_id"]), str(raw["call_id"])
+                            ),
                             "content": json.dumps(
                                 raw.get("result")
                                 if raw.get("ok")
@@ -385,7 +563,7 @@ def _request_body(
         body: dict[str, Any] = {
             "model": config.model,
             "system": SYSTEM_PROMPT,
-            "messages": _anthropic_messages(request),
+            "messages": _anthropic_messages(config, request),
             "tools": [
                 {
                     "name": tool["name"],
@@ -398,7 +576,7 @@ def _request_body(
     else:
         body = {
             "model": config.model,
-            "messages": _openai_messages(request),
+            "messages": _openai_messages(config, request),
             "tools": [
                 {
                     "type": "function",
@@ -421,6 +599,8 @@ def _post(config: ProviderConfig, body: Mapping[str, Any]) -> dict[str, Any]:
         )
     else:
         headers["Authorization"] = f"Bearer {config.api_key}"
+        if config.router_metadata:
+            headers["X-OpenRouter-Metadata"] = "enabled"
     request = Request(
         _endpoint(config),
         data=json.dumps(body, ensure_ascii=False, allow_nan=False).encode(),
@@ -444,10 +624,10 @@ def _post(config: ProviderConfig, body: Mapping[str, Any]) -> dict[str, Any]:
     return dict(value)
 
 
-def _usage(provider: str, response: Mapping[str, Any]) -> dict[str, int] | None:
+def _usage(provider: str, response: Mapping[str, Any]) -> dict[str, int]:
     raw = response.get("usage")
     if not isinstance(raw, Mapping):
-        return None
+        raise ProviderError("provider response usage is missing")
     input_tokens = raw.get(
         "input_tokens" if provider == "anthropic-messages" else "prompt_tokens"
     )
@@ -462,15 +642,166 @@ def _usage(provider: str, response: Mapping[str, Any]) -> dict[str, int] | None:
         and not isinstance(output_tokens, bool)
         and output_tokens >= 0
     ):
-        return None
+        raise ProviderError("provider response usage is invalid")
     if provider == "anthropic-messages":
         cached = ("cache_creation_input_tokens", "cache_read_input_tokens")
         for key in cached:
             value = raw.get(key, 0)
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
-                return None
+                raise ProviderError("provider response usage is invalid")
             input_tokens += value
     return {"input": input_tokens, "output": output_tokens}
+
+
+def _provider_usage(response: Mapping[str, Any]) -> dict[str, int | float]:
+    raw = response.get("usage")
+    if not isinstance(raw, Mapping):
+        raise ProviderError("provider response usage is missing")
+    result: dict[str, int | float] = {}
+    for key in (
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "input_tokens",
+        "output_tokens",
+        "cache_creation_input_tokens",
+        "cache_read_input_tokens",
+        "cost",
+    ):
+        if key not in raw:
+            continue
+        value = raw[key]
+        if (
+            not isinstance(value, (int, float))
+            or isinstance(value, bool)
+            or not math.isfinite(value)
+            or value < 0
+        ):
+            raise ProviderError("provider response usage is invalid")
+        result[key] = value
+    return result
+
+
+def _router_identity(
+    config: ProviderConfig, response: Mapping[str, Any], response_model: str
+) -> dict[str, Any]:
+    if not config.router_metadata:
+        provider = response.get("provider")
+        if not isinstance(provider, str) or provider not in config.expected_providers:
+            raise ProviderError("provider response identity is not allowed")
+        return {"selected_provider": provider, "selected_model": response_model}
+    raw = response.get("openrouter_metadata")
+    if not isinstance(raw, Mapping) or raw.get("requested") != config.model:
+        raise ProviderError("OpenRouter response metadata is invalid")
+    endpoints = raw.get("endpoints")
+    available = endpoints.get("available") if isinstance(endpoints, Mapping) else None
+    if not isinstance(available, Sequence) or isinstance(available, (str, bytes)):
+        raise ProviderError("OpenRouter response metadata is invalid")
+    selected = [
+        item
+        for item in available
+        if isinstance(item, Mapping) and item.get("selected") is True
+    ]
+    if len(selected) != 1:
+        raise ProviderError("OpenRouter response metadata is invalid")
+    provider = selected[0].get("provider")
+    routed_model = selected[0].get("model")
+    if (
+        not isinstance(provider, str)
+        or provider not in config.expected_providers
+        or not isinstance(routed_model, str)
+        or routed_model not in config.expected_routed_models
+    ):
+        raise ProviderError("OpenRouter routed identity is not allowed")
+    result: dict[str, Any] = {
+        "requested": config.model,
+        "selected_provider": provider,
+        "selected_model": routed_model,
+    }
+    strategy = raw.get("strategy")
+    region = raw.get("region")
+    attempt = raw.get("attempt")
+    is_byok = raw.get("is_byok")
+    if "strategy" in raw and not isinstance(strategy, str):
+        raise ProviderError("OpenRouter response metadata is invalid")
+    if region is not None and not isinstance(region, str):
+        raise ProviderError("OpenRouter response metadata is invalid")
+    if "attempt" in raw and (
+        not isinstance(attempt, int) or isinstance(attempt, bool) or attempt < 1
+    ):
+        raise ProviderError("OpenRouter response metadata is invalid")
+    if "is_byok" in raw and not isinstance(is_byok, bool):
+        raise ProviderError("OpenRouter response metadata is invalid")
+    for key, value in (
+        ("strategy", strategy),
+        ("region", region),
+        ("attempt", attempt),
+        ("is_byok", is_byok),
+    ):
+        if key in raw:
+            result[key] = value
+    return result
+
+
+def _response_metadata(
+    config: ProviderConfig, response: Mapping[str, Any]
+) -> dict[str, Any]:
+    response_id = response.get("id")
+    response_model = response.get("model")
+    if not isinstance(response_id, str) or not response_id:
+        raise ProviderError("provider response id is missing")
+    if (
+        not isinstance(response_model, str)
+        or response_model not in config.expected_models
+    ):
+        raise ProviderError("provider response model is not allowed")
+    result: dict[str, Any] = {"id": response_id, "model": response_model}
+    for key in ("service_tier", "system_fingerprint"):
+        if key not in response:
+            continue
+        value = response[key]
+        if not isinstance(value, (str, type(None))):
+            raise ProviderError("provider response metadata is invalid")
+        result[key] = value
+    if config.provider == "openai-compatible":
+        result["routing"] = _router_identity(config, response, response_model)
+    return result
+
+
+def _provider_continuation(
+    config: ProviderConfig, response: Mapping[str, Any]
+) -> dict[str, Any]:
+    if config.provider == "anthropic-messages":
+        content = response.get("content")
+        if not isinstance(content, list) or any(
+            not isinstance(item, Mapping)
+            or item.get("type")
+            not in {"text", "thinking", "redacted_thinking", "tool_use"}
+            for item in content
+        ):
+            raise ProviderError("Anthropic response contains unsupported content")
+        return {"kind": "anthropic", "content": content}
+    choices = response.get("choices")
+    if (
+        not isinstance(choices, list)
+        or len(choices) != 1
+        or not isinstance(choices[0], Mapping)
+        or not isinstance(choices[0].get("message"), Mapping)
+    ):
+        raise ProviderError("chat completion response is invalid")
+    assistant = choices[0]["message"]
+    allowed = {
+        "role",
+        "content",
+        "refusal",
+        "reasoning",
+        "reasoning_content",
+        "reasoning_details",
+        "tool_calls",
+    }
+    if set(assistant) - allowed or assistant.get("role", "assistant") != "assistant":
+        raise ProviderError("chat response contains unsupported assistant content")
+    return {"kind": "chat", "assistant": dict(assistant)}
 
 
 def _tool_calls(
@@ -499,7 +830,7 @@ def _tool_calls(
         if (
             not isinstance(choices, Sequence)
             or isinstance(choices, (str, bytes))
-            or not choices
+            or len(choices) != 1
             or not isinstance(choices[0], Mapping)
             or not isinstance(choices[0].get("message"), Mapping)
         ):
@@ -544,14 +875,26 @@ def _tool_calls(
 
 
 def _metadata(
-    config: ProviderConfig, response: Mapping[str, Any], latency_ms: int
+    config: ProviderConfig,
+    response_metadata: Mapping[str, Any],
+    usage: Mapping[str, int],
+    provider_usage: Mapping[str, int | float],
+    continuation: Mapping[str, Any],
+    latency_ms: int,
 ) -> dict[str, Any]:
     settings: dict[str, Any] = {
         "base_url": config.base_url,
+        "expected_response_models": list(config.expected_models),
         **dict(config.settings),
     }
     if config.api_version is not None:
         settings["api_version"] = config.api_version
+    if config.expected_providers:
+        settings["expected_response_providers"] = list(config.expected_providers)
+    if config.expected_routed_models:
+        settings["expected_routed_models"] = list(config.expected_routed_models)
+    if config.router_metadata:
+        settings["router_metadata"] = True
     result: dict[str, Any] = {
         "provider": config.provider,
         "model_id": config.model,
@@ -559,31 +902,11 @@ def _metadata(
         "prompt_hash": config.prompt_hash,
         "model_settings": settings,
         "model_latency_ms": latency_ms,
+        "response_metadata": dict(response_metadata),
+        "provider_usage": dict(provider_usage),
+        "token_usage": dict(usage),
+        "provider_continuation": dict(continuation),
     }
-    response_metadata = {
-        key: response[key]
-        for key in (
-            "id",
-            "model",
-            "provider",
-            "service_tier",
-            "system_fingerprint",
-        )
-        if key in response
-        and (
-            isinstance(response.get(key), (str, int, float, bool))
-            or response.get(key) is None
-        )
-    }
-    if isinstance(response.get("openrouter_metadata"), Mapping):
-        response_metadata["openrouter_metadata"] = dict(response["openrouter_metadata"])
-    if response_metadata:
-        result["response_metadata"] = response_metadata
-    if isinstance(response.get("usage"), Mapping):
-        result["provider_usage"] = dict(response["usage"])
-    usage = _usage(config.provider, response)
-    if usage is not None:
-        result["token_usage"] = usage
     return result
 
 
@@ -602,9 +925,15 @@ def adapt(config: ProviderConfig, request: Mapping[str, Any]) -> tuple[Message, 
     tools, reverse = _tool_maps(request)
     body = _request_body(config, request, tools)
     started = time.monotonic()
-    response = _post(config, body)
+    raw_response = _post(config, body)
     latency_ms = int((time.monotonic() - started) * 1000)
-    metadata = _metadata(config, response, latency_ms)
+    response = _safe_json(raw_response, config.api_key)
+    if not isinstance(response, Mapping):
+        raise ProviderError("provider response must be a JSON object")
+    response_metadata = _response_metadata(config, response)
+    usage = _usage(config.provider, response)
+    provider_usage = _provider_usage(response)
+    continuation = _provider_continuation(config, response)
     history = request.get("messages")
     sequence = (
         max(
@@ -631,6 +960,14 @@ def adapt(config: ProviderConfig, request: Mapping[str, Any]) -> tuple[Message, 
     calls = _tool_calls(config, response, reverse)
     if len(calls) != 1:
         raise ProviderError("provider returned multiple tool calls")
+    metadata = _metadata(
+        config,
+        response_metadata,
+        usage,
+        provider_usage,
+        continuation,
+        latency_ms,
+    )
     result: list[Message] = []
     for index, (provider_call_id, tool_name, arguments) in enumerate(calls):
         digest = hashlib.sha256(
