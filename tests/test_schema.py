@@ -132,6 +132,10 @@ def _protocol_fixtures() -> dict[str, dict[str, object]]:
             "tool_name": "crm.search",
             "arguments": {"query": "deal"},
             "idempotency_key": "read-schema",
+            "model_metadata": {
+                "model_id": "model-schema",
+                "token_usage": {"input": 1, "output": 1},
+            },
         },
         "tool_call_read_without_idempotency": {
             **base,

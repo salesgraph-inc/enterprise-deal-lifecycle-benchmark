@@ -1924,7 +1924,12 @@ def _result_value(
 
 def _collect_model_metadata(result: RunResult, message: Message) -> None:
     payload = message.payload if isinstance(message.payload, Mapping) else {}
-    sources = [payload.get("usage"), payload.get("metadata"), payload.get("model")]
+    sources = [
+        message.model_metadata,
+        payload.get("usage"),
+        payload.get("metadata"),
+        payload.get("model"),
+    ]
     models = result.model_metadata.setdefault("models", {})
     for source in sources:
         if not isinstance(source, Mapping):
@@ -1933,10 +1938,22 @@ def _collect_model_metadata(result: RunResult, message: Message) -> None:
             source.get("model_id") or source.get("model_digest") or "unknown"
         )
         model = models.setdefault(model_key, {})
-        for key in ("model_id", "model_digest", "prompt_hash", "model_settings"):
+        for key in (
+            "provider",
+            "model_id",
+            "model_digest",
+            "prompt_hash",
+            "model_settings",
+        ):
             if key in source:
                 model[key] = source[key]
                 result.model_metadata.setdefault(key, source[key])
+        response_metadata = source.get("response_metadata")
+        if isinstance(response_metadata, Mapping):
+            model.setdefault("responses", []).append(dict(response_metadata))
+        provider_usage = source.get("provider_usage")
+        if isinstance(provider_usage, Mapping):
+            model.setdefault("provider_usage", []).append(dict(provider_usage))
         latency = source.get("model_latency_ms")
         if (
             isinstance(latency, (int, float))
@@ -1987,6 +2004,8 @@ def _protocol_trace_payload(message: Message) -> dict[str, Any]:
     }
     if message.kind in {"start", "observation", "team_message"}:
         value["payload"] = dict(message.payload or {})
+    if message.model_metadata is not None:
+        value["model_metadata"] = dict(message.model_metadata)
     if message.kind == "team_message":
         value["recipient_role"] = message.recipient_role
     elif message.kind == "yield" and message.reason is not None:
@@ -2022,6 +2041,11 @@ def _context_message(message: Message) -> dict[str, Any]:
         "role": message.role,
         "recipient_role": message.recipient_role,
         "payload": dict(message.payload or {}),
+        **(
+            {"model_metadata": dict(message.model_metadata)}
+            if message.model_metadata is not None
+            else {}
+        ),
     }
 
 
@@ -3063,6 +3087,13 @@ class FixedHarnessScheduler:
         alerts, unread_team_messages = self._activation(role)
         call_cap, turn_cap = _run_caps(self.limits)
         observation_token = secrets.token_urlsafe(24)
+        role_models = cast(
+            Mapping[str, str], self.engine.manifest.agent_manifest["roles"]
+        )
+        models = cast(
+            Mapping[str, Mapping[str, Any]],
+            self.engine.manifest.agent_manifest["models"],
+        )
         request = {
             "protocol_version": PROTOCOL_VERSION,
             "kind": "adapter_request",
@@ -3076,6 +3107,7 @@ class FixedHarnessScheduler:
                 if key != "world_id"
             },
             "tool_schemas": list(tool_schemas(self.engine)),
+            "model_config": dict(models[role_models[role]]),
             "messages": list(self.contexts[role]),
             "alerts": alerts,
             "unread_team_messages": unread_team_messages,
@@ -3089,11 +3121,10 @@ class FixedHarnessScheduler:
                 "kind": "observation",
                 "role": role,
                 "occurred_at": self.engine.current_time,
-                "checkpoint": {
-                    key: value
-                    for key, value in (_checkpoint(self.engine) or {}).items()
-                    if key != "world_id"
-                },
+                "checkpoint": dict(cast(Mapping[str, Any], request["checkpoint"])),
+                "alerts": list(alerts),
+                "unread_team_messages": list(unread_team_messages),
+                "budget": dict(cast(Mapping[str, Any], request["budget"])),
             }
         )
         last_error: Exception | None = None

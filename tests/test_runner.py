@@ -762,6 +762,32 @@ print(json.dumps(message))
                 )
             self.assertEqual(len(scheduler.contexts["account_executive"]), 40)
 
+    def test_fixed_harness_retains_complete_activation_context(self) -> None:
+        with open_world(
+            WORLD, run_id="activation-context-test", track="fixed_harness"
+        ) as engine:
+            runner._activate_first(engine)
+            scheduler = FixedHarnessScheduler(engine, (sys.executable, "-c", "pass"))
+            scheduler._request("account_executive")
+            observation = scheduler.contexts["account_executive"][-1]
+        self.assertEqual(
+            set(observation),
+            {
+                "kind",
+                "role",
+                "occurred_at",
+                "checkpoint",
+                "alerts",
+                "unread_team_messages",
+                "budget",
+            },
+        )
+        self.assertTrue(observation["alerts"])
+        self.assertEqual(
+            observation["budget"],
+            {"tool_calls_per_checkpoint": None, "turns_per_checkpoint": None},
+        )
+
     def test_fixed_harness_retries_explicit_response_timeouts(self) -> None:
         with open_world(
             WORLD,

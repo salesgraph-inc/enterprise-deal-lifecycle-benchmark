@@ -92,6 +92,11 @@ not impose a total wall-time, CPU, memory, process, or file-descriptor cap.
 Those policies belong to the evaluator host, are hash-bound in the environment
 manifest, and must remain identical for comparable runs.
 
+Fixed-harness provider setup for OpenAI, Anthropic, and OpenRouter is documented
+in [PROVIDER_ADAPTERS.md](PROVIDER_ADAPTERS.md). The built-in adapter reads its
+provider and request settings from the hash-bound agent manifest and reads only
+the credential value from an environment variable.
+
 When a system relies on provider defaults, its resolved manifest must pin a
 SHA-256 digest of the canonical provider-default and API configuration. A
 changed default configuration therefore changes the EDLB configuration hash.

@@ -17,6 +17,10 @@
       "type": "string",
       "pattern": "^[A-Za-z0-9_-]{32,128}$"
     },
+    "model_metadata": {
+      "type": "object",
+      "minProperties": 1
+    },
     "start": {
       "type": "object",
       "additionalProperties": false,
@@ -39,6 +43,7 @@
         "kind": {"const": "start"},
         "role": {"const": "system"},
         "observation_token": {"$ref": "#/$defs/observation_token"},
+        "model_metadata": {"$ref": "#/$defs/model_metadata"},
         "payload": {"type": "object", "minProperties": 1}
       }
     },
@@ -67,6 +72,7 @@
           "enum": ["account_executive", "domain_specialist", "sales_manager", "revops"]
         },
         "observation_token": {"$ref": "#/$defs/observation_token"},
+        "model_metadata": {"$ref": "#/$defs/model_metadata"},
         "payload": {"type": "object", "minProperties": 1}
       }
     },
@@ -97,6 +103,7 @@
           "enum": ["account_executive", "domain_specialist", "sales_manager", "revops"]
         },
         "observation_token": {"$ref": "#/$defs/observation_token"},
+        "model_metadata": {"$ref": "#/$defs/model_metadata"},
         "tool_name": {
           "type": "string",
           "pattern": "^(crm|communications|calendar|documents|approvals|web|team|run)\\.[a-z0-9_]+$"
@@ -146,6 +153,7 @@
           "enum": ["account_executive", "domain_specialist", "sales_manager", "revops"]
         },
         "observation_token": {"$ref": "#/$defs/observation_token"},
+        "model_metadata": {"$ref": "#/$defs/model_metadata"},
         "call_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
         "ok": {"type": "boolean"},
         "result": {"type": "object"},
@@ -191,6 +199,7 @@
           "enum": ["account_executive", "domain_specialist", "sales_manager", "revops"]
         },
         "observation_token": {"$ref": "#/$defs/observation_token"},
+        "model_metadata": {"$ref": "#/$defs/model_metadata"},
         "recipient_role": {
           "type": "string",
           "enum": ["account_executive", "domain_specialist", "sales_manager", "revops"]
@@ -223,6 +232,7 @@
           "enum": ["account_executive", "domain_specialist", "sales_manager", "revops"]
         },
         "observation_token": {"$ref": "#/$defs/observation_token"},
+        "model_metadata": {"$ref": "#/$defs/model_metadata"},
         "reason": {"type": "string"}
       }
     },
@@ -253,6 +263,7 @@
           "enum": ["account_executive", "domain_specialist", "sales_manager", "revops"]
         },
         "observation_token": {"$ref": "#/$defs/observation_token"},
+        "model_metadata": {"$ref": "#/$defs/model_metadata"},
         "checkpoint_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
         "summary": {"type": "string", "minLength": 1}
       }
@@ -280,6 +291,7 @@
         "kind": {"const": "run_end"},
         "role": {"const": "system"},
         "observation_token": {"$ref": "#/$defs/observation_token"},
+        "model_metadata": {"$ref": "#/$defs/model_metadata"},
         "status": {"type": "string", "enum": ["completed", "failed", "invalid"]},
         "reason": {"type": "string"}
       }

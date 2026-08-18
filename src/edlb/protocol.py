@@ -116,6 +116,7 @@ class Message:
     status: str | None = None
     reason: str | None = None
     observation_token: str | None = None
+    model_metadata: Mapping[str, Any] | None = None
 
     def to_dict(self, allow_system: bool = False) -> dict[str, Any]:
         value: dict[str, Any] = {
@@ -129,6 +130,8 @@ class Message:
         }
         if self.observation_token is not None:
             value["observation_token"] = self.observation_token
+        if self.model_metadata is not None:
+            value["model_metadata"] = dict(self.model_metadata)
         if self.kind in {"start", "observation", "team_message"}:
             value["payload"] = dict(self.payload or {})
         elif self.kind == "tool_call":
@@ -181,6 +184,9 @@ class Message:
             status=data.get("status"),
             reason=data.get("reason"),
             observation_token=data.get("observation_token"),
+            model_metadata=(
+                dict(data["model_metadata"]) if "model_metadata" in data else None
+            ),
         )
 
 
@@ -221,7 +227,7 @@ def _validate(value: Mapping[str, Any], allow_system: bool = False) -> dict[str,
         raise ProtocolError(f"{kind} messages require system role")
     if kind not in {"start", "run_end"} and role == "system":
         raise ProtocolError("system role is reserved for internal orchestration")
-    shared_optional = {"observation_token"}
+    shared_optional = {"observation_token", "model_metadata"}
     allowed: dict[str, set[str]] = {
         "start": required | shared_optional | {"payload"},
         "observation": required | shared_optional | {"payload"},
@@ -259,6 +265,8 @@ def _validate(value: Mapping[str, Any], allow_system: bool = False) -> dict[str,
         or not OBSERVATION_TOKEN.fullmatch(observation_token)
     ):
         raise ProtocolError("observation_token has an invalid format")
+    if "model_metadata" in data:
+        _mapping(data["model_metadata"], "model_metadata", nonempty=True)
     if kind in {"start", "observation", "team_message"}:
         _mapping(data.get("payload"), "payload", nonempty=True)
     if kind == "tool_call":
