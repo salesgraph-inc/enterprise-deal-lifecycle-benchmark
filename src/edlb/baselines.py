@@ -302,6 +302,7 @@ def build_podman_command(config: PodmanConfig) -> list[str]:
     command.extend(config.command)
     return command
 
+
 def podman_command(
     image: str,
     command: str | Sequence[str],
