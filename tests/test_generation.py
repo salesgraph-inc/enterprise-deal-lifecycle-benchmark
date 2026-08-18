@@ -115,6 +115,17 @@ class GenerationTest(unittest.TestCase):
         parsed = datetime.fromisoformat(value)
         self.assertIsNotNone(parsed.tzinfo)
 
+    def test_generation_refuses_existing_output_without_force(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "benchmarks" / "v1"
+            output = root / "output"
+            output.mkdir(parents=True)
+            sentinel = output / "owner-data.txt"
+            sentinel.write_text("preserve", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "pass force=True"):
+                generate_dataset(root)
+            self.assertEqual(sentinel.read_text(encoding="utf-8"), "preserve")
+
     def bundles(self) -> list[tuple[Path, bool]]:
         result: list[tuple[Path, bool]] = []
         for split in ("train", "dev", "blind"):
