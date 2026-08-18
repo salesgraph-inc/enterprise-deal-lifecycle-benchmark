@@ -29,6 +29,9 @@ authorship and review remain pending release gates.
 - [x] Canary scanning, quota ledger, exact-byte manifest hashing, HMAC result
       signing, immutable network-disabled Podman isolation, and RevOps-only CRM
       merge have focused tests.
+- [x] The checked-in v1 fixture's public data boundary and CC BY 4.0 license
+      cover all 72 worlds, oracle/assertion material, hidden events, and
+      reference traces; future private packs remain excluded until retired.
 
 ## Resource policy
 
@@ -66,6 +69,10 @@ declared evaluator safety policy remain required controls.
 - [ ] Obtain formal trademark and legal clearance.
 - [ ] Publish only reviewed, reproducible leaderboard results.
 - [ ] Approve official benchmark publication and leaderboard release.
+
+The checked-in v1 fixture is prepared as public synthetic data; this checklist
+separates that repository data publication boundary from the still-pending
+official benchmark release, results, and leaderboard decisions.
 
 The fixed-harness and open-team leaderboards remain empty until official runs
 and release approval exist. Preliminary PyPI and GitHub namespace observations
