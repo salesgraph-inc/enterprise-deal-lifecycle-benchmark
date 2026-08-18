@@ -18,6 +18,35 @@ from edlb.provider_adapter import (
 DIGEST = "sha256:" + "a" * 64
 
 
+def _conditional_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            "channel": {"type": "string", "enum": ["email", "internal_chat"]},
+            "semantic_envelope": {
+                "type": "object",
+                "properties": {
+                    "purpose": {"anyOf": [{"type": "string"}, {"type": "null"}]}
+                },
+            },
+        },
+        "required": ["channel"],
+        "additionalProperties": False,
+        "allOf": [
+            {
+                "if": {"properties": {"channel": {"const": "email"}}},
+                "then": {"required": ["semantic_envelope"]},
+            }
+        ],
+    }
+
+
+def _anthropic_schema() -> dict[str, Any]:
+    value = _conditional_schema()
+    value.pop("allOf")
+    return value
+
+
 class _Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         length = int(self.headers.get("Content-Length", "0"))
@@ -217,7 +246,9 @@ class ProviderAdapterTest(unittest.TestCase):
                 expected_routed_models=("openai/test-resolved",),
                 router_metadata=True,
             )
-            message = adapt(config, _request(config))[0]
+            request = _request(config)
+            request["tool_schemas"][0]["arguments"] = _conditional_schema()
+            message = adapt(config, request)[0]
             followup = _request(config)
             followup["messages"].extend(
                 [
@@ -241,6 +272,9 @@ class ProviderAdapterTest(unittest.TestCase):
         self.assertNotIn("max_tokens", body)
         self.assertNotIn("timeout", body)
         self.assertEqual(body["tools"][0]["function"]["name"], "crm__search")
+        self.assertEqual(
+            body["tools"][0]["function"]["parameters"], _conditional_schema()
+        )
         self.assertEqual(body["messages"][2]["tool_calls"][0]["id"], "prior-call")
         self.assertEqual(body["messages"][3]["tool_call_id"], "prior-call")
         self.assertNotIn("top-secret-key", json.dumps(body))
@@ -265,6 +299,100 @@ class ProviderAdapterTest(unittest.TestCase):
         self.assertEqual(value["model_metadata"]["prompt_hash"], PROMPT_HASH)
         self.assertNotIn("top-secret-key", json.dumps(value))
         self.assertEqual(Message.from_dict(value), message)
+
+    def test_openai_compatible_anthropic_route_uses_anthropic_schema(self) -> None:
+        response = {
+            "id": "generation-anthropic-1",
+            "model": "anthropic/test-resolved",
+            "provider": "Anthropic",
+            "choices": [
+                {
+                    "finish_reason": "tool_calls",
+                    "message": {
+                        "tool_calls": [
+                            {
+                                "id": "call-1",
+                                "function": {
+                                    "name": "communications__send",
+                                    "arguments": "{}",
+                                },
+                            }
+                        ]
+                    },
+                }
+            ],
+            "usage": {"prompt_tokens": 2, "completion_tokens": 1},
+        }
+        with _server(response) as server:
+            config = ProviderConfig(
+                provider="openai-compatible",
+                model="anthropic/test",
+                model_digest=DIGEST,
+                base_url=f"http://127.0.0.1:{server.server_port}/v1",
+                settings={"tool_choice": "required", "parallel_tool_calls": False},
+                api_key="secret",
+                expected_models=("anthropic/test-resolved",),
+                expected_providers=("Anthropic", "Other Provider"),
+            )
+            request = _request(config, "communications.send")
+            schema = _conditional_schema()
+            canonical = json.loads(json.dumps(schema))
+            request["tool_schemas"][0]["arguments"] = schema
+            adapt(config, request)
+        body = server.requests[0][2]
+        self.assertEqual(
+            body["tools"][0]["function"]["parameters"], _anthropic_schema()
+        )
+        self.assertEqual(schema, canonical)
+        self.assertNotIn(
+            "semantic_envelope",
+            body["tools"][0]["function"]["parameters"]["required"],
+        )
+        self.assertIn(
+            "anyOf",
+            body["tools"][0]["function"]["parameters"]["properties"][
+                "semantic_envelope"
+            ]["properties"]["purpose"],
+        )
+
+    def test_anthropic_schema_rejects_top_level_unions(self) -> None:
+        config = ProviderConfig(
+            provider="anthropic-messages",
+            model="claude-test",
+            model_digest=DIGEST,
+            base_url="http://127.0.0.1:1/v1",
+            settings={
+                "max_tokens": 4096,
+                "tool_choice": {
+                    "type": "any",
+                    "disable_parallel_tool_use": True,
+                },
+            },
+            api_key="secret",
+            api_version="2023-06-01",
+            expected_models=("claude-test",),
+        )
+        for keyword in ("oneOf", "anyOf"):
+            with self.subTest(keyword=keyword):
+                request = _request(config)
+                request["tool_schemas"][0]["arguments"] = {
+                    "type": "object",
+                    keyword: [{"type": "object"}],
+                }
+                with self.assertRaisesRegex(ProviderError, "unions"):
+                    adapt(config, request)
+        request = _request(config)
+        request["tool_schemas"][0]["arguments"] = {
+            "type": "object",
+            "properties": {},
+            "allOf": [{"required": ["query"]}],
+        }
+        with self.assertRaisesRegex(ProviderError, "allOf is unsupported"):
+            adapt(config, request)
+        request = _request(config)
+        request["tool_schemas"][0]["arguments"] = {"type": "object"}
+        with self.assertRaisesRegex(ProviderError, "root properties"):
+            adapt(config, request)
 
     def test_direct_openai_chat_uses_the_same_native_chat_contract(self) -> None:
         response = {
@@ -319,10 +447,13 @@ class ProviderAdapterTest(unittest.TestCase):
                 {
                     "type": "tool_use",
                     "id": "toolu_1",
-                    "name": "run__complete_checkpoint",
+                    "name": "communications__send",
                     "input": {
-                        "checkpoint_id": "checkpoint-1",
-                        "summary": "Reviewed evidence.",
+                        "channel": "email",
+                        "recipients": ["buyer@example.test"],
+                        "subject": "Evidence review",
+                        "body": "Please review the evidence.",
+                        "semantic_envelope": {},
                     },
                 },
             ],
@@ -350,8 +481,13 @@ class ProviderAdapterTest(unittest.TestCase):
                 api_version="2023-06-01",
                 expected_models=("claude-test-resolved",),
             )
-            message = adapt(config, _request(config, "run.complete_checkpoint"))[0]
-            followup = _request(config, "run.complete_checkpoint")
+            request = _request(config, "communications.send")
+            schema = _conditional_schema()
+            canonical = json.loads(json.dumps(schema))
+            request["tool_schemas"][0]["arguments"] = schema
+            message = adapt(config, request)[0]
+            followup = _request(config, "communications.send")
+            followup["tool_schemas"][0]["arguments"] = _conditional_schema()
             followup["messages"].extend(
                 [
                     message.to_dict(),
@@ -371,14 +507,25 @@ class ProviderAdapterTest(unittest.TestCase):
         self.assertEqual(headers["Anthropic-Version"], "2023-06-01")
         self.assertEqual(body["max_tokens"], 4096)
         self.assertNotIn("temperature", body)
-        self.assertEqual(body["tools"][0]["name"], "run__complete_checkpoint")
+        self.assertEqual(body["tools"][0]["name"], "communications__send")
+        self.assertEqual(body["tools"][0]["input_schema"], _anthropic_schema())
+        self.assertEqual(schema, canonical)
+        self.assertNotIn(
+            "semantic_envelope", body["tools"][0]["input_schema"]["required"]
+        )
+        self.assertIn(
+            "anyOf",
+            body["tools"][0]["input_schema"]["properties"]["semantic_envelope"][
+                "properties"
+            ]["purpose"],
+        )
         self.assertEqual(body["messages"][1]["content"][0]["type"], "tool_use")
         self.assertEqual(body["messages"][2]["content"][0]["type"], "tool_result")
         self.assertEqual(replay_body["messages"][-3]["content"], response["content"])
         self.assertEqual(
             replay_body["messages"][-2]["content"][0]["tool_use_id"], "toolu_1"
         )
-        self.assertEqual(message.tool_name, "run.complete_checkpoint")
+        self.assertEqual(message.tool_name, "communications.send")
         self.assertRegex(message.idempotency_key or "", r"^model-write-[0-9a-f]{40}$")
         self.assertEqual(
             message.model_metadata["token_usage"], {"input": 18, "output": 5}

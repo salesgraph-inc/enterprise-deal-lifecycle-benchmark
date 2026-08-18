@@ -305,6 +305,45 @@ def _safe_context(value: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _provider_schema(
+    config: ProviderConfig, value: Mapping[str, Any]
+) -> Mapping[str, Any]:
+    if (
+        config.provider != "anthropic-messages"
+        and "Anthropic" not in config.expected_providers
+    ):
+        return value
+    schema = dict(value)
+    if schema.get("type") != "object":
+        raise ProviderError("Anthropic tool schemas must be root objects")
+    if "oneOf" in schema or "anyOf" in schema:
+        raise ProviderError("Anthropic tool schemas cannot use top-level unions")
+    if not isinstance(schema.get("properties"), Mapping):
+        raise ProviderError("Anthropic tool schemas require root properties")
+    raw_rules = schema.pop("allOf", ())
+    if not isinstance(raw_rules, Sequence) or isinstance(raw_rules, (str, bytes)):
+        raise ProviderError("Anthropic tool schema allOf is invalid")
+    for rule in raw_rules:
+        if not isinstance(rule, Mapping) or set(rule) != {"if", "then"}:
+            raise ProviderError("Anthropic tool schema allOf is unsupported")
+        condition = rule["if"]
+        consequence = rule["then"]
+        if (
+            not isinstance(condition, Mapping)
+            or not isinstance(consequence, Mapping)
+            or set(consequence) != {"required"}
+        ):
+            raise ProviderError("Anthropic tool schema allOf is unsupported")
+        fields = consequence["required"]
+        if (
+            not isinstance(fields, Sequence)
+            or isinstance(fields, (str, bytes))
+            or not all(isinstance(item, str) for item in fields)
+        ):
+            raise ProviderError("Anthropic tool schema allOf is unsupported")
+    return schema
+
+
 def _continuation(
     raw: Mapping[str, Any], config: ProviderConfig, kind: str
 ) -> dict[str, Any] | None:
@@ -568,7 +607,7 @@ def _request_body(
                 {
                     "name": tool["name"],
                     "description": tool["description"],
-                    "input_schema": tool["parameters"],
+                    "input_schema": _provider_schema(config, tool["parameters"]),
                 }
                 for tool in tools
             ],
@@ -580,7 +619,10 @@ def _request_body(
             "tools": [
                 {
                     "type": "function",
-                    "function": dict(tool),
+                    "function": {
+                        **dict(tool),
+                        "parameters": _provider_schema(config, tool["parameters"]),
+                    },
                 }
                 for tool in tools
             ],
