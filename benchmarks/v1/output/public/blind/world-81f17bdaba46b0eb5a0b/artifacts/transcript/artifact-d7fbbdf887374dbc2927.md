@@ -1,0 +1,12 @@
+# Consulting knowledge transfer update
+
+- Channel: call transcript
+- Date: 2025-12-02T10:51:00Z
+- Subject: Westmere Oakline Group strategy and operations engagement | knowledge transfer review
+
+Dara R. Keel-Morrow-e9f3 (Champion): The knowledge transfer review is waiting on a dated buyer position.
+Sable U. Orchard-Lumen-3c22 (Account Executive): I will identify who can decide and keep assumptions outside the forecast.
+Dara R. Keel-Morrow-e9f3 (Champion): Bring the unresolved procurement item into that discussion.
+Dara R. Keel-Morrow-e9f3 (Champion): Reviewers still cite the procurement record for knowledge-transfer responsibilities and handoff plan.
+Dara R. Keel-Morrow-e9f3 (Champion): Carry forward only commitments that the accountable owner confirmed.
+Dara R. Keel-Morrow-e9f3 (Champion): Keep the owner of knowledge-transfer responsibilities and handoff plan distinct from the person recording it.

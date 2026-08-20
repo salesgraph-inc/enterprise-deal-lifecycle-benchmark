@@ -9,12 +9,12 @@
 
 ## Control
 
-Rule: For close plan template, Emberline Commercial Bank may not mark committee review complete until Banking Sales Operations Lead verifies committee calendar, covenant tracker, and dated closing forecast.
+Rule: For close plan template, Emberline Commercial Bank may not mark credit approval complete until Banking Sales Operations Lead verifies credit approval record, covenant tracker, and dated closing forecast.
 Owner: Banking Sales Operations Lead
-Required evidence: committee calendar, covenant tracker, and dated closing forecast.
+Required evidence: credit approval record, covenant tracker, and dated closing forecast.
 Approval threshold: Exposure above USD 1,000,000.00 (100000000 minor units) requires written approval from Banking Sales Operations Lead.
 Escalation trigger: Escalate when forecast stage advances before KYC, credit, or documentation evidence is recorded.
 
 ## Recordkeeping
 
-Attach the evidence to the committee review record, preserve prior versions, and record the decision date before advancing the commercial lending and treasury sale.
+Attach the evidence to the credit approval record, preserve prior versions, and record the decision date before advancing the commercial lending and treasury sale.

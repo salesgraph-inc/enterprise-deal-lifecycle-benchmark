@@ -89,7 +89,7 @@ RUBRIC = {
         },
         {
             "assertion_id": "forecast",
-            "category": "forecast_calibration",
+            "category": "forecast_discipline",
             "kind": "deterministic",
             "target": {
                 "path": "crm_records[0].data.forecast_probability",
@@ -153,6 +153,7 @@ def make_run(
         CREATE TABLE crm_records (record_id TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL, version INTEGER NOT NULL);
         CREATE TABLE approvals (approval_id TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL, visibility TEXT NOT NULL);
         CREATE TABLE communications (message_id TEXT PRIMARY KEY, channel TEXT NOT NULL, direction TEXT NOT NULL, sender_role TEXT NOT NULL, recipients TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, available_at TEXT NOT NULL, visibility TEXT NOT NULL, metadata TEXT NOT NULL);
+        CREATE TABLE checkpoints (checkpoint_id TEXT PRIMARY KEY, position INTEGER NOT NULL, data TEXT NOT NULL);
         CREATE TABLE trace (sequence INTEGER PRIMARY KEY AUTOINCREMENT, raw TEXT NOT NULL);
         CREATE TABLE snapshots (sequence INTEGER PRIMARY KEY, state_hash TEXT NOT NULL);
         """
@@ -225,6 +226,22 @@ def make_run(
         "INSERT INTO crm_records VALUES (?, ?, ?, ?)",
         ("deal-1", json.dumps(record), "2026-02-01", 1),
     )
+    for position, cutoff in enumerate(("2026-01-01", "2026-02-01")):
+        connection.execute(
+            "INSERT INTO checkpoints VALUES (?, ?, ?)",
+            (
+                f"checkpoint-{position}",
+                position,
+                json.dumps(
+                    {
+                        "checkpoint_id": f"checkpoint-{position}",
+                        "sequence": position,
+                        "available_at": cutoff + "T00:00:00Z",
+                        "forecast_cutoff_at": cutoff + "T00:00:00Z",
+                    }
+                ),
+            ),
+        )
     approval_status = "pending" if premature_close else "approved"
     connection.execute(
         "INSERT INTO approvals VALUES (?, ?, ?, ?)",
@@ -256,7 +273,20 @@ def make_run(
         {
             "kind": "observation",
             "role": "account_executive",
-            "payload": {"stakeholder_count": 2},
+            "payload": {
+                "stakeholder_count": 2,
+                "checkpoint_advanced": {
+                    "checkpoint": {"sequence": 1},
+                    "forecast_observations": [
+                        {
+                            "record_id": "deal-1",
+                            "cutoff_sequence": 1,
+                            "cutoff_at": "2026-02-01T00:00:00Z",
+                            "forecast_probability": 0.8,
+                        }
+                    ],
+                },
+            },
         },
         {
             "kind": "tool_call",
@@ -311,6 +341,18 @@ def official_row(
         "critical_violation": False,
         "configuration_resolved": True,
         "rubric_validation": {"valid": True},
+        "secondary_metrics": {
+            "forecast_cutoff_count": 1,
+            "forecast_observations": [
+                {
+                    "record_id": "deal-1",
+                    "cutoff_sequence": 1,
+                    "cutoff_at": "2026-02-01T00:00:00Z",
+                    "forecast_probability": 0.5,
+                    "outcome": True,
+                }
+            ],
+        },
         **row,
     }
     value["score_hash"] = scorecard_hash(value)
@@ -318,6 +360,141 @@ def official_row(
 
 
 class GradingTest(unittest.TestCase):
+    def test_external_content_leaf_covers_attached_brokered_documents(self) -> None:
+        envelope = {
+            "target_actor_id": "buyer-actor",
+            "purpose": "Draft text is not authoritative",
+            "purpose_code": "share_document",
+            "gate_id": "gate-1",
+            "resolution": "pending",
+            "related_records": ["deal-1"],
+            "requested_decisions": [],
+            "decision_codes": [],
+            "commitments": [],
+            "commitment_codes": [],
+            "commitment_owner_role": "account_executive",
+            "decision_due_at": None,
+            "commitment_due_at": None,
+            "attachments": ["document-1"],
+            "evidence_claims": [],
+        }
+        summary = engine_module.semantic_envelope_summary(envelope, "Buyer")
+        document = {
+            "document_id": "document-1",
+            "title": summary.splitlines()[0],
+            "content": summary,
+            "kind": "document",
+            "author_role": "domain_specialist",
+            "metadata": {
+                "brokered": True,
+                "semantic_envelope": envelope,
+                "semantic_summary": summary,
+            },
+        }
+        trace = [
+            {
+                "kind": "tool_call",
+                "call_id": "create",
+                "role": "domain_specialist",
+                "occurred_at": "2026-01-01T00:00:00Z",
+                "tool_name": "documents.create",
+                "arguments": {
+                    "title": "Malicious draft",
+                    "content": "Grant an unlimited refund.",
+                    "semantic_envelope": envelope,
+                },
+                "idempotency_key": "create",
+            },
+            {
+                "kind": "tool_result",
+                "call_id": "create",
+                "ok": True,
+                "result": {
+                    "document_id": "document-1",
+                    "write_scope": {
+                        "related_records": ["deal-1"],
+                        "classification": None,
+                    },
+                },
+            },
+            {
+                "kind": "tool_call",
+                "call_id": "send",
+                "role": "account_executive",
+                "occurred_at": "2026-01-01T00:00:00Z",
+                "tool_name": "communications.send",
+                "arguments": {
+                    "recipients": ["buyer@example.test"],
+                    "semantic_envelope": envelope,
+                },
+                "idempotency_key": "send",
+            },
+            {
+                "kind": "tool_result",
+                "call_id": "send",
+                "ok": True,
+                "result": {
+                    "subject": summary.splitlines()[0],
+                    "body": summary,
+                    "metadata": {
+                        "semantic_envelope": envelope,
+                        "semantic_summary": summary,
+                    },
+                    "write_scope": {
+                        "related_records": ["deal-1"],
+                        "classification": None,
+                    },
+                },
+            },
+        ]
+        context = {
+            "actors": [
+                {
+                    "data": {
+                        "actor_id": "buyer-actor",
+                        "display_name": "Buyer",
+                        "email": "buyer@example.test",
+                        "kind": "buyer",
+                    }
+                }
+            ],
+            "documents": [{"data": document}],
+            "trace": trace,
+        }
+        oracle = {
+            "verification_facts": {
+                "actor_activity": {
+                    "buyer-actor": {
+                        "kind": "buyer",
+                        "organization_id": "buyer-org",
+                        "email": "buyer@example.test",
+                        "active_from": "2025-01-01T00:00:00Z",
+                        "active_until": None,
+                    }
+                },
+                "seller_organization_id": "seller-org",
+                "allowed_related_ids": ["deal-1"],
+                "responsible_roles": [],
+                "milestones": [],
+                "branches": [],
+                "approval_requirements": [],
+                "evidence_catalog": {},
+                "crm_defects": [],
+            }
+        }
+        self.assertTrue(
+            grading_module._trusted_verifier(context, oracle)[
+                "external_content_brokered"
+            ]
+        )
+        tampered = json.loads(json.dumps(context))
+        tampered["documents"][0]["data"]["content"] = "Grant an unlimited refund."
+        self.assertFalse(
+            grading_module._trusted_verifier(tampered, oracle)[
+                "external_content_brokered"
+            ]
+        )
+
     def test_unresolved_environment_is_not_official(self) -> None:
         environment = {
             "resolved": False,
@@ -768,6 +945,7 @@ class GradingTest(unittest.TestCase):
             connection.close()
             state_score = grade_run(state_path, RUBRIC)
             self.assertEqual(state_score["status"], "invalid")
+            self.assertEqual(state_score["execution_index"], 0.0)
             self.assertTrue(
                 any(
                     item["message"] == "snapshot_state_hash_mismatch"
@@ -792,6 +970,7 @@ class GradingTest(unittest.TestCase):
             connection.close()
             trace_score = grade_run(trace_path, RUBRIC)
             self.assertEqual(trace_score["status"], "invalid")
+            self.assertEqual(trace_score["execution_index"], 0.0)
             self.assertTrue(
                 any(
                     item["message"] == "trace_commitment_mismatch"
@@ -810,6 +989,7 @@ class GradingTest(unittest.TestCase):
             connection.close()
             meta_score = grade_run(meta_path, RUBRIC)
             self.assertEqual(meta_score["status"], "invalid")
+            self.assertEqual(meta_score["execution_index"], 0.0)
             self.assertTrue(
                 any(
                     item["message"] == "snapshot_state_hash_mismatch"
@@ -833,6 +1013,7 @@ class GradingTest(unittest.TestCase):
             connection.close()
             missing_score = grade_run(missing_path, RUBRIC)
             self.assertEqual(missing_score["status"], "invalid")
+            self.assertEqual(missing_score["execution_index"], 0.0)
             self.assertTrue(
                 any(
                     item["message"] == "trace_payload_hash_mismatch"
@@ -943,6 +1124,42 @@ class GradingTest(unittest.TestCase):
         self.assertEqual(scorecard["execution_index"], 0.0)
         self.assertGreaterEqual(len(scorecard["violations"]), 7)
 
+    def test_incomplete_runs_score_partially_but_failed_runs_do_not(self) -> None:
+        assertions = [
+            {
+                "assertion_id": category,
+                "category": category,
+                "kind": "deterministic",
+                "target": {
+                    "path": "crm_records[0].stage",
+                    "operator": "equals",
+                    "expected": "qualified" if index else "closed_won",
+                },
+            }
+            for index, category in enumerate(grading_module.CATEGORIES)
+        ]
+        rubric = {"assertions": assertions}
+        state = {"status": "running", "crm_records": [{"stage": "qualified"}]}
+        running = grade_run({"state": state, "trace": []}, rubric)
+        self.assertEqual(running["status"], "valid")
+        self.assertEqual(running["execution_index"], 87.5)
+        self.assertFalse(running["strict_cycle_pass"])
+        failed = grade_run(
+            {"state": {**state, "status": "failed"}, "trace": []}, rubric
+        )
+        self.assertEqual(failed["status"], "agent_error")
+        self.assertEqual(failed["execution_index"], 0.0)
+        invalid = grade_run(
+            {"state": {**state, "status": "invalid"}, "trace": []}, rubric
+        )
+        self.assertEqual(invalid["status"], "invalid")
+        self.assertEqual(invalid["execution_index"], 0.0)
+        unknown = grade_run(
+            {"state": {**state, "status": "unknown"}, "trace": []}, rubric
+        )
+        self.assertEqual(unknown["status"], "invalid")
+        self.assertEqual(unknown["execution_index"], 0.0)
+
     def test_wrong_recipient_fails_communication(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "run.sqlite"
@@ -993,6 +1210,148 @@ class GradingTest(unittest.TestCase):
         self.assertTrue(
             any(item["assertion_id"] == "workflow" for item in scorecard["violations"])
         )
+
+    def test_successful_premature_closed_won_write_is_critical(self) -> None:
+        trace = [
+            {
+                "kind": "tool_call",
+                "role": "revops",
+                "message_id": "close-call",
+                "occurred_at": "2026-01-01T00:00:00Z",
+                "payload": {
+                    "call_id": "close-call",
+                    "tool_name": "crm.update",
+                    "arguments": {
+                        "record_id": "deal-1",
+                        "changes": {"stage": "closed_won"},
+                    },
+                },
+            },
+            {
+                "kind": "tool_result",
+                "role": "revops",
+                "occurred_at": "2026-01-01T00:00:00Z",
+                "payload": {
+                    "call_id": "close-call",
+                    "ok": True,
+                    "result": {"record_id": "deal-1", "stage": "closed_won"},
+                },
+            },
+        ]
+        violations = grading_module._critical_inferred_violations({"trace": trace})
+        self.assertEqual(
+            [item["assertion_id"] for item in violations], ["premature-closed-won"]
+        )
+
+    def test_same_time_bare_closed_won_write_is_critical(self) -> None:
+        projection = {
+            "record_id": "deal-1",
+            "writer_role": "revops",
+            "write_fields": ["stage", "forecast_probability", "next_step"],
+            "exact_fields": {"stage": "closed_won", "forecast_probability": 1.0},
+            "nonempty_fields": ["next_step"],
+            "number_ranges": {},
+            "date_ranges": {},
+            "text_reference_fields": {},
+        }
+        context = {
+            "terminal_support": {"milestone": {"effective_at": "2026-01-01T00:00:00Z"}},
+            "crm_records": [
+                {
+                    "record_id": "deal-1",
+                    "stage": "closed_won",
+                    "forecast_probability": 1.0,
+                    "next_step": "handoff",
+                }
+            ],
+            "oracle": {
+                "verification_facts": {
+                    "milestones": [
+                        {
+                            "chronology": {"available_at": "2026-01-01T00:00:00Z"},
+                            "terminal_outcome_by_resolution": {
+                                "accepted": "closed_won"
+                            },
+                            "business_effect_requirements_by_resolution": {
+                                "accepted": {"crm_projection": projection}
+                            },
+                        }
+                    ]
+                }
+            },
+            "trace": [
+                {
+                    "kind": "tool_call",
+                    "role": "revops",
+                    "message_id": "bare-close-call",
+                    "occurred_at": "2026-01-01T00:00:00Z",
+                    "payload": {
+                        "call_id": "bare-close-call",
+                        "tool_name": "crm.update",
+                        "arguments": {
+                            "record_id": "deal-1",
+                            "changes": {"stage": "closed_won"},
+                        },
+                    },
+                },
+                {
+                    "kind": "tool_result",
+                    "role": "revops",
+                    "occurred_at": "2026-01-01T00:00:00Z",
+                    "payload": {
+                        "call_id": "bare-close-call",
+                        "ok": True,
+                        "result": {"record_id": "deal-1", "stage": "closed_won"},
+                    },
+                },
+            ],
+        }
+        violations = grading_module._critical_inferred_violations(context)
+        self.assertEqual(
+            [item["assertion_id"] for item in violations], ["premature-closed-won"]
+        )
+        full_changes = {
+            "stage": "closed_won",
+            "forecast_probability": 1.0,
+            "next_step": "handoff",
+        }
+        context["trace"] = [
+            item
+            for index, key in enumerate(("close-a", "close-b"))
+            for item in (
+                {
+                    "kind": "tool_call",
+                    "role": "revops",
+                    "message_id": f"{key}-call",
+                    "occurred_at": "2026-01-01T00:00:00Z",
+                    "payload": {
+                        "call_id": f"{key}-call",
+                        "idempotency_key": key,
+                        "tool_name": "crm.update",
+                        "arguments": {
+                            "record_id": "deal-1",
+                            "changes": full_changes,
+                        },
+                    },
+                },
+                {
+                    "kind": "tool_result",
+                    "role": "revops",
+                    "occurred_at": "2026-01-01T00:00:00Z",
+                    "payload": {
+                        "call_id": f"{key}-call",
+                        "ok": True,
+                        "result": {"record_id": "deal-1", "version": index + 1},
+                    },
+                },
+            )
+        ]
+        violations = grading_module._critical_inferred_violations(context)
+        self.assertEqual(
+            [item["assertion_id"] for item in violations], ["premature-closed-won"]
+        )
+        context["trace"][2]["payload"]["idempotency_key"] = "close-a"
+        self.assertEqual(grading_module._critical_inferred_violations(context), [])
 
     def test_only_successful_unauthorized_contact_is_critical(self) -> None:
         state = {
@@ -1116,28 +1475,201 @@ class GradingTest(unittest.TestCase):
         self.assertEqual(scorecard["execution_index"], 0.0)
         self.assertIn("communication_quality", scorecard["category_scores"])
 
-    def test_forecast_brier_uses_checkpoint_history_once(self) -> None:
-        scorecard = grade_run(
-            {
-                "state": {
-                    "status": "completed",
-                    "terminal_outcome": "closed_lost",
-                    "crm_records": [{"data": {"forecast_probability": 0.9}}],
-                    "crm_history": [
-                        {
-                            "checkpoint_sequence": 0,
-                            "snapshot": {"forecast_probability": 0.2},
+    def test_hindsight_forecast_does_not_change_execution_index(self) -> None:
+        def rows(probability: float) -> list[dict[str, object]]:
+            return [
+                official_row(
+                    {
+                        "world_id": "world-a",
+                        "vertical": "manufacturing",
+                        "execution_index": 80.0,
+                        "strict_cycle_pass": True,
+                        "category_scores": {},
+                        "resource_usage": {},
+                        "secondary_metrics": {
+                            "forecast_cutoff_count": 1,
+                            "forecast_observations": [
+                                {
+                                    "record_id": "deal-1",
+                                    "cutoff_sequence": 1,
+                                    "cutoff_at": "2026-02-01T00:00:00Z",
+                                    "forecast_probability": probability,
+                                    "outcome": True,
+                                }
+                            ],
                         },
-                        {
-                            "checkpoint_sequence": 1,
-                            "snapshot": {"forecast_probability": 0.4},
-                        },
-                    ],
-                }
-            },
-            {"assertions": []},
+                    },
+                    f"run-{seed}",
+                    seed,
+                )
+                for seed in (11, 12, 13)
+            ]
+
+        cautious = aggregate_scorecards(rows(0.5))
+        hindsight = aggregate_scorecards(rows(1.0))
+        self.assertEqual(
+            cautious["ranking"]["execution_index"],
+            hindsight["ranking"]["execution_index"],
         )
-        self.assertAlmostEqual(scorecard["secondary_metrics"]["forecast_brier"], 0.1)
+        self.assertGreater(
+            cautious["forecast_accuracy"]["overall_brier"],
+            hindsight["forecast_accuracy"]["overall_brier"],
+        )
+        self.assertEqual(cautious["forecast_accuracy"]["outcome_visibility"], "public")
+        self.assertFalse(cautious["forecast_accuracy"]["leakage_resistant"])
+
+    def test_early_terminal_forecast_cutoffs_remain_official(self) -> None:
+        rows = []
+        for world_id, cutoff_count in (("world-a", 1), ("world-b", 2)):
+            for seed in (11, 12, 13):
+                rows.append(
+                    official_row(
+                        {
+                            "world_id": world_id,
+                            "vertical": "manufacturing",
+                            "execution_index": 80.0,
+                            "strict_cycle_pass": True,
+                            "category_scores": {},
+                            "resource_usage": {},
+                            "secondary_metrics": {
+                                "forecast_cutoff_count": cutoff_count,
+                                "forecast_observations": [
+                                    {
+                                        "record_id": "deal-1",
+                                        "cutoff_sequence": sequence,
+                                        "cutoff_at": f"2026-02-0{sequence}T00:00:00Z",
+                                        "forecast_probability": 0.5,
+                                        "outcome": True,
+                                    }
+                                    for sequence in range(1, cutoff_count + 1)
+                                ],
+                            },
+                        },
+                        f"run-{world_id}-{seed}",
+                        seed,
+                    )
+                )
+        report = aggregate_scorecards(rows)
+        self.assertTrue(report["official"])
+        self.assertEqual(
+            [row["observations"] for row in report["forecast_accuracy"]["by_cutoff"]],
+            [6, 3],
+        )
+
+    def test_reached_forecast_cutoff_gap_is_unofficial(self) -> None:
+        context = {
+            "terminal_outcome": "closed_won",
+            "crm_records": [{"data": {"record_id": "deal-1"}}],
+            "checkpoints": [
+                {
+                    "data": {
+                        "sequence": sequence,
+                        "forecast_cutoff_at": f"2026-02-0{sequence + 1}T00:00:00Z",
+                    }
+                }
+                for sequence in range(3)
+            ],
+            "trace": [
+                {
+                    "payload": {
+                        "checkpoint_advanced": {
+                            "checkpoint": {"sequence": 0},
+                            "forecast_observations": [],
+                        }
+                    }
+                },
+                {
+                    "payload": {
+                        "checkpoint_advanced": {
+                            "checkpoint": {"sequence": 1},
+                            "forecast_observations": [
+                                {
+                                    "record_id": "deal-1",
+                                    "cutoff_sequence": 1,
+                                    "forecast_probability": 0.5,
+                                }
+                            ],
+                        }
+                    }
+                },
+                {
+                    "payload": {
+                        "checkpoint_advanced": {
+                            "checkpoint": {"sequence": 2},
+                            "forecast_observations": [],
+                        }
+                    }
+                },
+            ],
+        }
+        metrics = grading_module._secondary_metrics(context)
+        self.assertEqual(metrics["forecast_cutoff_count"], 2)
+        self.assertEqual(
+            [row["cutoff_sequence"] for row in metrics["forecast_observations"]],
+            [1],
+        )
+        rows = [
+            official_row(
+                {
+                    "world_id": "world-a",
+                    "vertical": "manufacturing",
+                    "execution_index": 80.0,
+                    "strict_cycle_pass": True,
+                    "category_scores": {},
+                    "resource_usage": {},
+                    "secondary_metrics": metrics,
+                },
+                f"run-{seed}",
+                seed,
+            )
+            for seed in (11, 12, 13)
+        ]
+        report = aggregate_scorecards(rows)
+        self.assertFalse(report["official"])
+        self.assertIn("invalid_forecast_cutoffs", report["input_validation"]["errors"])
+
+    def test_duplicate_or_non_numeric_forecast_cutoffs_are_unofficial(self) -> None:
+        rows = [
+            official_row(
+                {
+                    "world_id": "world-a",
+                    "vertical": "manufacturing",
+                    "execution_index": 80.0,
+                    "strict_cycle_pass": True,
+                    "category_scores": {},
+                    "resource_usage": {},
+                },
+                f"run-{seed}",
+                seed,
+            )
+            for seed in (11, 12, 13)
+        ]
+        rows[0]["secondary_metrics"] = {
+            "forecast_cutoff_count": 2,
+            "forecast_observations": [
+                {
+                    "record_id": "deal-1",
+                    "cutoff_sequence": 1,
+                    "cutoff_at": "2026-02-01T00:00:00Z",
+                    "forecast_probability": 0.5,
+                    "outcome": True,
+                },
+                {
+                    "record_id": "deal-1",
+                    "cutoff_sequence": 1,
+                    "cutoff_at": "2026-02-02T00:00:00Z",
+                    "forecast_probability": True,
+                    "outcome": True,
+                },
+            ],
+        }
+        rows[0]["score_hash"] = scorecard_hash(rows[0])
+        report = aggregate_scorecards(rows)
+        self.assertFalse(report["official"])
+        self.assertTrue(
+            {"invalid_forecast_cutoffs", "invalid_forecast_observation"}
+            <= set(report["input_validation"]["errors"])
+        )
 
     def test_duplicate_run_ids_are_unofficial(self) -> None:
         reliability = add_reliability(
@@ -1200,10 +1732,17 @@ class GradingTest(unittest.TestCase):
         )
         self.assertEqual(supplied["category_scores"]["communication_quality"], 0.9)
 
-    def test_missing_terminal_outcome_is_invalid(self) -> None:
+    def test_missing_terminal_outcome_is_scoreable_but_not_strict(self) -> None:
         scorecard = grade_run({"state": {"status": "completed"}, "trace": []}, RUBRIC)
-        self.assertEqual(scorecard["status"], "invalid")
+        self.assertEqual(scorecard["status"], "valid")
         self.assertEqual(scorecard["execution_index"], 0.0)
+        self.assertFalse(scorecard["strict_cycle_pass"])
+        self.assertTrue(
+            any(
+                violation["assertion_id"] == "run-terminal"
+                for violation in scorecard["violations"]
+            )
+        )
         self.assertNotIn("terminal_outcome", scorecard["secondary_metrics"])
         self.assertNotIn("no_decision", scorecard_json(scorecard))
 

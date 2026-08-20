@@ -1,0 +1,115 @@
+{
+  "artifact_key": "credit_approval_borrower_summary",
+  "gate_id": "credit_approval",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": false,
+      "basis": null,
+      "policy_evidence": null,
+      "policy_limit_minor_units": null,
+      "policy_owner": null,
+      "reason": "no_seller_exception",
+      "required": false,
+      "trigger": "none"
+    },
+    "approval_record": {
+      "approval_authority": "credit_officer",
+      "status": "pending"
+    },
+    "approval_required": false,
+    "artifact_key": "credit_approval_borrower_summary",
+    "artifact_subtype": "borrower_summary",
+    "author": {
+      "display_name": "Sable O. Grove-Ashby-14a2",
+      "email": "sable-o-grove-ashby-14a2@tern-fallow-enterprises.example",
+      "kind": "buyer",
+      "organization_id": "org-5a86964d918dd29ccd90",
+      "role_id": "buyer.finance"
+    },
+    "author_actor_id": "act-009e7a68b4cf4687e54c",
+    "author_role_id": "buyer.finance",
+    "authoritative_for": [
+      "credit_approval",
+      "banking-credit-separation",
+      "banking-exception-approval",
+      "crm.stage"
+    ],
+    "authority_actor_ids": [
+      "act-6bd73b9e91bb3f73b9cb"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-6bd73b9e91bb3f73b9cb",
+        "effective_at": "2025-10-29T09:00:00Z",
+        "resolution": "pending",
+        "rights": [
+          "provide_buyer_input",
+          "accept_credit_decision",
+          "accept_preclosing_checklist",
+          "accept_return",
+          "accept_sensitivity_analysis",
+          "authorize_closing",
+          "review_closing_conditions",
+          "review_customer_due_diligence",
+          "review_customer_identity",
+          "review_independent_credit_record",
+          "review_loan_documents",
+          "review_risk_based_pricing",
+          "review_underwriting",
+          "verify_beneficial_owner"
+        ]
+      }
+    ],
+    "authority_role_id": "buyer.economic_buyer",
+    "authority_role_ids": [
+      "buyer.economic_buyer"
+    ],
+    "channel": "email",
+    "checkpoint_id": "checkpoint-c81718fd98ae13be78cc",
+    "decision_owner_actor_id": "act-6bd73b9e91bb3f73b9cb",
+    "decision_owner_actor_ids": [
+      "act-6bd73b9e91bb3f73b9cb"
+    ],
+    "decision_state": "pending",
+    "exception_route": {
+      "reason": "within_delegated_authority",
+      "required": false
+    },
+    "forecast_cutoff_at": "2025-10-29T15:30:00Z",
+    "gate_id": "credit_approval",
+    "origination_separation": {
+      "approver": "independent_credit",
+      "originator": "relationship_team"
+    },
+    "recipient_role_ids": [
+      "seller.account_executive"
+    ],
+    "recipients": [
+      {
+        "display_name": "Yara T. Ashby-Elm-1117",
+        "email": "account.executive@emberline-bank.example",
+        "kind": "seller",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_id": "seller.account_executive"
+      }
+    ],
+    "required_signer_actor_ids": [
+      "act-6bd73b9e91bb3f73b9cb"
+    ],
+    "required_signer_role_ids": [
+      "buyer.economic_buyer"
+    ],
+    "source_evidence_term": "separated origination and approval with routed exceptions when required",
+    "source_fact_ids": [
+      "banking-credit-separation",
+      "banking-exception-approval"
+    ],
+    "stage": "credit_approval"
+  }
+}

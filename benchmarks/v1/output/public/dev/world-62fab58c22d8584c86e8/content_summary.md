@@ -3,20 +3,20 @@
 - Split: dev
 - Vertical: construction
 - Seller: Cinderline Builders Group
-- Buyer: Keystone Stonebridge Group (keystone-stonebridge-group.example)
-- Simulated duration: 272 days
-- Checkpoints: 12
-- Canonical artifacts: 72
+- Buyer: Tern Umber Partners (tern-umber-partners.example)
+- Simulated duration: 273 days
+- Checkpoints: 6
+- Canonical artifacts: 117
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
-- internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
-- web_news: 6
+- transcript: 11
+- email: 31
+- internal_chat: 16
+- crm: 16
+- calendar: 10
+- document: 25
+- web_news: 8
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

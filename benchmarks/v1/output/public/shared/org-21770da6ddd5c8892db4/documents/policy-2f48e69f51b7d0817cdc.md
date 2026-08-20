@@ -9,7 +9,7 @@
 
 ## Control
 
-Rule: For implementation guide, Quarry Counsel LLP may not mark security and privilege review complete until Pricing Committee Chair verifies fee proposal, staffing pyramid, and realization analysis.
+Rule: For implementation guide, Quarry Counsel LLP may not mark leadership approval complete until Pricing Committee Chair verifies fee proposal, staffing pyramid, and realization analysis.
 Owner: Pricing Committee Chair
 Required evidence: fee proposal, staffing pyramid, and realization analysis.
 Approval threshold: Exposure above USD 75,000.00 (7500000 minor units) requires written approval from Pricing Committee Chair.
@@ -17,4 +17,4 @@ Escalation trigger: Escalate when discount exceeds 12 percent or expected realiz
 
 ## Recordkeeping
 
-Attach the evidence to the security and privilege review record, preserve prior versions, and record the decision date before advancing the outside counsel pursuit.
+Attach the evidence to the leadership approval record, preserve prior versions, and record the decision date before advancing the outside counsel pursuit.

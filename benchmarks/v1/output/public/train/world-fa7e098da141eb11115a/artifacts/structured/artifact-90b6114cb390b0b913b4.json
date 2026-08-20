@@ -1,0 +1,111 @@
+{
+  "artifact_key": "quotation_carrier_quote_alternative",
+  "gate_id": "quotation",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": true,
+      "basis": {
+        "amount_minor_units": 6500000,
+        "field": "annual_premium_minor_units",
+        "value": 6500000
+      },
+      "policy_evidence": "quote comparison, commission disclosure, and client order",
+      "policy_limit_minor_units": 10000000,
+      "policy_owner": "Broking Director",
+      "reason": "concrete_term_within_policy",
+      "required": false,
+      "trigger": "seller_policy_exception"
+    },
+    "approval_required": false,
+    "artifact_key": "quotation_carrier_quote_alternative",
+    "artifact_subtype": "carrier_quote_alternative",
+    "author": {
+      "display_name": "Yara N. Fallow-Rook-eccf",
+      "email": "yara-n-fallow-rook-eccf@underwriter.example",
+      "kind": "external",
+      "organization_id": "org-a94ff8ca326e5966204a",
+      "role_id": "insurance.underwriter_authority"
+    },
+    "author_actor_id": "act-35cc1756026bb116aee3",
+    "author_role_id": "insurance.underwriter_authority",
+    "authoritative_for": [
+      "quotation",
+      "insurance-submission-quote",
+      "crm.close_date"
+    ],
+    "authority_actor_ids": [
+      "act-35cc1756026bb116aee3"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-35cc1756026bb116aee3",
+        "effective_at": "2025-06-11T09:00:00Z",
+        "resolution": "pending",
+        "rights": [
+          "accept_quotation_request_basis",
+          "review_subjectivities"
+        ]
+      }
+    ],
+    "authority_role_id": "insurance.underwriter_authority",
+    "authority_role_ids": [
+      "insurance.underwriter_authority"
+    ],
+    "channel": "document",
+    "checkpoint_id": "checkpoint-25ef1bce396ca79df8f1",
+    "close_date": "2025-09-08",
+    "commissions": {
+      "broker_minor_units": 650000,
+      "carrier_fee_minor_units": 260000,
+      "total_minor_units": 910000
+    },
+    "decision_owner_actor_id": "act-35cc1756026bb116aee3",
+    "decision_owner_actor_ids": [
+      "act-35cc1756026bb116aee3"
+    ],
+    "decision_state": "pending",
+    "exclusions": [
+      "known_pollution_without_endorsement"
+    ],
+    "forecast_cutoff_at": "2025-06-11T16:00:00Z",
+    "gate_id": "quotation",
+    "limits": {
+      "aggregate_minor_units": 520000000,
+      "each_claim_minor_units": 260000000
+    },
+    "premium_to_each_claim_limit": 0.025,
+    "premiums": {
+      "annual_minor_units": 6500000,
+      "total_term_minor_units": 13000000
+    },
+    "recipient_role_ids": [
+      "seller.domain_specialist"
+    ],
+    "recipients": [
+      {
+        "display_name": "Cato Q. Umber-Vale-3d22",
+        "email": "domain.specialist@blueharbor-risk.example",
+        "kind": "seller",
+        "organization_id": "org-16ae0290a01581c703bd",
+        "role_id": "seller.domain_specialist"
+      }
+    ],
+    "required_signer_actor_ids": [
+      "act-35cc1756026bb116aee3"
+    ],
+    "required_signer_role_ids": [
+      "insurance.underwriter_authority"
+    ],
+    "source_evidence_term": "quotation with limits, premiums, commissions, and exclusions",
+    "source_fact_ids": [
+      "insurance-submission-quote",
+      "insurance-structured-placement-data"
+    ]
+  }
+}

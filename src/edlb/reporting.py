@@ -79,7 +79,8 @@ def _schema_scorecard(value: Mapping[str, Any]) -> dict[str, Any]:
             "revenue_minor_units",
             "margin_minor_units",
             "cycle_days",
-            "forecast_brier",
+            "forecast_cutoff_count",
+            "forecast_observations",
             "amount_error_minor_units",
             "close_date_error_days",
         )
@@ -177,12 +178,15 @@ def render_markdown(scorecard: Mapping[str, Any] | Any) -> str:
             "revenue_minor_units",
             "margin_minor_units",
             "cycle_days",
-            "forecast_brier",
             "amount_error_minor_units",
             "close_date_error_days",
         ):
             if key in secondary:
                 lines.append(f"| {key} | {secondary[key]} |")
+        if "forecast_observations" in secondary:
+            lines.append(
+                f"| forecast_observations | {len(secondary['forecast_observations'])} |"
+            )
     reliability = value.get("reliability", {})
     if reliability:
         lines.extend(("", "## Reliability", "", "| Metric | Value |", "| --- | ---: |"))
@@ -278,6 +282,26 @@ def render_aggregate_markdown(report: Mapping[str, Any]) -> str:
         for key in ("worlds", "incomplete_world_count", "duplicate_world_count"):
             if key in reliability:
                 lines.append(f"| {key} | {reliability[key]} |")
+    forecast = report.get("forecast_accuracy")
+    if isinstance(forecast, Mapping):
+        lines.extend(
+            (
+                "",
+                "## Forecast accuracy",
+                "",
+                f"Official: **{'yes' if forecast.get('official') else 'no'}**",
+                f"Outcome visibility: **{forecast.get('outcome_visibility', 'unknown')}**",
+                f"Leakage resistant: **{'yes' if forecast.get('leakage_resistant') else 'no'}**",
+                f"Overall Brier: **{_number(forecast.get('overall_brier'))}**",
+                "",
+                "| Cutoff | Observations | Brier | Mean probability | Event rate |",
+                "| ---: | ---: | ---: | ---: | ---: |",
+            )
+        )
+        for row in forecast.get("by_cutoff", ()):
+            lines.append(
+                f"| {row['cutoff_sequence']} | {row['observations']} | {_number(row['brier'])} | {_number(row['mean_probability'])} | {_number(row['event_rate'])} |"
+            )
     interval = report.get("execution_index_confidence_interval")
     lines.extend(
         (

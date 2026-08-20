@@ -3,20 +3,20 @@
 - Split: dev
 - Vertical: corporate_banking
 - Seller: Emberline Commercial Bank
-- Buyer: Yarrow Harbor Collective (yarrow-harbor-collective.example)
+- Buyer: Tern Fallow Enterprises (tern-fallow-enterprises.example)
 - Simulated duration: 299 days
-- Checkpoints: 10
-- Canonical artifacts: 72
+- Checkpoints: 8
+- Canonical artifacts: 120
 - Shared seller documents: 30
 
 ## Channels
 
 - transcript: 10
-- email: 14
+- email: 33
 - internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
-- web_news: 6
+- crm: 21
+- calendar: 10
+- document: 26
+- web_news: 8
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

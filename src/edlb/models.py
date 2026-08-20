@@ -284,6 +284,8 @@ class Actor(JsonModel):
     role_tags: tuple[str, ...]
     active_from: str
     visibility: str
+    synthetic: bool
+    authority: Mapping[str, Any]
     active_until: str | None = None
     email: str | None = None
     phone: str | None = None
@@ -301,6 +303,8 @@ class Actor(JsonModel):
             role_tags=_tuple(value["role_tags"]),
             active_from=str(value["active_from"]),
             visibility=str(value["visibility"]),
+            synthetic=_boolean(value["synthetic"], "synthetic"),
+            authority=dict(value["authority"]),
             active_until=value.get("active_until"),
             email=value.get("email"),
             phone=value.get("phone"),
@@ -358,12 +362,22 @@ class Artifact(JsonModel):
     visibility: str
     content: Mapping[str, Any]
     checksum: str
+    synthetic: bool
     provenance: Mapping[str, Any]
+    gate_id: str
+    artifact_key: str
+    structured_payload: Mapping[str, Any]
+    authoritative_for: tuple[str, ...]
+    recipient_role_ids: tuple[str, ...]
+    projection_origin: Mapping[str, Any] | None
+    logical_document_id: str | None
+    version: int | None
+    supersedes_artifact_id: str | None
+    derived_from_artifact_ids: tuple[str, ...]
     source_actor_ids: tuple[str, ...] = ()
     recipient_actor_ids: tuple[str, ...] = ()
     thread_id: str | None = None
     record_id: str | None = None
-    version: int | None = None
     visible_roles: tuple[str, ...] = ()
 
     @classmethod
@@ -378,12 +392,34 @@ class Artifact(JsonModel):
             visibility=str(value["visibility"]),
             content=dict(value["content"]),
             checksum=str(value["checksum"]),
+            synthetic=_boolean(value["synthetic"], "synthetic"),
             provenance=dict(value["provenance"]),
+            gate_id=str(value["gate_id"]),
+            artifact_key=str(value["artifact_key"]),
+            structured_payload=dict(value["structured_payload"]),
+            authoritative_for=_tuple(value["authoritative_for"]),
+            recipient_role_ids=_tuple(value["recipient_role_ids"]),
+            projection_origin=(
+                dict(value["projection_origin"])
+                if value["projection_origin"] is not None
+                else None
+            ),
+            logical_document_id=(
+                str(value["logical_document_id"])
+                if value["logical_document_id"] is not None
+                else None
+            ),
+            version=(int(value["version"]) if value["version"] is not None else None),
+            supersedes_artifact_id=(
+                str(value["supersedes_artifact_id"])
+                if value["supersedes_artifact_id"] is not None
+                else None
+            ),
+            derived_from_artifact_ids=_tuple(value["derived_from_artifact_ids"]),
             source_actor_ids=_tuple(value.get("source_actor_ids")),
             recipient_actor_ids=_tuple(value.get("recipient_actor_ids")),
             thread_id=value.get("thread_id"),
             record_id=value.get("record_id"),
-            version=value.get("version"),
             visible_roles=_tuple(value.get("visible_roles")),
         )
 
@@ -431,14 +467,33 @@ class Checkpoint(JsonModel):
     world_id: str
     sequence: int
     available_at: str
+    forecast_cutoff_at: str
     window_start: str
     window_end: str
     status: str
+    synthetic: bool
     objective_ids: tuple[str, ...]
     visible_artifact_ids: tuple[str, ...]
+    released_event_ids: tuple[str, ...]
     required_roles: tuple[str, ...]
     terminal: bool
-    released_event_ids: tuple[str, ...] = ()
+    visible_gate: str
+    label: str
+    business_objective: str
+    decision_condition: str
+    role_deliverables: Mapping[str, str]
+    completion_conditions: tuple[str, ...]
+    policy_entrypoints: tuple[str, ...]
+    gate_id: str
+    source_fact_ids: tuple[str, ...]
+    required_artifact_keys: tuple[str, ...]
+    required_artifact_roles: Mapping[str, str]
+    authority_role_ids: tuple[str, ...]
+    authority_rights: tuple[str, ...]
+    required_payload_fields: tuple[str, ...]
+    decision_route: Mapping[str, Any]
+    recovery_decisions: tuple[str, ...]
+    availability_delay_bounds: Mapping[str, Any]
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> Checkpoint:
@@ -447,14 +502,39 @@ class Checkpoint(JsonModel):
             world_id=str(value["world_id"]),
             sequence=int(value["sequence"]),
             available_at=str(value["available_at"]),
+            forecast_cutoff_at=str(value["forecast_cutoff_at"]),
             window_start=str(value["window_start"]),
             window_end=str(value["window_end"]),
             status=str(value["status"]),
+            synthetic=_boolean(value["synthetic"], "synthetic"),
             objective_ids=_tuple(value["objective_ids"]),
-            visible_artifact_ids=_tuple(value.get("visible_artifact_ids")),
+            visible_artifact_ids=_tuple(value["visible_artifact_ids"]),
+            released_event_ids=_tuple(value["released_event_ids"]),
             required_roles=_tuple(value["required_roles"]),
             terminal=bool(value["terminal"]),
-            released_event_ids=_tuple(value.get("released_event_ids")),
+            visible_gate=str(value["visible_gate"]),
+            label=str(value["label"]),
+            business_objective=str(value["business_objective"]),
+            decision_condition=str(value["decision_condition"]),
+            role_deliverables={
+                str(key): str(item)
+                for key, item in dict(value["role_deliverables"]).items()
+            },
+            completion_conditions=_tuple(value["completion_conditions"]),
+            policy_entrypoints=_tuple(value["policy_entrypoints"]),
+            gate_id=str(value["gate_id"]),
+            source_fact_ids=_tuple(value["source_fact_ids"]),
+            required_artifact_keys=_tuple(value["required_artifact_keys"]),
+            required_artifact_roles={
+                str(key): str(item)
+                for key, item in dict(value["required_artifact_roles"]).items()
+            },
+            authority_role_ids=_tuple(value["authority_role_ids"]),
+            authority_rights=_tuple(value["authority_rights"]),
+            required_payload_fields=_tuple(value["required_payload_fields"]),
+            decision_route=dict(value["decision_route"]),
+            recovery_decisions=_tuple(value["recovery_decisions"]),
+            availability_delay_bounds=dict(value["availability_delay_bounds"]),
         )
 
 
@@ -558,6 +638,10 @@ class Assertion(JsonModel):
     provenance: Mapping[str, Any]
     checkpoint_id: str | None = None
     judge: Mapping[str, Any] | None = None
+    semantic_target: str | None = field(default=None, metadata={"omit_none": True})
+    responsible_roles: tuple[str, ...] = ()
+    objective_ids: tuple[str, ...] = ()
+    available_by: str | None = field(default=None, metadata={"omit_none": True})
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> Assertion:
@@ -576,6 +660,18 @@ class Assertion(JsonModel):
             provenance=dict(value["provenance"]),
             checkpoint_id=value.get("checkpoint_id"),
             judge=dict(value["judge"]) if value.get("judge") is not None else None,
+            semantic_target=(
+                str(value["semantic_target"])
+                if value.get("semantic_target") is not None
+                else None
+            ),
+            responsible_roles=_tuple(value.get("responsible_roles")),
+            objective_ids=_tuple(value.get("objective_ids")),
+            available_by=(
+                str(value["available_by"])
+                if value.get("available_by") is not None
+                else None
+            ),
         )
 
 

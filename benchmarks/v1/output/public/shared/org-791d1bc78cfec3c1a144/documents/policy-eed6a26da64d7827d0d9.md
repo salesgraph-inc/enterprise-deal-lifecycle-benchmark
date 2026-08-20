@@ -17,4 +17,4 @@ Escalation trigger: Escalate when bid contingency falls below 3 percent or an al
 
 ## Recordkeeping
 
-Attach the evidence to the award and contract record, preserve prior versions, and record the decision date before advancing the general contractor project pursuit.
+Attach the evidence to the award and contract record, preserve prior versions, and record the decision date before advancing the federal public transportation CM/GC project pursuit.

@@ -9,7 +9,7 @@
 
 ## Control
 
-Rule: For legal review guide, Emberline Commercial Bank may not mark diligence complete until KYC and AML Officer verifies beneficial ownership certification, sanctions results, and source-of-funds review.
+Rule: For legal review guide, Emberline Commercial Bank may not mark beneficial ownership complete until KYC and AML Officer verifies beneficial ownership certification, sanctions results, and source-of-funds review.
 Owner: KYC and AML Officer
 Required evidence: beneficial ownership certification, sanctions results, and source-of-funds review.
 Approval threshold: Exposure above USD 1,000,000.00 (100000000 minor units) requires written approval from KYC and AML Officer.
@@ -17,4 +17,4 @@ Escalation trigger: Escalate when a beneficial owner is unverified or a screenin
 
 ## Recordkeeping
 
-Attach the evidence to the diligence record, preserve prior versions, and record the decision date before advancing the commercial lending and treasury sale.
+Attach the evidence to the beneficial ownership record, preserve prior versions, and record the decision date before advancing the commercial lending and treasury sale.

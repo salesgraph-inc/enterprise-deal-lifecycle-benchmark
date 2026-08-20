@@ -1,0 +1,108 @@
+{
+  "artifact_key": "pricing_pricing_approval",
+  "gate_id": "pricing",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": false,
+      "basis": null,
+      "policy_evidence": null,
+      "policy_limit_minor_units": null,
+      "policy_owner": null,
+      "reason": "no_seller_exception",
+      "required": false,
+      "trigger": "none"
+    },
+    "approval_required": false,
+    "approved_return": 0.085,
+    "artifact_key": "pricing_pricing_approval",
+    "artifact_subtype": "pricing_approval",
+    "author": {
+      "display_name": "Finley X. Lumen-Morrow-fa0d",
+      "email": "finley-x-lumen-morrow-fa0d@larkspur-stonebridge-enterprises.example",
+      "kind": "buyer",
+      "organization_id": "org-a89c4bc6d19ea4b45e10",
+      "role_id": "buyer.finance"
+    },
+    "author_actor_id": "act-d429bbb54273b5ac4b8c",
+    "author_role_id": "buyer.finance",
+    "authoritative_for": [
+      "pricing",
+      "decision_state",
+      "crm.next_step"
+    ],
+    "authority_actor_ids": [
+      "act-d429bbb54273b5ac4b8c"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-d429bbb54273b5ac4b8c",
+        "effective_at": "2025-08-25T09:00:00Z",
+        "resolution": "deferred",
+        "rights": [
+          "provide_buyer_input",
+          "accept_credit_decision",
+          "accept_preclosing_checklist",
+          "accept_return",
+          "accept_sensitivity_analysis",
+          "authorize_closing",
+          "review_closing_conditions",
+          "review_customer_due_diligence",
+          "review_customer_identity",
+          "review_independent_credit_record",
+          "review_loan_documents",
+          "review_risk_based_pricing",
+          "review_underwriting",
+          "verify_beneficial_owner"
+        ]
+      }
+    ],
+    "authority_role_id": "buyer.finance",
+    "authority_role_ids": [
+      "buyer.finance"
+    ],
+    "channel": "email",
+    "checkpoint_id": "checkpoint-b5de7a48024f11384fc9",
+    "decision_owner_actor_id": "act-d429bbb54273b5ac4b8c",
+    "decision_owner_actor_ids": [
+      "act-d429bbb54273b5ac4b8c"
+    ],
+    "decision_state": "deferred",
+    "fee_waiver": 0,
+    "forecast_cutoff_at": "2025-08-25T17:15:00Z",
+    "gate_id": "pricing",
+    "next_step": "account executive to confirm the credit approval decision with buyer authority",
+    "pricing_basis": {
+      "base_rate": "SOFR",
+      "model": "risk_based_spread",
+      "spread_basis_points": 95
+    },
+    "recipient_role_ids": [
+      "seller.sales_manager"
+    ],
+    "recipients": [
+      {
+        "display_name": "Vale Z. Vale-Elm-f50d",
+        "email": "sales.manager@emberline-bank.example",
+        "kind": "seller",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_id": "seller.sales_manager"
+      }
+    ],
+    "required_signer_actor_ids": [
+      "act-d429bbb54273b5ac4b8c"
+    ],
+    "required_signer_role_ids": [
+      "buyer.finance"
+    ],
+    "source_evidence_term": "risk-based pricing within documented lending authority",
+    "source_fact_ids": [
+      "banking-lending-authority"
+    ]
+  }
+}

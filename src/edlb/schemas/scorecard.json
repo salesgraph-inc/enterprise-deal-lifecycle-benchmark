@@ -96,7 +96,7 @@
         "stakeholder_management",
         "workflow_compliance",
         "communication_quality",
-        "forecast_calibration",
+        "forecast_discipline",
         "longitudinal_recovery",
         "side_effect_discipline"
       ],
@@ -106,7 +106,7 @@
         "stakeholder_management": {"type": "number", "minimum": 0, "maximum": 1},
         "workflow_compliance": {"type": "number", "minimum": 0, "maximum": 1},
         "communication_quality": {"type": "number", "minimum": 0, "maximum": 1},
-        "forecast_calibration": {"type": "number", "minimum": 0, "maximum": 1},
+        "forecast_discipline": {"type": "number", "minimum": 0, "maximum": 1},
         "longitudinal_recovery": {"type": "number", "minimum": 0, "maximum": 1},
         "side_effect_discipline": {"type": "number", "minimum": 0, "maximum": 1}
       }
@@ -136,10 +136,29 @@
           "type": "integer",
           "minimum": 0
         },
-        "forecast_brier": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+        "forecast_cutoff_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "forecast_observations": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["record_id", "cutoff_sequence", "cutoff_at", "forecast_probability", "outcome"],
+            "properties": {
+              "record_id": {"type": "string", "minLength": 1},
+              "cutoff_sequence": {"type": "integer", "minimum": 0},
+              "cutoff_at": {"type": "string", "format": "date-time"},
+              "forecast_probability": {
+                "type": ["number", "null"],
+                "minimum": 0,
+                "maximum": 1
+              },
+              "outcome": {"type": ["boolean", "null"]}
+            }
+          }
         },
         "amount_error_minor_units": {
           "type": "integer",
@@ -309,7 +328,17 @@
       "then": {
         "required": ["rubric_hash", "state_hash", "score_hash"],
         "properties": {
-          "secondary_metrics": {"required": ["terminal_outcome"]}
+          "secondary_metrics": {
+            "required": [
+              "terminal_outcome",
+              "forecast_cutoff_count",
+              "forecast_observations"
+            ],
+            "properties": {
+              "forecast_cutoff_count": {"minimum": 1},
+              "forecast_observations": {"minItems": 1}
+            }
+          }
         }
       }
     }

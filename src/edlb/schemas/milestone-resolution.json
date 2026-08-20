@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/milestone-resolution.json",
+  "title": "MilestoneResolution",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "milestone_id",
+    "resolution",
+    "decision_artifact_ids",
+    "evidence_ids",
+    "authority_resolutions",
+    "business_effects",
+    "effective_at",
+    "remedy_of"
+  ],
+  "properties": {
+    "milestone_id": {"$ref": "#/$defs/id"},
+    "resolution": {
+      "type": "string",
+      "enum": ["accepted", "rejected", "deferred", "inapplicable", "remedied"]
+    },
+    "decision_artifact_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/id"}
+    },
+    "evidence_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/id"}
+    },
+    "authority_resolutions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["actor_id", "decision_artifact_id", "organization_scope", "resolution", "rights"],
+        "properties": {
+          "actor_id": {"$ref": "#/$defs/id"},
+          "decision_artifact_id": {"$ref": "#/$defs/id"},
+          "organization_scope": {"type": "string", "enum": ["buyer", "seller", "third_party"]},
+          "resolution": {"type": "string", "enum": ["accepted", "rejected", "deferred", "remedied"]},
+          "rights": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/id"}
+          }
+        }
+      }
+    },
+    "business_effects": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "approval",
+          "crm_projection",
+          "decision_followup",
+          "deliverable"
+        ]
+      },
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "effective_at": {"type": "string", "format": "date-time"},
+    "remedy_of": {
+      "anyOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    }
+  }
+}

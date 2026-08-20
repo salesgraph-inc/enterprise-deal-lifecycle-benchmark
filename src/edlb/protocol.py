@@ -112,7 +112,6 @@ class Message:
     error: Mapping[str, Any] | None = None
     recipient_role: str | None = None
     checkpoint_id: str | None = None
-    summary: str | None = None
     status: str | None = None
     reason: str | None = None
     observation_token: str | None = None
@@ -151,7 +150,6 @@ class Message:
                 value["reason"] = self.reason
         elif self.kind == "checkpoint_complete":
             value["checkpoint_id"] = self.checkpoint_id
-            value["summary"] = self.summary
         elif self.kind == "run_end":
             value["status"] = self.status
             if self.reason is not None:
@@ -180,7 +178,6 @@ class Message:
             error=dict(data["error"]) if "error" in data else None,
             recipient_role=data.get("recipient_role"),
             checkpoint_id=data.get("checkpoint_id"),
-            summary=data.get("summary"),
             status=data.get("status"),
             reason=data.get("reason"),
             observation_token=data.get("observation_token"),
@@ -239,9 +236,7 @@ def _validate(value: Mapping[str, Any], allow_system: bool = False) -> dict[str,
         | {"call_id", "ok", "result", "error"},
         "team_message": required | shared_optional | {"recipient_role", "payload"},
         "yield": required | shared_optional | {"reason"},
-        "checkpoint_complete": required
-        | shared_optional
-        | {"checkpoint_id", "summary"},
+        "checkpoint_complete": required | shared_optional | {"checkpoint_id"},
         "run_end": required | shared_optional | {"status", "reason"},
     }
     unknown = sorted(set(data) - allowed[kind])
@@ -311,8 +306,6 @@ def _validate(value: Mapping[str, Any], allow_system: bool = False) -> dict[str,
         raise ProtocolError("yield reason is invalid")
     if kind == "checkpoint_complete":
         _identifier(data.get("checkpoint_id"), "checkpoint_id")
-        if not isinstance(data.get("summary"), str) or not data["summary"]:
-            raise ProtocolError("checkpoint summary is invalid")
     if kind == "run_end":
         if data.get("status") not in {"completed", "failed", "invalid"}:
             raise ProtocolError("run_end status is invalid")

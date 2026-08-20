@@ -9,7 +9,7 @@
 
 ## Control
 
-Rule: For qualification policy, Emberline Commercial Bank may not mark diligence complete until Relationship Credit Officer verifies borrower request, ownership chart, and current financial statements.
+Rule: For qualification policy, Emberline Commercial Bank may not mark beneficial ownership complete until Relationship Credit Officer verifies borrower request, ownership chart, and current financial statements.
 Owner: Relationship Credit Officer
 Required evidence: borrower request, ownership chart, and current financial statements.
 Approval threshold: Exposure above USD 5,000,000.00 (500000000 minor units) requires written approval from Relationship Credit Officer.
@@ -17,4 +17,4 @@ Escalation trigger: Escalate when leverage exceeds the approved screen or financ
 
 ## Recordkeeping
 
-Attach the evidence to the diligence record, preserve prior versions, and record the decision date before advancing the commercial lending and treasury sale.
+Attach the evidence to the beneficial ownership record, preserve prior versions, and record the decision date before advancing the commercial lending and treasury sale.

@@ -9,7 +9,7 @@
 
 ## Control
 
-Rule: For risk escalation, Quarry Counsel LLP may not mark matter scope complete until Information Governance Counsel verifies security questionnaire, privilege protocol, and data-retention schedule.
+Rule: For risk escalation, Quarry Counsel LLP may not mark leadership approval complete until Information Governance Counsel verifies security questionnaire, privilege protocol, and data-retention schedule.
 Owner: Information Governance Counsel
 Required evidence: security questionnaire, privilege protocol, and data-retention schedule.
 Approval threshold: Exposure above USD 50,000.00 (5000000 minor units) requires written approval from Information Governance Counsel.
@@ -17,4 +17,4 @@ Escalation trigger: Escalate when privileged material is routed through an unapp
 
 ## Recordkeeping
 
-Attach the evidence to the matter scope record, preserve prior versions, and record the decision date before advancing the outside counsel pursuit.
+Attach the evidence to the leadership approval record, preserve prior versions, and record the decision date before advancing the outside counsel pursuit.

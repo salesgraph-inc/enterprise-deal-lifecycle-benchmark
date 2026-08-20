@@ -1,0 +1,110 @@
+{
+  "artifact_key": "commercial_model_commercial_acceptance",
+  "gate_id": "commercial_model",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": true,
+      "basis": {
+        "amount_minor_units": 300000000,
+        "field": "fixed_fee_minor_units",
+        "value": 300000000
+      },
+      "policy_evidence": "pricing model, margin worksheet, and approved service specification",
+      "policy_limit_minor_units": 15000000,
+      "policy_owner": "Commercial Partner",
+      "reason": "concrete_term_breaches_policy",
+      "required": true,
+      "trigger": "seller_policy_exception"
+    },
+    "approval_required": true,
+    "artifact_key": "commercial_model_commercial_acceptance",
+    "artifact_subtype": "commercial_acceptance",
+    "author": {
+      "display_name": "Wren I. Cairn-Rook-5686",
+      "email": "wren-i-cairn-rook-5686@umber-redwood-group.example",
+      "kind": "buyer",
+      "organization_id": "org-20f81b08dae9a822dc39",
+      "role_id": "consulting.commercial_authority"
+    },
+    "author_actor_id": "act-a669b58d2aa0dc96e0ac",
+    "author_role_id": "consulting.commercial_authority",
+    "authoritative_for": [
+      "commercial_model",
+      "decision_state",
+      "crm.next_step"
+    ],
+    "authority_actor_ids": [
+      "act-a669b58d2aa0dc96e0ac"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-a669b58d2aa0dc96e0ac",
+        "effective_at": "2025-07-14T09:00:00Z",
+        "resolution": "deferred",
+        "rights": [
+          "accept_risk_allocation",
+          "review_pricing"
+        ]
+      }
+    ],
+    "authority_role_id": "consulting.commercial_authority",
+    "authority_role_ids": [
+      "consulting.commercial_authority"
+    ],
+    "channel": "email",
+    "checkpoint_id": "checkpoint-cdb14084b8cb16e3ff97",
+    "decision_owner_actor_id": "act-a669b58d2aa0dc96e0ac",
+    "decision_owner_actor_ids": [
+      "act-a669b58d2aa0dc96e0ac"
+    ],
+    "decision_state": "deferred",
+    "forecast_cutoff_at": "2025-07-14T15:45:00Z",
+    "gate_id": "commercial_model",
+    "next_step": "account executive to confirm the service specification decision with buyer authority",
+    "payment_basis": {
+      "days": 30,
+      "milestones": [
+        "kickoff",
+        "interim",
+        "acceptance"
+      ]
+    },
+    "pricing_basis": {
+      "blended_hourly_rate_minor_units": 1875000,
+      "fee_minor_units": 300000000,
+      "model": "fixed_fee"
+    },
+    "recipient_role_ids": [
+      "seller.account_executive"
+    ],
+    "recipients": [
+      {
+        "display_name": "Orin E. Fallow-Juniper-1ac6",
+        "email": "account.executive@fieldstone-advisory.example",
+        "kind": "seller",
+        "organization_id": "org-1cd3b08c8fdb009592e4",
+        "role_id": "seller.account_executive"
+      }
+    ],
+    "required_signer_actor_ids": [
+      "act-a669b58d2aa0dc96e0ac"
+    ],
+    "required_signer_role_ids": [
+      "consulting.commercial_authority"
+    ],
+    "risk_allocation": {
+      "change_control": "shared",
+      "delivery_risk": "seller_bounded"
+    },
+    "source_evidence_term": "pricing mechanism, risk allocation, and payment basis",
+    "source_fact_ids": [
+      "consulting-evaluation-pricing"
+    ]
+  }
+}

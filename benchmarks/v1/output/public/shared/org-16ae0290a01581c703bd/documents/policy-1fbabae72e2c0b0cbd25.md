@@ -9,7 +9,7 @@
 
 ## Control
 
-Rule: For margin guardrails, Blueharbor Risk Partners may not mark quote comparison complete until Broking Director verifies quote comparison, commission disclosure, and client order.
+Rule: For margin guardrails, Blueharbor Risk Partners may not mark client order complete until Broking Director verifies quote comparison, commission disclosure, and client order.
 Owner: Broking Director
 Required evidence: quote comparison, commission disclosure, and client order.
 Approval threshold: Exposure above USD 100,000.00 (10000000 minor units) requires written approval from Broking Director.
@@ -17,4 +17,4 @@ Escalation trigger: Escalate when premium variance exceeds 10 percent or a cover
 
 ## Recordkeeping
 
-Attach the evidence to the quote comparison record, preserve prior versions, and record the decision date before advancing the commercial insurance placement.
+Attach the evidence to the client order record, preserve prior versions, and record the decision date before advancing the commercial insurance placement.

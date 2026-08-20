@@ -37,7 +37,7 @@ comparable only when its run manifest records all of these versions.
 ## Dataset releases
 
 The current pack contains 72 public worlds, 24 each in train, dev, and blind
-splits. Each world contains 72 artifacts, for 5,184 artifacts overall, and the
+splits. Each world contains 100 to 120 artifacts, for 8,060 artifacts overall, and the
 authoring pack contains 180 shared seller documents.
 
 World bundles are immutable after a release decision. Each bundle and artifact

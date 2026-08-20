@@ -1,0 +1,11 @@
+# Consulting procurement update
+
+- Publisher: EDLB Synthetic Wire
+- Published: 2025-09-01T13:50:00Z
+- URL: https://edlb.example/signals/artifact-c70cc3defa0766f1a55c
+
+A synthetic trade bulletin reviews timing pressure around the procurement stage of a strategy and operations engagement.
+The open market-engagement, evaluation, and clarification record question still points back to the service specification record.
+Carry the unresolved market-engagement, evaluation, and clarification record item with its accountable buyer role.
+Keep unresolved ownership visible until the buyer responds.
+Keep the market-engagement, evaluation, and clarification record forecast unchanged until a dated buyer source confirms the signal.

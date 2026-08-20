@@ -6,8 +6,8 @@ Use Python 3.14 or newer and uv. The contract and generated data version is
 v1.0.0. All train, dev, and blind worlds are under
 benchmarks/v1/output/public/ and are released with their answer material.
 
-The full pack contains 72 public worlds, 72 artifacts per world, 5,184
-artifacts, 716 checkpoint windows, 180 shared seller documents, 36
+The full pack contains 72 public worlds, 100 to 120 artifacts per world, 8,060
+artifacts, 576 checkpoint windows, 180 shared seller documents, 36
 counterfactual pairs, and 4 rich renderings. The public manifest and validation
 records are committed with the generated pack.
 

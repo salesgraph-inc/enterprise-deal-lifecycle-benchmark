@@ -9,7 +9,7 @@
 
 ## Control
 
-Rule: For capacity planning, Emberline Commercial Bank may not mark committee review complete until Treasury Product Director verifies cash-flow analysis, implementation plan, and pricing schedule.
+Rule: For capacity planning, Emberline Commercial Bank may not mark credit approval complete until Treasury Product Director verifies cash-flow analysis, implementation plan, and pricing schedule.
 Owner: Treasury Product Director
 Required evidence: cash-flow analysis, implementation plan, and pricing schedule.
 Approval threshold: Exposure above USD 2,500,000.00 (250000000 minor units) requires written approval from Treasury Product Director.
@@ -17,4 +17,4 @@ Escalation trigger: Escalate when fee waiver exceeds 15 percent or implementatio
 
 ## Recordkeeping
 
-Attach the evidence to the committee review record, preserve prior versions, and record the decision date before advancing the commercial lending and treasury sale.
+Attach the evidence to the credit approval record, preserve prior versions, and record the decision date before advancing the commercial lending and treasury sale.

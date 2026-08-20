@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/branch-resolution.json",
+  "title": "BranchResolution",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["branch_id", "option", "effect_ids", "action_keys", "selected_decision_artifact_ids", "resolved_at"],
+  "properties": {
+    "branch_id": {"$ref": "#/$defs/id"},
+    "option": {"type": "string", "enum": ["success", "fallback"]},
+    "effect_ids": {"$ref": "#/$defs/ids"},
+    "action_keys": {"$ref": "#/$defs/ids"},
+    "selected_decision_artifact_ids": {"$ref": "#/$defs/nonempty_ids"},
+    "resolved_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "ids": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+    "nonempty_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}}
+  }
+}

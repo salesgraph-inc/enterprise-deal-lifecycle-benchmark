@@ -3,20 +3,20 @@
 - Split: train
 - Vertical: corporate_banking
 - Seller: Emberline Commercial Bank
-- Buyer: Yarrow Vale Industries (yarrow-vale-industries.example)
+- Buyer: Larkspur Stonebridge Enterprises (larkspur-stonebridge-enterprises.example)
 - Simulated duration: 282 days
-- Checkpoints: 9
-- Canonical artifacts: 72
+- Checkpoints: 8
+- Canonical artifacts: 112
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
-- internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
+- transcript: 9
+- email: 32
+- internal_chat: 10
+- crm: 21
+- calendar: 6
+- document: 28
 - web_news: 6
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

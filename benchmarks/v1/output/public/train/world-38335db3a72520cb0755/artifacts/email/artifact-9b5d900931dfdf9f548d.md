@@ -1,0 +1,16 @@
+# Construction qualification update
+
+- From: account.executive@cinderline-builders.example
+- To: uma-k-juniper-ashby-52ec@oakline-alder-holdings.example
+- Date: 2025-02-24T14:42:00Z
+- Subject: Oakline Alder Holdings federal public transportation CM/GC project pursuit | qualification review
+
+Hi Uma K. Juniper-Ashby-52ec,
+
+The qualification discussion left one buyer decision open. Please confirm who owns it, when they expect to decide, and which assumption should remain outside the forecast.
+Reviewers still cite the qualification record for CM/GC qualifications and best-value selection evidence.
+Carry forward only commitments that the accountable owner confirmed.
+Treat the current CM/GC qualifications and best-value selection evidence entry as a source claim, not a forecast fact.
+
+Regards,
+Orin E. Yarrow-Juniper-8676

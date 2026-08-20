@@ -3,20 +3,20 @@
 - Split: dev
 - Vertical: legal_services
 - Seller: Quarry Counsel LLP
-- Buyer: Pinecrest Dovetail Industries (pinecrest-dovetail-industries.example)
-- Simulated duration: 254 days
-- Checkpoints: 12
-- Canonical artifacts: 72
+- Buyer: Cairn Dovetail Group (cairn-dovetail-group.example)
+- Simulated duration: 256 days
+- Checkpoints: 7
+- Canonical artifacts: 103
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
-- internal_chat: 12
-- crm: 12
+- transcript: 12
+- email: 27
+- internal_chat: 9
+- crm: 18
 - calendar: 8
-- document: 10
-- web_news: 6
+- document: 24
+- web_news: 5
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

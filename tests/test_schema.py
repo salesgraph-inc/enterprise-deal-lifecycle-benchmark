@@ -15,23 +15,23 @@ from jsonschema import Draft202012Validator, FormatChecker
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from edlb.models import (
-    Actor,
-    Artifact,
-    Assertion,
-    Checkpoint,
-    Event,
-    RoleGrant,
-    RunManifest,
-    Scorecard,
-    TraceEvent,
-)
-from edlb.protocol import Message
-from edlb.runner import (
-    BundleError,
-    normalize_agent_manifest,
-    normalize_environment_manifest,
-)
+models = importlib.import_module("edlb.models")
+protocol = importlib.import_module("edlb.protocol")
+runner = importlib.import_module("edlb.runner")
+causal = importlib.import_module("edlb.causal")
+Actor = models.Actor
+Artifact = models.Artifact
+Assertion = models.Assertion
+Checkpoint = models.Checkpoint
+Event = models.Event
+RoleGrant = models.RoleGrant
+RunManifest = models.RunManifest
+Scorecard = models.Scorecard
+TraceEvent = models.TraceEvent
+Message = protocol.Message
+BundleError = runner.BundleError
+normalize_agent_manifest = runner.normalize_agent_manifest
+normalize_environment_manifest = runner.normalize_environment_manifest
 
 DATE_TIME = re.compile(
     r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
@@ -63,11 +63,17 @@ def _is_uri(value: object) -> bool:
 
 
 SCHEMA_NAMES = {
+    "action-effect-rule",
     "actor",
     "artifact",
     "assertion",
+    "branch-definition",
+    "branch-resolution",
     "checkpoint",
     "event",
+    "forecast-accuracy",
+    "milestone-definition",
+    "milestone-resolution",
     "protocol-message",
     "role-grant",
     "run-manifest",
@@ -115,7 +121,11 @@ def _protocol_fixtures() -> dict[str, dict[str, object]]:
             **base,
             "kind": "start",
             "role": "system",
-            "payload": {"world_id": "world-schema", "track": "open_team"},
+            "payload": {
+                "world_id": "world-schema",
+                "track": "open_team",
+                "scenario_hash": "sha256:" + "0" * 64,
+            },
         },
         "observation": {
             **base,
@@ -191,7 +201,6 @@ def _protocol_fixtures() -> dict[str, dict[str, object]]:
             "role": "account_executive",
             "observation_token": "b" * 32,
             "checkpoint_id": "checkpoint-schema",
-            "summary": "Reviewed the available evidence.",
         },
         "run_end": {
             **base,
@@ -241,6 +250,31 @@ class SchemaTest(unittest.TestCase):
         for value in ("2025-01-01T00:00:00", "2025-13-01T00:00:00Z", "not-a-date"):
             self.assertTrue(list(validator.iter_errors(value)), value)
 
+    def test_forecast_accuracy_declares_public_outcome_leakage(self) -> None:
+        value = {
+            "official": True,
+            "outcome_visibility": "public",
+            "leakage_resistant": False,
+            "overall_brier": 0.25,
+            "by_cutoff": [
+                {
+                    "cutoff_sequence": 1,
+                    "observations": 3,
+                    "brier": 0.25,
+                    "mean_probability": 0.5,
+                    "event_rate": 1.0,
+                }
+            ],
+        }
+        self.assert_valid("forecast-accuracy", value, "forecast-accuracy")
+        self.assertTrue(
+            list(
+                self.validators["forecast-accuracy"].iter_errors(
+                    {**value, "leakage_resistant": True}
+                )
+            )
+        )
+
     def test_generated_records(self) -> None:
         files = (
             ("actor", "actors.jsonl"),
@@ -279,7 +313,75 @@ class SchemaTest(unittest.TestCase):
                 self.assert_valid(
                     "scenario-manifest", value["scenario_manifest"], oracle
                 )
+                for index, milestone in enumerate(
+                    value["verification_facts"]["milestones"]
+                ):
+                    self.assert_valid(
+                        "milestone-definition",
+                        milestone,
+                        f"{oracle}:milestone:{index + 1}",
+                    )
+                for schema_name, key, parser in (
+                    (
+                        "action-effect-rule",
+                        "action_effect_rules",
+                        causal.action_effect_rule,
+                    ),
+                    ("branch-definition", "branches", causal.branch_definition),
+                ):
+                    for index, record in enumerate(value["verification_facts"][key]):
+                        self.assert_valid(
+                            schema_name,
+                            record,
+                            f"{oracle}:{schema_name}:{index + 1}",
+                        )
+                        parser(record)
             self.assertTrue((bundle / "hidden_events.jsonl").is_file())
+
+    def test_causal_schema_and_parser_reject_unknown_contract_values(self) -> None:
+        oracle = json.loads((_bundles()[0] / "oracle.json").read_text())
+        facts = oracle["verification_facts"]
+        branch = facts["branches"][0]
+        resolution = {
+            "branch_id": branch["branch_id"],
+            "option": "fallback",
+            "effect_ids": [],
+            "action_keys": [],
+            "selected_decision_artifact_ids": branch["fallback_decision_artifact_ids"],
+            "resolved_at": facts["intervention_at"],
+        }
+        self.assert_valid("branch-resolution", resolution, "branch-resolution")
+        causal.branch_resolution(resolution)
+        cases = (
+            (
+                "action-effect-rule",
+                facts["action_effect_rules"][0],
+                "purpose_code",
+                "unknown_recovery_purpose",
+                causal.action_effect_rule,
+            ),
+            (
+                "branch-definition",
+                facts["branches"][0],
+                "recoverable",
+                "yes",
+                causal.branch_definition,
+            ),
+            (
+                "branch-resolution",
+                resolution,
+                "option",
+                "unknown",
+                causal.branch_resolution,
+            ),
+        )
+        for schema_name, source, field, value, parser in cases:
+            with self.subTest(schema=schema_name, field=field):
+                mutated = json.loads(json.dumps(source))
+                mutated[field] = value
+                self.assertTrue(list(self.validators[schema_name].iter_errors(mutated)))
+                with self.assertRaises(causal.CausalError):
+                    parser(mutated)
 
     def test_generated_protocol_messages(self) -> None:
         paths = sorted(
@@ -309,35 +411,58 @@ class SchemaTest(unittest.TestCase):
         checksum = "sha256:" + hashlib.sha256(body.encode()).hexdigest()
         fixtures = {
             "actor": Actor(
-                "actor-schema",
-                "buyer",
-                "Schema Buyer",
-                "org-schema",
-                ("champion",),
-                "2025-01-01T00:00:00Z",
-                "public",
+                actor_id="actor-schema",
+                kind="buyer",
+                display_name="Schema Buyer",
+                organization_id="org-schema",
+                role_tags=("champion",),
+                active_from="2025-01-01T00:00:00Z",
+                visibility="public",
+                synthetic=True,
+                authority={
+                    "role_id": "champion",
+                    "rights": ["confirm_objective"],
+                    "gate_ids": ["discovery"],
+                },
                 email=None,
             ).to_dict(),
             "artifact": Artifact(
-                "artifact-schema",
-                "world-schema",
-                "email",
-                "Schema artifact",
-                "2025-01-01T00:00:00Z",
-                "2025-01-01T00:00:00Z",
-                "agent_visible",
-                {"mime_type": "text/plain", "body": body, "language": "en"},
-                checksum,
-                {
+                artifact_id="artifact-schema",
+                world_id="world-schema",
+                kind="email",
+                title="Schema artifact",
+                created_at="2025-01-01T00:00:00Z",
+                available_at="2025-01-01T00:00:00Z",
+                visibility="agent_visible",
+                content={"mime_type": "text/plain", "body": body, "language": "en"},
+                checksum=checksum,
+                synthetic=True,
+                provenance={
                     "synthetic_only": True,
                     "source_type": "generated_template",
                     "generator": "schema-test",
                     "generator_version": "v1.0.0",
+                    "source_ids": ["source-schema-test"],
+                    "fact_ids": ["schema-test-fact"],
                     "license": "CC-BY-4.0",
                 },
+                gate_id="discovery",
+                artifact_key="artifact-schema",
+                structured_payload={
+                    "gate_id": "discovery",
+                    "objective": "Confirm objective",
+                },
+                authoritative_for=("discovery",),
+                recipient_role_ids=("account_executive",),
+                projection_origin=None,
+                logical_document_id="document-schema",
+                version=1,
+                supersedes_artifact_id=None,
+                derived_from_artifact_ids=(),
+                source_actor_ids=("actor-schema",),
+                recipient_actor_ids=("seller-account-executive",),
                 thread_id="thread-schema",
                 record_id="record-schema",
-                version=1,
             ).to_dict(),
             "assertion": Assertion(
                 "assertion-schema",
@@ -354,17 +479,45 @@ class SchemaTest(unittest.TestCase):
                 {"source": "generated", "license": "CC-BY-4.0"},
             ).to_dict(),
             "checkpoint": Checkpoint(
-                "checkpoint-schema",
-                "world-schema",
-                0,
-                "2025-01-01T00:00:00Z",
-                "2025-01-01T00:00:00Z",
-                "2025-01-02T00:00:00Z",
-                "pending",
-                ("objective-schema",),
-                (),
-                ("account_executive",),
-                False,
+                checkpoint_id="checkpoint-schema",
+                world_id="world-schema",
+                sequence=0,
+                available_at="2025-01-01T00:00:00Z",
+                forecast_cutoff_at="2025-01-01T00:00:00Z",
+                window_start="2025-01-01T00:00:00Z",
+                window_end="2025-01-02T00:00:00Z",
+                status="pending",
+                synthetic=True,
+                objective_ids=("objective-schema",),
+                visible_artifact_ids=(),
+                released_event_ids=(),
+                required_roles=("account_executive",),
+                terminal=False,
+                visible_gate="discovery",
+                label="Discovery",
+                business_objective="Confirm the buyer's objective.",
+                decision_condition="Advance when the buyer accepts the evidence.",
+                role_deliverables={
+                    "account_executive": "Confirm the decision owner.",
+                    "domain_specialist": "Validate the evidence.",
+                    "sales_manager": "Review the forecast.",
+                    "revops": "Reconcile the CRM record.",
+                },
+                completion_conditions=("The buyer decision is recorded.",),
+                policy_entrypoints=("policy-schema",),
+                gate_id="discovery",
+                source_fact_ids=("schema-test-fact",),
+                required_artifact_keys=("artifact-schema",),
+                required_artifact_roles={"artifact-schema": "evidence"},
+                authority_role_ids=("champion",),
+                authority_rights=("confirm_objective",),
+                required_payload_fields=("objective",),
+                decision_route={"accepted": "advance"},
+                recovery_decisions=("revalidate",),
+                availability_delay_bounds={
+                    "min_minutes": 0,
+                    "max_minutes": 4320,
+                },
             ).to_dict(),
             "event": Event(
                 "event-schema",
@@ -472,12 +625,24 @@ class SchemaTest(unittest.TestCase):
                         "stakeholder_management",
                         "workflow_compliance",
                         "communication_quality",
-                        "forecast_calibration",
+                        "forecast_discipline",
                         "longitudinal_recovery",
                         "side_effect_discipline",
                     )
                 },
-                {"terminal_outcome": "closed_won"},
+                {
+                    "terminal_outcome": "closed_won",
+                    "forecast_cutoff_count": 1,
+                    "forecast_observations": [
+                        {
+                            "record_id": "deal-schema",
+                            "cutoff_sequence": 1,
+                            "cutoff_at": "2025-01-01T00:00:00Z",
+                            "forecast_probability": 0.5,
+                            "outcome": True,
+                        }
+                    ],
+                },
                 {},
                 {
                     "tool_calls": 0,
@@ -508,6 +673,24 @@ class SchemaTest(unittest.TestCase):
         )
         for schema_name, value in fixtures.items():
             self.assert_valid(schema_name, value, schema_name)
+        self.assertEqual(
+            Checkpoint.from_dict(fixtures["checkpoint"]).to_dict(),
+            fixtures["checkpoint"],
+        )
+        invalid_scorecard = json.loads(json.dumps(fixtures["scorecard"]))
+        invalid_scorecard["status"] = "invalid"
+        invalid_scorecard["secondary_metrics"] = {
+            "forecast_cutoff_count": 0,
+            "forecast_observations": [],
+        }
+        self.assert_valid("scorecard", invalid_scorecard, "invalid-scorecard")
+        non_numeric_forecast = json.loads(json.dumps(fixtures["scorecard"]))
+        non_numeric_forecast["secondary_metrics"]["forecast_observations"][0][
+            "forecast_probability"
+        ] = "not-a-number"
+        self.assertTrue(
+            list(self.validators["scorecard"].iter_errors(non_numeric_forecast))
+        )
 
         manifest = fixtures["run-manifest"]["agent_manifest"]
         unpinned = json.loads(json.dumps(manifest))

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/forecast-accuracy.json",
+  "title": "Forecast Accuracy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "official",
+    "outcome_visibility",
+    "leakage_resistant",
+    "overall_brier",
+    "by_cutoff"
+  ],
+  "properties": {
+    "official": {"type": "boolean"},
+    "outcome_visibility": {"const": "public"},
+    "leakage_resistant": {"const": false},
+    "overall_brier": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "by_cutoff": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cutoff_sequence",
+          "observations",
+          "brier",
+          "mean_probability",
+          "event_rate"
+        ],
+        "properties": {
+          "cutoff_sequence": {"type": "integer", "minimum": 1},
+          "observations": {"type": "integer", "minimum": 1},
+          "brier": {"type": "number", "minimum": 0, "maximum": 1},
+          "mean_probability": {"type": "number", "minimum": 0, "maximum": 1},
+          "event_rate": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    }
+  }
+}

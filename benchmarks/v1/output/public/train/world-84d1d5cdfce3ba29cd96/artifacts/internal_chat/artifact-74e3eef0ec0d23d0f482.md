@@ -1,0 +1,11 @@
+# Corporate Banking pricing update
+
+- Channel: internal chat
+- Date: 2025-10-13T13:00:00Z
+- Participants: Kiran M. Yarrow-Ashby-2e32, Vale N. Cairn-Juniper-7085
+
+Kiran M. Yarrow-Ashby-2e32: We need the buyer's dated pricing position before the next review.
+Vale N. Cairn-Juniper-7085: I will return with the owner, date, and unresolved business limit.
+Kiran M. Yarrow-Ashby-2e32: The buyer evaluation ranking changed for the pricing gate without a disclosed criteria change.
+Kiran M. Yarrow-Ashby-2e32: Leave the forecast unchanged until the accountable owner decides.
+Kiran M. Yarrow-Ashby-2e32: The next review should test risk-based pricing within documented lending authority against a dated buyer reply.

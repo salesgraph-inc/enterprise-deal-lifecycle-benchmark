@@ -54,7 +54,7 @@ sources for design context and record generator, model, prompt, seed, and
 license provenance.
 
 The current pack contains 72 public worlds, 24 each in train, dev, and blind
-splits. Each world contains 72 artifacts, for 5,184 artifacts overall, and 180
+splits. Each world contains 100 to 120 artifacts, for 8,060 artifacts overall, and 180
 shared seller documents.
 
 The current records are generated from structured template blueprints. Expert

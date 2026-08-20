@@ -3,20 +3,20 @@
 - Split: dev
 - Vertical: manufacturing
 - Seller: Northstar Fabrication Cooperative
-- Buyer: Alder Granite Collective (alder-granite-collective.example)
+- Buyer: Juniper Pinecrest Group (juniper-pinecrest-group.example)
 - Simulated duration: 227 days
-- Checkpoints: 9
-- Canonical artifacts: 72
+- Checkpoints: 6
+- Canonical artifacts: 116
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
+- transcript: 12
+- email: 34
 - internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
-- web_news: 6
+- crm: 21
+- calendar: 6
+- document: 26
+- web_news: 5
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

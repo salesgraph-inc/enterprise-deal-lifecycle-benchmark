@@ -1,0 +1,111 @@
+{
+  "artifact_key": "quotation_quote_recommendation",
+  "gate_id": "quotation",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": true,
+      "basis": {
+        "amount_minor_units": 7000000,
+        "field": "annual_premium_minor_units",
+        "value": 7000000
+      },
+      "policy_evidence": "quote comparison, commission disclosure, and client order",
+      "policy_limit_minor_units": 10000000,
+      "policy_owner": "Broking Director",
+      "reason": "concrete_term_within_policy",
+      "required": false,
+      "trigger": "seller_policy_exception"
+    },
+    "approval_required": false,
+    "artifact_key": "quotation_quote_recommendation",
+    "artifact_subtype": "quote_recommendation",
+    "author": {
+      "display_name": "Cato U. Yarrow-Vale-656a",
+      "email": "cato-u-yarrow-vale-656a@underwriter.example",
+      "kind": "external",
+      "organization_id": "org-efcc3cc9b1bf1d72a995",
+      "role_id": "insurance.underwriter_authority"
+    },
+    "author_actor_id": "act-a4a1deb1c9d1fbe49b3d",
+    "author_role_id": "insurance.underwriter_authority",
+    "authoritative_for": [
+      "quotation",
+      "decision_state",
+      "crm.next_step"
+    ],
+    "authority_actor_ids": [
+      "act-a4a1deb1c9d1fbe49b3d"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-a4a1deb1c9d1fbe49b3d",
+        "effective_at": "2025-06-09T09:00:00Z",
+        "resolution": "deferred",
+        "rights": [
+          "accept_quotation_request_basis",
+          "review_subjectivities"
+        ]
+      }
+    ],
+    "authority_role_id": "insurance.underwriter_authority",
+    "authority_role_ids": [
+      "insurance.underwriter_authority"
+    ],
+    "channel": "email",
+    "checkpoint_id": "checkpoint-006703dc89ca5cf7ad45",
+    "commissions": {
+      "broker_minor_units": 700000,
+      "carrier_fee_minor_units": 280000,
+      "total_minor_units": 980000
+    },
+    "decision_owner_actor_id": "act-a4a1deb1c9d1fbe49b3d",
+    "decision_owner_actor_ids": [
+      "act-a4a1deb1c9d1fbe49b3d"
+    ],
+    "decision_state": "deferred",
+    "exclusions": [
+      "known_pollution_without_endorsement"
+    ],
+    "forecast_cutoff_at": "2025-06-09T17:15:00Z",
+    "gate_id": "quotation",
+    "limits": {
+      "aggregate_minor_units": 560000000,
+      "each_claim_minor_units": 280000000
+    },
+    "next_step": "account executive to confirm the client order decision with buyer authority",
+    "premium_to_each_claim_limit": 0.025,
+    "premiums": {
+      "annual_minor_units": 7000000,
+      "total_term_minor_units": 14000000
+    },
+    "recipient_role_ids": [
+      "insurance.client_authority"
+    ],
+    "recipients": [
+      {
+        "display_name": "Quill U. Elm-Umber-ef70",
+        "email": "quill-u-elm-umber-ef70@umber-northfield-collective.example",
+        "kind": "buyer",
+        "organization_id": "org-fca122443fd42477d20c",
+        "role_id": "insurance.client_authority"
+      }
+    ],
+    "required_signer_actor_ids": [
+      "act-a4a1deb1c9d1fbe49b3d"
+    ],
+    "required_signer_role_ids": [
+      "insurance.underwriter_authority"
+    ],
+    "source_evidence_term": "quotation with limits, premiums, commissions, and exclusions",
+    "source_fact_ids": [
+      "insurance-submission-quote",
+      "insurance-structured-placement-data"
+    ]
+  }
+}

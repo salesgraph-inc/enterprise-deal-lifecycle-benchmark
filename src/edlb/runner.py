@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.resources
 import json
 import math
 import os
@@ -14,7 +15,7 @@ import tempfile
 import time
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -88,6 +89,7 @@ class WorldBundle:
     private: bool
     actor_rows: tuple[Mapping[str, Any], ...] = ()
     checkpoint_rows: tuple[Mapping[str, Any], ...] = ()
+    hidden_events: tuple[Mapping[str, Any], ...] = ()
 
     @property
     def world_id(self) -> str:
@@ -440,6 +442,131 @@ def _json(path: Path) -> Any:
         raise BundleError(f"cannot read JSON file {path}: {exc}") from exc
 
 
+def _schema_type_matches(value: Any, expected: str) -> bool:
+    if expected == "null":
+        return value is None
+    if expected == "boolean":
+        return isinstance(value, bool)
+    if expected == "object":
+        return isinstance(value, Mapping)
+    if expected == "array":
+        return isinstance(value, list)
+    if expected == "string":
+        return isinstance(value, str)
+    if expected == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if expected == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    return True
+
+
+def _schema_value_errors(value: Any, schema: Mapping[str, Any], path: str) -> list[str]:
+    errors: list[str] = []
+    expected = schema.get("type")
+    if expected is not None:
+        types = (expected,) if isinstance(expected, str) else tuple(expected)
+        if not any(_schema_type_matches(value, item) for item in types):
+            return [f"{path} must be {', '.join(types)}"]
+    if "const" in schema and value != schema["const"]:
+        errors.append(f"{path} must equal {schema['const']!r}")
+    if "enum" in schema and value not in schema["enum"]:
+        errors.append(f"{path} must be one of {schema['enum']!r}")
+    if isinstance(value, str):
+        length = len(value)
+        if length < schema.get("minLength", 0):
+            errors.append(f"{path} is shorter than minLength")
+        if "maxLength" in schema and length > schema["maxLength"]:
+            errors.append(f"{path} is longer than maxLength")
+        pattern = schema.get("pattern")
+        if pattern is not None and re.search(pattern, value) is None:
+            errors.append(f"{path} does not match pattern")
+        format_name = schema.get("format")
+        if format_name == "date-time":
+            try:
+                parsed = datetime.fromisoformat(value)
+            except ValueError:
+                parsed = None
+            if parsed is None or parsed.tzinfo is None or parsed.utcoffset() is None:
+                errors.append(f"{path} is not an RFC 3339 date-time")
+        elif format_name == "uri":
+            from urllib.parse import urlsplit
+
+            parsed_uri = urlsplit(value)
+            if (
+                not value
+                or any(char.isspace() for char in value)
+                or not parsed_uri.scheme
+            ):
+                errors.append(f"{path} is not a URI")
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if "minimum" in schema and value < schema["minimum"]:
+            errors.append(f"{path} is below minimum")
+        if "maximum" in schema and value > schema["maximum"]:
+            errors.append(f"{path} is above maximum")
+    if isinstance(value, list):
+        if len(value) < schema.get("minItems", 0):
+            errors.append(f"{path} has fewer than minItems")
+        if "maxItems" in schema and len(value) > schema["maxItems"]:
+            errors.append(f"{path} has more than maxItems")
+        if schema.get("uniqueItems"):
+            encoded = [
+                json.dumps(item, sort_keys=True, separators=(",", ":"))
+                for item in value
+            ]
+            if len(set(encoded)) != len(encoded):
+                errors.append(f"{path} contains duplicate items")
+        item_schema = schema.get("items")
+        if isinstance(item_schema, Mapping):
+            for index, item in enumerate(value):
+                errors.extend(
+                    _schema_value_errors(item, item_schema, f"{path}[{index}]")
+                )
+    if isinstance(value, Mapping):
+        if len(value) < schema.get("minProperties", 0):
+            errors.append(f"{path} has fewer than minProperties")
+        required = schema.get("required", ())
+        for key in required:
+            if key not in value:
+                errors.append(f"{path} is missing required field {key!r}")
+        properties = schema.get("properties", {})
+        if schema.get("additionalProperties") is False:
+            unknown = sorted(set(value) - set(properties))
+            errors.extend(f"{path} has unknown field {key!r}" for key in unknown)
+        additional = schema.get("additionalProperties")
+        for key, item in value.items():
+            child_schema = properties.get(key)
+            if child_schema is None and isinstance(additional, Mapping):
+                child_schema = additional
+            if isinstance(child_schema, Mapping):
+                errors.extend(_schema_value_errors(item, child_schema, f"{path}.{key}"))
+    for subschema in schema.get("allOf", ()):
+        if isinstance(subschema, Mapping):
+            errors.extend(_schema_value_errors(value, subschema, path))
+    conditional = schema.get("if")
+    if isinstance(conditional, Mapping) and not _schema_value_errors(
+        value, conditional, path
+    ):
+        consequent = schema.get("then")
+        if isinstance(consequent, Mapping):
+            errors.extend(_schema_value_errors(value, consequent, path))
+    return errors
+
+
+def _validate_packaged_schema(
+    schema_name: str, value: Mapping[str, Any], source: Path
+) -> None:
+    schema_path = importlib.resources.files("edlb").joinpath(
+        "schemas", f"{schema_name}.json"
+    )
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise BundleError(f"cannot read packaged {schema_name} schema: {exc}") from exc
+    errors = _schema_value_errors(value, schema, schema_name)
+    if errors:
+        raise BundleError(f"{source} fails {schema_name} schema: {errors[0]}")
+
+
 def _jsonl(path: Path) -> list[dict[str, Any]]:
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
@@ -475,6 +602,7 @@ def load_world_bundle(path: str | Path, allow_private: bool = False) -> WorldBun
     manifest = _json(manifest_path)
     if not isinstance(manifest, Mapping) or not manifest.get("world_id"):
         raise BundleError("world manifest must contain world_id")
+    _validate_packaged_schema("scenario-manifest", manifest, manifest_path)
     release_visibility = manifest.get("release_visibility")
     if release_visibility not in {"public", "private"}:
         raise BundleError("world manifest must contain valid release_visibility")
@@ -486,16 +614,46 @@ def load_world_bundle(path: str | Path, allow_private: bool = False) -> WorldBun
     assert events_path is not None and artifacts_path is not None
     events = tuple(_jsonl(events_path))
     artifacts = tuple(_jsonl(artifacts_path))
+    for index, row in enumerate(events):
+        _validate_packaged_schema(
+            "event", row, events_path.with_name(f"{events_path.name}:{index + 1}")
+        )
+    for index, row in enumerate(artifacts):
+        _validate_packaged_schema(
+            "artifact",
+            row,
+            artifacts_path.with_name(f"{artifacts_path.name}:{index + 1}"),
+        )
     for row in artifacts:
         artifact_path = row.get("path")
         if artifact_path is not None:
             _resolve_bundle_file(root, artifact_path)
-    actor_file = _resolve_bundle_file(root, "actors.jsonl", required=False)
-    checkpoint_file = _resolve_bundle_file(root, "checkpoints.jsonl", required=False)
-    actor_rows = tuple(_jsonl(actor_file)) if actor_file is not None else ()
-    checkpoint_rows = (
-        tuple(_jsonl(checkpoint_file)) if checkpoint_file is not None else ()
-    )
+        elif isinstance(row.get("content"), Mapping):
+            source_uri = row["content"].get("source_uri")
+            if isinstance(source_uri, str) and source_uri.startswith("artifacts/"):
+                _resolve_bundle_file(root, source_uri)
+    actor_file = _resolve_bundle_file(root, "actors.jsonl")
+    checkpoint_file = _resolve_bundle_file(root, "checkpoints.jsonl")
+    hidden_file = _resolve_bundle_file(root, "hidden_events.jsonl")
+    assert actor_file is not None and checkpoint_file is not None
+    assert hidden_file is not None
+    actor_rows = tuple(_jsonl(actor_file))
+    checkpoint_rows = tuple(_jsonl(checkpoint_file))
+    hidden_events = tuple(_jsonl(hidden_file))
+    for index, row in enumerate(actor_rows):
+        _validate_packaged_schema(
+            "actor", row, actor_file.with_name(f"{actor_file.name}:{index + 1}")
+        )
+    for index, row in enumerate(checkpoint_rows):
+        _validate_packaged_schema(
+            "checkpoint",
+            row,
+            checkpoint_file.with_name(f"{checkpoint_file.name}:{index + 1}"),
+        )
+    for index, row in enumerate(hidden_events):
+        _validate_packaged_schema(
+            "event", row, hidden_file.with_name(f"{hidden_file.name}:{index + 1}")
+        )
     rubric_path = _resolve_bundle_file(root, "rubric.json")
     assert rubric_path is not None
     oracle_path = _resolve_bundle_file(root, "oracle.json", required=False)
@@ -509,7 +667,30 @@ def load_world_bundle(path: str | Path, allow_private: bool = False) -> WorldBun
         private,
         actor_rows,
         checkpoint_rows,
+        hidden_events,
     )
+
+
+def _validate_world_bundle_schema(bundle: WorldBundle) -> None:
+    root = bundle.path
+    _validate_packaged_schema(
+        "scenario-manifest", bundle.manifest, root / "manifest.json"
+    )
+    rows = (
+        ("event", bundle.events, "events.jsonl"),
+        ("artifact", bundle.artifacts, "artifacts.jsonl"),
+        ("actor", bundle.actor_rows, "actors.jsonl"),
+        ("checkpoint", bundle.checkpoint_rows, "checkpoints.jsonl"),
+        ("event", bundle.hidden_events, "hidden_events.jsonl"),
+    )
+    for schema_name, values, filename in rows:
+        for index, value in enumerate(values, 1):
+            _validate_packaged_schema(schema_name, value, root / f"{filename}:{index}")
+    release_visibility = bundle.manifest.get("release_visibility")
+    if release_visibility not in {"public", "private"}:
+        raise BundleError("world manifest must contain valid release_visibility")
+    if bundle.private != (release_visibility == "private"):
+        raise BundleError("world bundle privacy does not match release_visibility")
 
 
 def validate_world_bundle(
@@ -673,6 +854,23 @@ def _dataset_observed_extras(
             errors.append(f"pair {pair_id} base facts are not equal")
         if item.get("pre_intervention_artifacts_equal") is not True:
             errors.append(f"pair {pair_id} pre-intervention artifacts are not equal")
+        if item.get("post_intervention_changes_are_declared_descendants") is not True:
+            errors.append(f"pair {pair_id} has undeclared causal differences")
+        if item.get("causal_event_graph_valid") is not True:
+            errors.append(f"pair {pair_id} causal event graph is invalid")
+        if item.get("action_contracts_isomorphic") is not True:
+            errors.append(f"pair {pair_id} action contracts are not isomorphic")
+        for contract_field in (
+            "pre_intervention_events_equal",
+            "pre_intervention_hidden_events_equal",
+            "terminal_mappings_isomorphic",
+            "milestone_contracts_isomorphic",
+            "branch_contracts_isomorphic",
+            "selected_evidence_contracts_isomorphic",
+            "reference_trace_causal_material_isomorphic",
+        ):
+            if item.get(contract_field) is not True:
+                errors.append(f"pair {pair_id} {contract_field} is invalid")
         artifact_differences = item.get("post_intervention_artifact_differences")
         if (
             not isinstance(artifact_differences, int)
@@ -1051,6 +1249,8 @@ def _digest_bundle(bundle: WorldBundle) -> str:
         "artifacts": bundle.artifacts,
         "actors": bundle.actor_rows,
         "checkpoints": bundle.checkpoint_rows,
+        "hidden_events": bundle.hidden_events,
+        "oracle": _json(bundle.oracle_path) if bundle.oracle_path is not None else None,
     }
     return _sha256(to_json(payload).encode("utf-8"))
 
@@ -1102,269 +1302,97 @@ def _visible_roles(raw: Mapping[str, Any], visibility: Any) -> tuple[str, ...]:
 
 
 def _actor_models(bundle: WorldBundle) -> tuple[Actor, ...]:
+    if not bundle.actor_rows:
+        raise BundleError("actors.jsonl must contain actor rows")
     actors: list[Actor] = []
-    source_rows = bundle.actor_rows or tuple(
-        item for item in bundle.manifest.get("actors", ()) if isinstance(item, Mapping)
-    )
-    for raw in source_rows:
+    for raw in bundle.actor_rows:
         if not isinstance(raw, Mapping):
-            continue
-        if (
-            raw.get("organization_id") is not None
-            and raw.get("display_name") is not None
-        ):
-            actor_data = dict(raw)
-            actor_data.setdefault("kind", "external")
-            actor_data.setdefault("organization_id", "synthetic")
-            actor_data.setdefault("role_tags", ())
-            actor_data.setdefault(
-                "active_from",
-                bundle.manifest.get(
-                    "start_at",
-                    bundle.manifest.get("start_date", "1970-01-01T00:00:00+00:00"),
-                ),
-            )
-            actor_data.setdefault("visibility", "public")
-            actor_data.setdefault("attributes", {})
-            if actor_data["visibility"] == "role_scoped":
-                actor_data["visibility"] = "internal_role_scoped"
-            actor_data["visible_roles"] = _visible_roles(
-                actor_data, actor_data["visibility"]
-            )
+            raise BundleError("actor rows must be objects")
+        actor_data = dict(raw)
+        if actor_data.get("visibility") == "role_scoped":
+            raise BundleError("role_scoped actor visibility is not a v1 value")
+        try:
             actors.append(Actor.from_dict(actor_data))
-            continue
-        visibility = raw.get("visibility", ())
-        actor_visibility = (
-            "internal_role_scoped" if visibility == "role_scoped" else visibility
-        )
-        actor = Actor.from_dict(
-            {
-                "actor_id": raw.get("actor_id"),
-                "kind": raw.get("kind", "external"),
-                "display_name": raw.get("name", raw.get("label", raw.get("actor_id"))),
-                "organization_id": raw.get("organization", "synthetic"),
-                "role_tags": (raw.get("role"), raw.get("label")),
-                "active_from": _timestamp(
-                    bundle.manifest.get(
-                        "start_at",
-                        bundle.manifest.get("start_date", "1970-01-01T00:00:00+00:00"),
-                    )
-                ),
-                "visibility": ",".join(str(item) for item in visibility)
-                if isinstance(visibility, Sequence) and not isinstance(visibility, str)
-                else str(actor_visibility),
-                "email": raw.get("email"),
-                "phone": raw.get("phone"),
-                "attributes": {"synthetic": True, "source_role": raw.get("role")},
-                "visible_roles": _visible_roles(raw, actor_visibility),
-            }
-        )
-        actors.append(actor)
+        except (KeyError, TypeError, ValueError) as exc:
+            raise BundleError("actor row does not satisfy the v1 contract") from exc
     return tuple(actors)
 
 
 def _event_models(bundle: WorldBundle) -> tuple[Event, ...]:
     result: list[Event] = []
-    for sequence, raw in enumerate(bundle.events):
-        payload = raw.get("payload", {})
-        actor_ids: list[str] = (
-            [str(item) for item in raw.get("actor_ids", ())]
-            if isinstance(raw.get("actor_ids"), Sequence)
-            and not isinstance(raw.get("actor_ids"), str)
-            else []
-        )
-        if isinstance(payload, Mapping):
-            for key in ("actor_id", "source_actor_id", "recipient_actor_id"):
-                if payload.get(key) and str(payload[key]) not in actor_ids:
-                    actor_ids.append(str(payload[key]))
-        result.append(
-            Event.from_dict(
-                {
-                    "event_id": raw.get("event_id", f"event-{sequence:04d}"),
-                    "world_id": bundle.world_id,
-                    "sequence": int(raw.get("sequence", sequence)),
-                    "kind": raw.get("kind", "event"),
-                    "effective_at": _timestamp(
-                        raw.get("effective_at", raw.get("available_at"))
-                    ),
-                    "recorded_at": _timestamp(
-                        raw.get("recorded_at", raw.get("available_at"))
-                    ),
-                    "available_at": _timestamp(raw.get("available_at")),
-                    "actor_ids": actor_ids,
-                    "visibility": raw.get("visibility", "agent_visible"),
-                    "payload": dict(payload)
-                    if isinstance(payload, Mapping)
-                    else {"value": payload},
-                    "artifact_ids": tuple(
-                        str(item) for item in raw.get("artifact_ids", ())
-                    )
-                    if isinstance(raw.get("artifact_ids"), Sequence)
-                    and not isinstance(raw.get("artifact_ids"), str)
-                    else (
-                        (str(raw.get("artifact_id")),) if raw.get("artifact_id") else ()
-                    ),
-                    "channel": raw.get("channel"),
-                    "causal_parent_ids": raw.get(
-                        "causal_parent_ids", raw.get("causal_parent_event_ids", ())
-                    ),
-                    "visible_roles": _visible_roles(
-                        raw, raw.get("visibility", "agent_visible")
-                    ),
-                }
+    for raw in bundle.events:
+        try:
+            payload = raw["payload"]
+            actor_ids = tuple(str(item) for item in raw["actor_ids"])
+            if not isinstance(payload, Mapping):
+                raise BundleError("event payload must be an object")
+            result.append(
+                Event.from_dict(
+                    {
+                        "event_id": raw["event_id"],
+                        "world_id": bundle.world_id,
+                        "sequence": int(raw["sequence"]),
+                        "kind": raw["kind"],
+                        "effective_at": _timestamp(raw["effective_at"]),
+                        "recorded_at": _timestamp(raw["recorded_at"]),
+                        "available_at": _timestamp(raw["available_at"]),
+                        "actor_ids": actor_ids,
+                        "visibility": raw["visibility"],
+                        "payload": dict(payload),
+                        "artifact_ids": tuple(
+                            str(item) for item in raw["artifact_ids"]
+                        ),
+                        "channel": raw["channel"],
+                        "causal_parent_ids": tuple(
+                            str(item) for item in raw["causal_parent_ids"]
+                        ),
+                        "visible_roles": tuple(
+                            str(item) for item in raw["visible_roles"]
+                        ),
+                    }
+                )
             )
-        )
+        except BundleError:
+            raise
+        except (KeyError, TypeError, ValueError) as exc:
+            raise BundleError("event row does not satisfy the v1 contract") from exc
     return tuple(result)
 
 
 def _artifact_models(bundle: WorldBundle) -> tuple[Artifact, ...]:
+    if not bundle.artifacts:
+        raise BundleError("artifacts.jsonl must contain artifact rows")
     result: list[Artifact] = []
     for row in bundle.artifacts:
-        content, raw = _artifact_content(bundle, row)
-        result.append(
-            Artifact.from_dict(
-                {
-                    "artifact_id": row.get("artifact_id"),
-                    "world_id": bundle.world_id,
-                    "kind": row.get(
-                        "kind", row.get("artifact_type", row.get("channel", "document"))
-                    ),
-                    "title": row.get("title", row.get("artifact_id")),
-                    "created_at": _timestamp(
-                        row.get(
-                            "created_at",
-                            row.get("effective_at", row.get("available_at")),
-                        )
-                    ),
-                    "available_at": _timestamp(row.get("available_at")),
-                    "visibility": row.get("visibility", "agent_visible"),
-                    "content": content,
-                    "checksum": row.get("checksum", _sha256(raw.encode("utf-8"))),
-                    "provenance": row.get(
-                        "provenance",
-                        {
-                            "path": row.get("path"),
-                            "synthetic": bool(row.get("synthetic", True)),
-                            "source_event_id": row.get("source_event_id"),
-                        },
-                    ),
-                    "source_actor_ids": row.get(
-                        "source_actor_ids",
-                        (row.get("source_actor_id"),)
-                        if row.get("source_actor_id")
-                        else (),
-                    ),
-                    "recipient_actor_ids": row.get(
-                        "recipient_actor_ids",
-                        (row.get("recipient_actor_id"),)
-                        if row.get("recipient_actor_id")
-                        else (),
-                    ),
-                    "thread_id": row.get("thread_id", row.get("pair_id")),
-                    "record_id": row.get("record_id", row.get("deal_id")),
-                    "version": row.get("version", 1),
-                    "visible_roles": _visible_roles(
-                        row, row.get("visibility", "agent_visible")
-                    ),
-                }
-            )
-        )
+        if not isinstance(row, Mapping):
+            raise BundleError("artifact rows must be objects")
+        content, _ = _artifact_content(bundle, row)
+        artifact_data = dict(row)
+        artifact_data["world_id"] = bundle.world_id
+        artifact_data["content"] = content
+        if "checksum" not in artifact_data:
+            raise BundleError("artifact row is missing checksum")
+        try:
+            result.append(Artifact.from_dict(artifact_data))
+        except (KeyError, TypeError, ValueError) as exc:
+            raise BundleError("artifact row does not satisfy the v1 contract") from exc
     return tuple(result)
 
 
 def _checkpoint_models(bundle: WorldBundle) -> tuple[Checkpoint, ...]:
-    if bundle.checkpoint_rows:
-        result: list[Checkpoint] = []
-        for fallback_index, raw in enumerate(
-            sorted(
-                bundle.checkpoint_rows, key=lambda item: int(item.get("sequence", 0))
-            )
-        ):
-            sequence = int(raw.get("sequence", fallback_index))
-            result.append(
-                Checkpoint(
-                    checkpoint_id=str(raw.get("checkpoint_id")),
-                    world_id=bundle.world_id,
-                    sequence=sequence,
-                    available_at=_timestamp(raw.get("available_at")),
-                    window_start=_timestamp(
-                        raw.get("window_start", raw.get("available_at"))
-                    ),
-                    window_end=_timestamp(
-                        raw.get("window_end", raw.get("available_at"))
-                    ),
-                    status=str(raw.get("status", "pending")),
-                    objective_ids=tuple(
-                        str(item) for item in raw.get("objective_ids", ())
-                    ),
-                    visible_artifact_ids=tuple(
-                        str(item) for item in raw.get("visible_artifact_ids", ())
-                    ),
-                    required_roles=tuple(
-                        str(item) for item in raw.get("required_roles", ROLE_ORDER)
-                    ),
-                    terminal=bool(raw.get("terminal", False)),
-                    released_event_ids=tuple(
-                        str(item) for item in raw.get("released_event_ids", ())
-                    ),
-                )
-            )
-        return tuple(result)
-    rows: dict[str, list[Mapping[str, Any]]] = {}
-    for artifact in bundle.artifacts:
-        checkpoint = str(artifact.get("checkpoint_id", "cp-01"))
-        rows.setdefault(checkpoint, []).append(artifact)
-    ids = list(bundle.manifest.get("checkpoint_ids", ()))
-    if not ids:
-        ids = sorted(rows)
-    start = _date_value(
-        str(
-            bundle.manifest.get(
-                "start_at",
-                bundle.manifest.get("start_date", "1970-01-01T00:00:00+00:00"),
-            )
-        )
-    )
-    end = start + timedelta(days=int(bundle.manifest.get("duration_days", 180)))
-    fallback_result: list[Checkpoint] = []
-    for index, checkpoint_id in enumerate(ids):
-        items = rows.get(str(checkpoint_id), [])
-        dates = [
-            _date_value(str(item.get("available_at")))
-            for item in items
-            if item.get("available_at")
-        ]
-        available = (
-            min(dates)
-            if dates
-            else start + (end - start) * index // max(1, len(ids) - 1)
-        )
-        next_available = start + (end - start) * (index + 1) // max(1, len(ids))
-        fallback_result.append(
-            Checkpoint(
-                checkpoint_id=str(checkpoint_id),
-                world_id=bundle.world_id,
-                sequence=index,
-                available_at=f"{available.isoformat()}T00:00:00+00:00",
-                window_start=f"{available.isoformat()}T00:00:00+00:00",
-                window_end=f"{next_available.isoformat()}T00:00:00+00:00",
-                status="pending",
-                objective_ids=(f"objective-{checkpoint_id}",),
-                visible_artifact_ids=tuple(
-                    str(item.get("artifact_id"))
-                    for item in items
-                    if item.get("artifact_id")
-                ),
-                required_roles=ROLE_ORDER,
-                terminal=index == len(ids) - 1,
-                released_event_ids=tuple(
-                    str(item.get("event_id"))
-                    for item in bundle.events
-                    if item.get("checkpoint_id") == checkpoint_id
-                ),
-            )
-        )
-    return tuple(fallback_result)
+    if not bundle.checkpoint_rows:
+        raise BundleError("checkpoints.jsonl must contain checkpoint rows")
+    result: list[Checkpoint] = []
+    for raw in sorted(bundle.checkpoint_rows, key=lambda item: int(item["sequence"])):
+        value = dict(raw)
+        value["world_id"] = bundle.world_id
+        try:
+            result.append(Checkpoint.from_dict(value))
+        except (KeyError, TypeError, ValueError) as exc:
+            raise BundleError(
+                "checkpoint row does not satisfy the v1 contract"
+            ) from exc
+    return tuple(result)
 
 
 def _role_grants() -> tuple[RoleGrant, ...]:
@@ -1455,7 +1483,7 @@ def _role_grants() -> tuple[RoleGrant, ...]:
                 "can_approve_commercial": role == "sales_manager",
                 "can_request_approval": role
                 in {"account_executive", "domain_specialist", "sales_manager"},
-                "approval_limit_minor_units": 100000
+                "approval_limit_minor_units": 20_000_000_000
                 if role == "sales_manager"
                 else None,
             }
@@ -1486,9 +1514,7 @@ def _manifest_values(
     return RunManifest.from_dict(
         {
             "run_id": run_id,
-            "benchmark_version": str(
-                source.get("dataset_version", source.get("schema_version", "v1.0.0"))
-            ),
+            "benchmark_version": str(source["schema_version"]),
             "world_id": bundle.world_id,
             "track": track,
             "team_id": team_id,
@@ -1519,11 +1545,7 @@ def _manifest_values(
                 "retries": limits.retries,
             },
             "environment": dict(environment_manifest),
-            "started_at": _timestamp(
-                source.get(
-                    "start_at", source.get("start_date", "1970-01-01T00:00:00+00:00")
-                )
-            ),
+            "started_at": _timestamp(source["start_at"]),
             "status": "created",
         }
     )
@@ -1531,99 +1553,69 @@ def _manifest_values(
 
 def _scenario_model(bundle: WorldBundle) -> ScenarioManifest:
     source = bundle.manifest
-    start_text = str(
-        source.get("start_at", source.get("start_date", "1970-01-01T00:00:00+00:00"))
-    )
-    end_text = str(source.get("end_at", ""))
-    start = _date_value(start_text)
-    duration_days = int(
-        source.get(
-            "duration_days",
-            max(
-                1,
-                (_date_value(end_text).toordinal() - start.toordinal())
-                if end_text
-                else 180,
-            ),
-        )
-    )
-    end = _date_value(end_text) if end_text else start + timedelta(days=duration_days)
-    values: dict[str, Any] = {
+    values = {
         "world_id": bundle.world_id,
-        "release_visibility": source.get("release_visibility"),
-        "split": source.get("split"),
-        "vertical": source.get("vertical"),
-        "seller_org_id": source.get("seller_org_id", source.get("seller_id")),
-        "buyer_org_id": source.get("buyer_org_id", source.get("buyer_name")),
-        "title": source.get("title", source.get("motion")),
-        "description": source.get("description"),
-        "start_at": _timestamp(start_text),
-        "end_at": _timestamp(end_text)
-        if end_text
-        else f"{end.isoformat()}T00:00:00+00:00",
-        "duration_days": duration_days,
-        "checkpoint_ids": tuple(source.get("checkpoint_ids", ())),
-        "actor_ids": tuple(
-            str(item.get("actor_id"))
-            for item in source.get("actors", ())
-            if isinstance(item, Mapping) and item.get("actor_id")
-        ),
-        "event_ids": tuple(
-            str(item.get("event_id")) for item in bundle.events if item.get("event_id")
-        ),
-        "artifact_ids": tuple(
-            str(item.get("artifact_id"))
-            for item in bundle.artifacts
-            if item.get("artifact_id")
-        ),
-        "required_channels": tuple(
-            str(item)
-            for item in source.get(
-                "required_channels", source.get("artifact_channels", ())
-            )
-        ),
-        "license": source.get("license"),
-        "provenance": source.get("provenance"),
+        "release_visibility": source["release_visibility"],
+        "split": source["split"],
+        "vertical": source["vertical"],
+        "seller_org_id": source["seller_org_id"],
+        "buyer_org_id": source["buyer_org_id"],
+        "title": source["title"],
+        "description": source["description"],
+        "start_at": _timestamp(source["start_at"]),
+        "end_at": _timestamp(source["end_at"]),
+        "duration_days": int(source["duration_days"]),
+        "checkpoint_ids": tuple(source["checkpoint_ids"]),
+        "actor_ids": tuple(str(item) for item in source["actor_ids"]),
+        "event_ids": tuple(str(item["event_id"]) for item in bundle.events),
+        "artifact_ids": tuple(str(item["artifact_id"]) for item in bundle.artifacts),
+        "required_channels": tuple(str(item) for item in source["required_channels"]),
+        "license": source["license"],
+        "provenance": source["provenance"],
     }
-    for key in (
-        "pair_id",
-        "counterfactual_variant",
-        "causal_skeleton",
-        "terminal_outcome",
-        "seed",
-        "outcome_reason",
-    ):
-        if source.get(key) is not None:
-            values[key] = source[key]
-    return ScenarioManifest.from_dict(
-        {key: value for key, value in values.items() if value is not None}
-    )
+    return ScenarioManifest.from_dict(values)
 
 
 def _seed_systems(
     engine: RunEngine, bundle: WorldBundle, until: str | None = None
 ) -> None:
+    if engine._supported_terminal_outcome() is not None:
+        return
     seeded: set[str] = getattr(engine, "_edlb_seeded_artifacts", set())
+    actors_by_id = {str(actor["actor_id"]): actor for actor in bundle.actor_rows}
+
+    def actor_view(actor_id: str) -> dict[str, Any]:
+        actor = actors_by_id[actor_id]
+        authority = actor["authority"]
+        return {
+            "actor_id": actor_id,
+            "display_name": actor["display_name"],
+            "email": actor["email"],
+            "kind": actor["kind"],
+            "organization_id": actor["organization_id"],
+            "role": authority["role_id"],
+        }
+
     cutoff = _timestamp(until) if until is not None else None
     rows = sorted(
         bundle.artifacts,
         key=lambda row: (
-            _timestamp(row.get("available_at")),
-            str(row.get("artifact_id", "")),
+            _timestamp(row["available_at"]),
+            str(row["artifact_id"]),
         ),
     )
     for row in rows:
-        artifact_id = str(row.get("artifact_id"))
+        artifact_id = str(row["artifact_id"])
         if artifact_id in seeded:
             continue
+        if not engine._artifact_is_selected(artifact_id):
+            continue
         content, raw = _artifact_content(bundle, row)
-        kind = str(
-            row.get("kind", row.get("artifact_type", row.get("channel", "document")))
-        )
-        available = _timestamp(row.get("available_at"))
+        kind = str(row["kind"])
+        available = _timestamp(row["available_at"])
         if cutoff is not None and available > cutoff:
             continue
-        visibility_label = str(row.get("visibility", "agent_visible"))
+        visibility_label = str(row["visibility"])
         visibility = (
             _visible_roles(row, visibility_label)
             if visibility_label in {"role_scoped", "internal_role_scoped", "restricted"}
@@ -1636,52 +1628,101 @@ def _seed_systems(
             and not visibility
         ):
             raise BundleError(f"scoped artifact {artifact_id!r} has no visible_roles")
-        if kind in {"crm", "crm_record"}:
+        if kind in {"crm", "crm_record", "crm_history"}:
             record = _structured_content(content)
             record_value = (
                 record.get("record") if kind == "crm" and "record" in record else record
             )
             if isinstance(record_value, Mapping):
                 record_id = str(
-                    row.get(
-                        "record_id",
-                        record_value.get(
-                            "record_id", record_value.get("deal_id", artifact_id)
-                        ),
+                    row.get("record_id", record_value.get("record_id", artifact_id))
+                )
+                payload = record_value.get("structured_payload", record_value)
+                if not isinstance(payload, Mapping):
+                    raise BundleError(
+                        f"CRM artifact {artifact_id!r} payload is invalid"
                     )
-                )
-                engine.seed_crm_record(
-                    record_id, {**record_value, "visibility": visibility}, available
-                )
+                source_views = [
+                    actor_view(str(item)) for item in row.get("source_actor_ids", ())
+                ]
+                recipient_views = [
+                    actor_view(str(item)) for item in row.get("recipient_actor_ids", ())
+                ]
+                record_data = {
+                    **dict(payload),
+                    "record_id": record_id,
+                    "gate_id": row.get("gate_id"),
+                    "visibility": visibility,
+                    "source_actors": source_views,
+                    "recipient_actors": recipient_views,
+                    "projection_origin": row.get("projection_origin"),
+                }
+                engine.seed_crm_projection(record_id, record_data, available)
         elif kind in {"email", "transcript", "call_transcript"}:
+            source_views = [
+                actor_view(str(item)) for item in row.get("source_actor_ids", ())
+            ]
+            recipient_views = [
+                actor_view(str(item)) for item in row.get("recipient_actor_ids", ())
+            ]
+            source = (
+                source_views[0]
+                if source_views
+                else {
+                    "kind": "seller",
+                    "role": "account_executive",
+                    "email": "account_executive",
+                    "organization_id": engine.scenario.seller_org_id,
+                }
+            )
             engine.seed_communication(
                 artifact_id,
                 {
                     "message_id": artifact_id,
                     "channel": "transcript" if kind == "call_transcript" else kind,
-                    "direction": "inbound",
-                    "sender_role": "external",
-                    "recipients": (),
+                    "direction": "outbound"
+                    if source["organization_id"] == engine.scenario.seller_org_id
+                    else "inbound",
+                    "sender_role": source["role"],
+                    "recipients": [actor["email"] for actor in recipient_views],
                     "subject": str(row.get("title", artifact_id)),
                     "body": raw,
-                    "created_at": available,
+                    "created_at": _timestamp(row["created_at"]),
                     "available_at": available,
                     "visibility": visibility,
-                    "metadata": {"artifact_id": artifact_id},
+                    "metadata": {
+                        "gate_id": row.get("gate_id"),
+                        "source_actors": source_views,
+                        "recipient_actors": recipient_views,
+                        "thread_id": row.get("thread_id", artifact_id),
+                    },
                 },
             )
         elif kind == "internal_chat":
+            source_views = [
+                actor_view(str(item)) for item in row.get("source_actor_ids", ())
+            ]
+            recipient_views = [
+                actor_view(str(item)) for item in row.get("recipient_actor_ids", ())
+            ]
             engine.seed_team_message(
                 artifact_id,
                 {
                     "message_id": artifact_id,
-                    "sender_role": "system",
-                    "recipients": ROLE_ORDER,
+                    "sender_role": (
+                        source_views[0]["role"] if source_views else "account_executive"
+                    ),
+                    "recipients": [actor["role"] for actor in recipient_views],
                     "body": raw,
-                    "created_at": available,
+                    "created_at": _timestamp(row["created_at"]),
                     "available_at": available,
                     "visibility": visibility,
-                    "metadata": {"artifact_id": artifact_id},
+                    "metadata": {
+                        "gate_id": row.get("gate_id"),
+                        "source_actors": source_views,
+                        "recipient_actors": recipient_views,
+                        "thread_id": row.get("thread_id", artifact_id),
+                    },
                 },
             )
         elif kind in {"calendar", "calendar_event"}:
@@ -1692,10 +1733,11 @@ def _seed_systems(
                 if isinstance(event_value, Mapping)
                 else {"content": event_value}
             )
-            calendar_value.setdefault("subject", str(row.get("title", artifact_id)))
-            calendar_value.setdefault("start_at", available)
-            calendar_value.setdefault("end_at", available)
-            calendar_value.setdefault("participants", ())
+            start_at = str(calendar_value.pop("start"))
+            end_at = str(calendar_value.pop("end"))
+            calendar_value["start_at"] = start_at
+            calendar_value["end_at"] = end_at
+            calendar_value["participants"] = tuple(calendar_value.pop("attendees"))
             engine.seed_calendar_event(
                 artifact_id,
                 {
@@ -1712,19 +1754,25 @@ def _seed_systems(
             "quote",
             "contract",
             "diligence_document",
+            "policy_document",
         }:
             engine.seed_document(
                 artifact_id,
                 {
                     "document_id": artifact_id,
-                    "title": str(row.get("title", artifact_id)),
+                    "title": str(row["title"]),
                     "content": raw,
                     "kind": kind,
-                    "version": int(row.get("version", 1)),
-                    "created_at": _timestamp(row.get("created_at", available)),
+                    "version": int(row["version"]),
+                    "created_at": _timestamp(row["created_at"]),
                     "available_at": available,
                     "visibility": visibility,
-                    "metadata": {"artifact_id": artifact_id},
+                    "metadata": {
+                        "gate_id": row["gate_id"],
+                        "document_type": kind,
+                        "logical_document_id": row["logical_document_id"],
+                        "version": row["version"],
+                    },
                 },
             )
         elif kind in {"web_news", "web_page", "news_item"}:
@@ -1732,9 +1780,9 @@ def _seed_systems(
                 artifact_id,
                 {
                     "record_id": artifact_id,
-                    "title": str(row.get("title", artifact_id)),
+                    "title": str(row["title"]),
                     "content": raw,
-                    "created_at": available,
+                    "created_at": _timestamp(row["created_at"]),
                     "available_at": available,
                     "visibility": visibility,
                     "metadata": {"artifact_id": artifact_id},
@@ -1744,10 +1792,51 @@ def _seed_systems(
     engine._edlb_seeded_artifacts = seeded
 
 
+def _seed_policy_documents(engine: RunEngine, bundle: WorldBundle) -> None:
+    checkpoint = engine.current_checkpoint()
+    if checkpoint is None:
+        return
+    shared_path = _dataset_sidecar(bundle.path, "authoring/shared_documents.jsonl")
+    if shared_path is None:
+        raise BundleError("authoring/shared_documents.jsonl is missing")
+    seeded: set[str] = getattr(engine, "_edlb_seeded_policy_documents", set())
+    root = shared_path.parent.parent
+    wanted = {str(item) for item in checkpoint["policy_entrypoints"]}
+    for row in _jsonl(shared_path):
+        document_id = str(row["document_id"])
+        if document_id not in wanted or document_id in seeded:
+            continue
+        path = root / str(row["path"])
+        content = path.read_text(encoding="utf-8")
+        available_at = str(row["effective_at"])
+        engine.seed_document(
+            document_id,
+            {
+                "document_id": document_id,
+                "title": f"{row['vertical']} {row['theme']} policy",
+                "content": content,
+                "kind": "policy_document",
+                "version": 1,
+                "created_at": available_at,
+                "available_at": available_at,
+                "visibility": ROLE_ORDER,
+                "metadata": {
+                    "policy_id": document_id,
+                    "vertical": row["vertical"],
+                    "theme": row["theme"],
+                    "effective_at": available_at,
+                },
+            },
+        )
+        seeded.add(document_id)
+    engine._edlb_seeded_policy_documents = seeded
+
+
 def _release_sources(engine: RunEngine) -> None:
     bundle = getattr(engine, "_edlb_bundle", None)
     if isinstance(bundle, WorldBundle):
         _seed_systems(engine, bundle, engine.current_time)
+        _seed_policy_documents(engine, bundle)
 
 
 def open_world(
@@ -1775,6 +1864,9 @@ def open_world(
         if isinstance(bundle, WorldBundle)
         else load_world_bundle(bundle, allow_private=allow_private)
     )
+    _validate_world_bundle_schema(world)
+    if world.private and not allow_private:
+        raise BundleError("private world bundles require allow_private=True")
     actual_limits = limits or RunLimits()
     actual_run_id = (
         run_id
@@ -1807,6 +1899,26 @@ def open_world(
         stakeholder_seed,
     )
     scenario = _scenario_model(world)
+    oracle = _json(world.oracle_path) if world.oracle_path is not None else {}
+    facts = oracle.get("verification_facts") if isinstance(oracle, Mapping) else None
+    milestones = facts.get("milestones", ()) if isinstance(facts, Mapping) else ()
+    action_effect_rules = (
+        facts.get("action_effect_rules", ()) if isinstance(facts, Mapping) else ()
+    )
+    branches = facts.get("branches", ()) if isinstance(facts, Mapping) else ()
+    if not isinstance(milestones, Sequence) or isinstance(milestones, (str, bytes)):
+        raise BundleError("oracle milestone definitions must be an array")
+    if any(not isinstance(value, Mapping) for value in milestones):
+        raise BundleError("oracle milestone definitions must contain objects")
+    if (
+        not isinstance(action_effect_rules, Sequence)
+        or isinstance(action_effect_rules, (str, bytes))
+        or any(not isinstance(value, Mapping) for value in action_effect_rules)
+        or not isinstance(branches, Sequence)
+        or isinstance(branches, (str, bytes))
+        or any(not isinstance(value, Mapping) for value in branches)
+    ):
+        raise BundleError("oracle causal branch definitions are invalid")
     engine = RunEngine(
         db_path=db_path,
         manifest=manifest,
@@ -1816,12 +1928,16 @@ def open_world(
         artifacts=_artifact_models(world),
         checkpoints=_checkpoint_models(world),
         grants=_role_grants(),
+        milestones=tuple(dict(value) for value in milestones),
+        action_effect_rules=tuple(dict(value) for value in action_effect_rules),
+        branches=tuple(dict(value) for value in branches),
         trace_path=trace_path,
         stakeholder_realizer_command=stakeholder_realizer_command,
         stakeholder_timeout_seconds=stakeholder_timeout_seconds,
     )
     engine._edlb_bundle = world
     _seed_systems(engine, world, engine.current_time)
+    _seed_policy_documents(engine, world)
     return engine
 
 
@@ -1863,7 +1979,6 @@ def _message(
     error: Mapping[str, Any] | None = None,
     recipient_role: str | None = None,
     checkpoint_id: str | None = None,
-    summary: str | None = None,
     status: str | None = None,
     reason: str | None = None,
     observation_token: str | None = None,
@@ -1886,7 +2001,6 @@ def _message(
         error=error,
         recipient_role=recipient_role,
         checkpoint_id=checkpoint_id,
-        summary=summary,
         status=status,
         reason=reason,
         observation_token=observation_token,
@@ -2057,10 +2171,14 @@ def _apply_team_message(
     body = str(message.payload.get("body", message.payload.get("text", "")))
     if not body:
         raise ProtocolViolation("team message body is required")
+    checkpoint = engine.current_checkpoint()
+    if checkpoint is None:
+        raise ProtocolViolation("team message checkpoint is unavailable")
     engine.team_send(
         message.role,
         [message.recipient_role],
         body,
+        str(checkpoint["checkpoint_id"]),
         f"team-{message.message_id}",
         ROLE_ORDER,
         message.payload.get("metadata")
@@ -2212,6 +2330,7 @@ def _direct_tool(
                 key,
                 args.get("visibility", ROLE_ORDER),
                 args.get("metadata"),
+                args.get("semantic_envelope"),
             )
         if action == "revise":
             return engine.documents_revise(
@@ -2219,6 +2338,7 @@ def _direct_tool(
                 str(args["document_id"]),
                 str(args.get("content", "")),
                 args.get("metadata"),
+                args.get("semantic_envelope"),
                 key,
             )
         return engine.documents_attach(
@@ -2236,10 +2356,11 @@ def _direct_tool(
         if action == "request":
             return engine.approvals_request(
                 role,
-                str(args["approver_role"]),
+                [str(item) for item in args["approver_actor_ids"]],
                 str(args["purpose"]),
                 dict(args.get("details") or {}),
                 key,
+                args.get("semantic_envelope"),
                 args.get("visibility", ROLE_ORDER),
             )
         if action == "approve":
@@ -2266,6 +2387,7 @@ def _direct_tool(
             role,
             args.get("recipients", ()),
             str(args.get("body", "")),
+            str(args.get("checkpoint_id", "")),
             key,
             args.get("visibility", ROLE_ORDER),
             args.get("metadata"),
@@ -2279,7 +2401,6 @@ def _direct_tool(
             engine,
             role,
             str(args["checkpoint_id"]),
-            str(args.get("summary", "")),
             key or "",
         )
     raise RunnerError(f"unsupported tool action {tool}.{action}")
@@ -2345,39 +2466,55 @@ def _checkpoint(engine: RunEngine) -> Mapping[str, Any] | None:
     return dict(value) if isinstance(value, Mapping) else None
 
 
+_AGENT_CHECKPOINT_FIELDS = (
+    "checkpoint_id",
+    "sequence",
+    "available_at",
+    "window_start",
+    "window_end",
+    "visible_gate",
+    "label",
+    "business_objective",
+    "role_deliverables",
+    "completion_conditions",
+    "policy_entrypoints",
+)
+
+
+def _agent_checkpoint(checkpoint: Mapping[str, Any] | None) -> dict[str, Any]:
+    if checkpoint is None:
+        return {}
+    return {key: checkpoint[key] for key in _AGENT_CHECKPOINT_FIELDS}
+
+
 def _activate_first(engine: RunEngine) -> None:
-    if getattr(engine, "current_checkpoint_index", -1) < 0 and engine.checkpoints():
-        try:
-            _advance(engine, False, "activate-first")
-        except TypeError:
-            engine.advance_checkpoint(
-                budget_exhausted=False, idempotency_key="activate-first"
-            )
-            _release_sources(engine)
+    if engine.current_checkpoint_index < 0 and engine.checkpoints():
+        _advance(engine, False, "activate-first")
 
 
 def _advance(engine: RunEngine, budget_exhausted: bool, key: str) -> Mapping[str, Any]:
-    try:
-        value = engine.advance_checkpoint(budget_exhausted, key)
-    except TypeError:
-        value = engine.advance_checkpoint(
-            budget_exhausted=budget_exhausted, idempotency_key=key
-        )
+    value = engine.advance_checkpoint(budget_exhausted, key)
     if not isinstance(value, Mapping):
         raise RunnerError("engine advance did not return an object")
     _release_sources(engine)
+    if engine.status == "running" and engine._supported_terminal_outcome() is not None:
+        _complete_run(
+            engine,
+            "completed",
+            {"terminal": True},
+            None,
+            f"run-complete-{engine.manifest.run_id}",
+        )
     return value
 
 
 def _complete_checkpoint(
-    engine: RunEngine, role: str, checkpoint_id: str, summary: str, key: str
+    engine: RunEngine,
+    role: str,
+    checkpoint_id: str,
+    key: str,
 ) -> Mapping[str, Any]:
-    try:
-        value = engine.complete_checkpoint(role, checkpoint_id, summary, key)
-    except TypeError:
-        value = engine.complete_checkpoint(
-            role=role, checkpoint_id=checkpoint_id, summary=summary, idempotency_key=key
-        )
+    value = engine.complete_checkpoint(role, checkpoint_id, key)
     if not isinstance(value, Mapping):
         raise RunnerError("engine checkpoint completion did not return an object")
     return value
@@ -2390,12 +2527,7 @@ def _complete_run(
     reason: str | None,
     key: str,
 ) -> Mapping[str, Any]:
-    try:
-        value = engine.run_complete(status, result, reason, key)
-    except TypeError:
-        value = engine.run_complete(
-            status=status, result=result, reason=reason, idempotency_key=key
-        )
+    value = engine.run_complete(status, result, reason, key)
     if not isinstance(value, Mapping):
         raise RunnerError("engine completion did not return an object")
     return value
@@ -2406,15 +2538,13 @@ def _start_payload(engine: RunEngine, limits: RunLimits) -> dict[str, Any]:
     tool_cap, turn_cap = _run_caps(limits)
     return {
         "protocol_version": PROTOCOL_VERSION,
+        "world_id": engine.manifest.world_id,
+        "scenario_hash": engine.manifest.scenario_hash,
         "track": engine.manifest.track,
         "roles": list(ROLE_ORDER),
         "tool_schemas": list(tool_schemas(engine)),
         "current_time": engine.current_time,
-        "checkpoint": {
-            key: value
-            for key, value in (checkpoint or {}).items()
-            if key not in {"world_id", "objective_ids", "released_event_ids"}
-        },
+        "checkpoint": _agent_checkpoint(checkpoint),
         "limits": {
             "tool_calls_per_checkpoint": tool_cap,
             "turns_per_checkpoint": turn_cap,
@@ -2436,6 +2566,23 @@ def _limit_reached(used: int, limit: int | None) -> bool:
     return limit is not None and used >= limit
 
 
+def _released_alerts(
+    engine: RunEngine, role: str, seen_alerts: set[str]
+) -> list[dict[str, Any]]:
+    checkpoint = _checkpoint(engine)
+    if checkpoint is None:
+        return []
+    released_ids = {str(item) for item in checkpoint["released_event_ids"]}
+    alerts = [
+        item
+        for item in engine.events(role)
+        if str(item["event_id"]) in released_ids
+        and str(item["event_id"]) not in seen_alerts
+    ]
+    seen_alerts.update(str(item["event_id"]) for item in alerts)
+    return alerts
+
+
 def _observation(
     engine: RunEngine,
     role: str,
@@ -2443,27 +2590,19 @@ def _observation(
     limits: RunLimits,
     message_id: str,
     observation_token: str,
+    alerts: Sequence[Mapping[str, Any]] = (),
 ) -> Message:
     checkpoint = _checkpoint(engine) or {}
     tool_cap, turn_cap = _run_caps(limits)
     payload = {
         "current_time": engine.current_time,
-        "checkpoint": {
-            key: value
-            for key, value in checkpoint.items()
-            if key
-            not in {
-                "world_id",
-                "objective_ids",
-                "released_event_ids",
-                "visible_artifact_ids",
-            }
-        },
+        "checkpoint": _agent_checkpoint(checkpoint),
         "budget": {
             "tool_calls_remaining": tool_cap,
             "turns_remaining": turn_cap,
         },
         "tool_schemas": list(tool_schemas(engine)),
+        "alerts": [dict(item) for item in alerts],
     }
     return _message(
         run_id=engine.manifest.run_id,
@@ -2584,6 +2723,7 @@ class OpenTeamRunner:
         self.sequence = 0
         self.protocol_sequence = -1
         self.completed_roles: set[str] = set()
+        self.seen_alerts: dict[str, set[str]] = {role: set() for role in ROLE_ORDER}
         self.calls_this_checkpoint = 0
         self.turns_this_checkpoint = 0
         self.observation_token = secrets.token_urlsafe(24)
@@ -2605,6 +2745,9 @@ class OpenTeamRunner:
             if self.response_deadline is None
             else max(0.0, self.response_deadline - time.monotonic())
         )
+
+    def _alerts(self, role: str) -> list[dict[str, Any]]:
+        return _released_alerts(self.engine, role, self.seen_alerts[role])
 
     def _send(self, stream: Any, message: Message, allow_system: bool = False) -> None:
         value = _wire(message, allow_system=allow_system) + "\n"
@@ -2673,7 +2816,7 @@ class OpenTeamRunner:
         required = set(checkpoint.get("required_roles", ROLE_ORDER))
         if not required.issubset(self.completed_roles):
             return False
-        if checkpoint.get("terminal"):
+        if checkpoint.get("terminal") or self.engine._supported_terminal_outcome():
             _complete_run(
                 self.engine,
                 "completed",
@@ -2685,6 +2828,8 @@ class OpenTeamRunner:
         _advance(
             self.engine, False, f"advance-{self.engine.current_checkpoint_index + 1}"
         )
+        if self.engine.status != "running":
+            return True
         self.observation_token = secrets.token_urlsafe(24)
         self.completed_roles.clear()
         self.calls_this_checkpoint = 0
@@ -2699,6 +2844,7 @@ class OpenTeamRunner:
                     self.limits,
                     f"observation-{self.sequence + 1}",
                     self.observation_token,
+                    self._alerts(role),
                 ),
             )
             self.sequence += 1
@@ -2723,6 +2869,16 @@ class OpenTeamRunner:
         if checkpoint is None:
             self._fail("budget exhausted without an active checkpoint")
             return
+        if self.engine._supported_terminal_outcome():
+            _complete_run(
+                self.engine,
+                "completed",
+                {"terminal": True},
+                None,
+                f"run-complete-{self.engine.manifest.run_id}",
+            )
+            self.result.status = "completed"
+            return
         if checkpoint.get("terminal"):
             self._fail("terminal checkpoint exhausted its budget")
             return
@@ -2745,6 +2901,7 @@ class OpenTeamRunner:
                     self.limits,
                     f"observation-{self.sequence + 1}",
                     self.observation_token,
+                    self._alerts(role),
                 ),
             )
             self.sequence += 1
@@ -2793,17 +2950,21 @@ class OpenTeamRunner:
                 allow_system=True,
             )
             for role in ROLE_ORDER:
-                self._send(
-                    process.stdin,
-                    _observation(
-                        self.engine,
-                        role,
-                        self.sequence + 1,
-                        self.limits,
-                        f"observation-{self.sequence + 1}",
-                        self.observation_token,
-                    ),
-                )
+                try:
+                    self._send(
+                        process.stdin,
+                        _observation(
+                            self.engine,
+                            role,
+                            self.sequence + 1,
+                            self.limits,
+                            f"observation-{self.sequence + 1}",
+                            self.observation_token,
+                            self._alerts(role),
+                        ),
+                    )
+                except BrokenPipeError:
+                    break
                 self.sequence += 1
             while self.result.status == "running":
                 timeout = self._response_timeout()
@@ -2934,14 +3095,12 @@ class OpenTeamRunner:
                             if (
                                 message.role not in ROLE_ORDER
                                 or message.checkpoint_id is None
-                                or message.summary is None
                             ):
                                 raise ProtocolViolation("invalid checkpoint completion")
                             _complete_checkpoint(
                                 self.engine,
                                 message.role,
                                 message.checkpoint_id,
-                                message.summary,
                                 f"complete-{message.checkpoint_id}-{message.role}",
                             )
                             self.completed_roles.add(message.role)
@@ -2952,9 +3111,11 @@ class OpenTeamRunner:
                         elif message.kind == "team_message":
                             _apply_team_message(self.engine, message)
                         elif message.kind == "run_end":
-                            if message.status == "completed" and not (
-                                _checkpoint(self.engine) or {}
-                            ).get("terminal"):
+                            if (
+                                message.status == "completed"
+                                and not (_checkpoint(self.engine) or {}).get("terminal")
+                                and self.engine._supported_terminal_outcome() is None
+                            ):
                                 raise ProtocolViolation(
                                     "completed run_end requires terminal checkpoint"
                                 )
@@ -3057,21 +3218,7 @@ class FixedHarnessScheduler:
     def _activation(
         self, role: str
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-        checkpoint = _checkpoint(self.engine) or {}
-        released_ids = {str(item) for item in checkpoint.get("released_event_ids", ())}
-        events = self.engine.events(role)
-        if released_ids:
-            events = [
-                item for item in events if str(item.get("event_id")) in released_ids
-            ]
-        alerts = [
-            item
-            for item in events
-            if str(item.get("event_id")) not in self.seen_alerts[role]
-        ]
-        self.seen_alerts[role].update(
-            str(item.get("event_id")) for item in alerts if item.get("event_id")
-        )
+        alerts = _released_alerts(self.engine, role, self.seen_alerts[role])
         team_messages = self.engine.team_inbox(role)
         unread = [
             item
@@ -3101,11 +3248,7 @@ class FixedHarnessScheduler:
             "role": role,
             "occurred_at": self.engine.current_time,
             "observation_token": observation_token,
-            "checkpoint": {
-                key: value
-                for key, value in (_checkpoint(self.engine) or {}).items()
-                if key != "world_id"
-            },
+            "checkpoint": _agent_checkpoint(_checkpoint(self.engine)),
             "tool_schemas": list(tool_schemas(self.engine)),
             "model_config": dict(models[role_models[role]]),
             "messages": list(self.contexts[role]),
@@ -3293,13 +3436,12 @@ class FixedHarnessScheduler:
                 if ok and message.tool_name == "run.complete_checkpoint":
                     completed_roles.add(role)
             elif message.kind == "checkpoint_complete":
-                if not message.checkpoint_id or not message.summary:
+                if not message.checkpoint_id:
                     raise ProtocolViolation("invalid checkpoint completion")
                 _complete_checkpoint(
                     self.engine,
                     role,
                     message.checkpoint_id,
-                    message.summary,
                     f"complete-{message.checkpoint_id}-{role}",
                 )
                 completed_roles.add(role)
@@ -3362,30 +3504,20 @@ class FixedHarnessScheduler:
                     for role in ROLE_ORDER:
                         if role in completed_roles:
                             continue
-                        while role not in completed_roles:
-                            if _limit_reached(
-                                self.calls_this_checkpoint, call_cap
-                            ) or _limit_reached(self.turns_this_checkpoint, turn_cap):
-                                budget_exhausted = True
-                                break
-                            self.result.turns += 1
-                            self.turns_this_checkpoint += 1
-                            messages = self._request(role)
-                            if not messages:
-                                budget_exhausted = _limit_reached(
-                                    self.turns_this_checkpoint, turn_cap
-                                )
-                                break
-                            before = len(completed_roles)
-                            if self._process(role, messages, completed_roles):
-                                budget_exhausted = True
-                                break
-                            if len(completed_roles) == before and all(
-                                message.kind in {"tool_call", "team_message"}
-                                for message in messages
-                            ):
-                                continue
+                        if _limit_reached(
+                            self.calls_this_checkpoint, call_cap
+                        ) or _limit_reached(self.turns_this_checkpoint, turn_cap):
+                            budget_exhausted = True
                             break
+                        self.result.turns += 1
+                        self.turns_this_checkpoint += 1
+                        messages = self._request(role)
+                        if not messages:
+                            budget_exhausted = _limit_reached(
+                                self.turns_this_checkpoint, turn_cap
+                            )
+                        elif self._process(role, messages, completed_roles):
+                            budget_exhausted = True
                         if (
                             budget_exhausted
                             or required.issubset(completed_roles)
@@ -3394,7 +3526,10 @@ class FixedHarnessScheduler:
                         ):
                             break
                 if required.issubset(completed_roles):
-                    if checkpoint.get("terminal"):
+                    if (
+                        checkpoint.get("terminal")
+                        or self.engine._supported_terminal_outcome() is not None
+                    ):
                         _complete_run(
                             self.engine,
                             "completed",
@@ -3447,7 +3582,7 @@ def _validate_replay_rows(
     engine: RunEngine, rows: Sequence[Mapping[str, Any]]
 ) -> tuple[str, list[dict[str, Any]], dict[str, Any] | None]:
     if not rows:
-        return "protocol", [], None
+        raise ProtocolViolation("protocol trace requires a scenario-bound start")
     trace_mode = any("payload_hash" in row or "actor_role" in row for row in rows)
     if trace_mode:
         previous_sequence: int | None = None
@@ -3551,17 +3686,31 @@ def _validate_replay_rows(
             raise ProtocolViolation("protocol rows contain multiple run_id values")
         if previous_sequence is not None and message.sequence <= previous_sequence:
             raise ProtocolViolation("protocol row sequence is not increasing")
+        if not validated_messages and message.kind != "start":
+            raise ProtocolViolation("protocol start must be the first row")
         if message.kind == "start":
+            if source_manifest is not None:
+                raise ProtocolViolation("protocol trace contains multiple starts")
             payload = message.payload or {}
-            world_id = payload.get("world_id")
-            track = payload.get("track")
-            if world_id is not None and str(world_id) != engine.manifest.world_id:
+            required_binding = {"world_id", "track", "scenario_hash"}
+            if not required_binding <= set(payload):
+                raise ProtocolViolation(
+                    "protocol start is missing its scenario binding"
+                )
+            world_id = payload["world_id"]
+            track = payload["track"]
+            if str(world_id) != engine.manifest.world_id:
                 raise ProtocolViolation(
                     "protocol source world_id does not match the active world"
                 )
-            if track is not None and str(track) != engine.manifest.track:
+            if str(track) != engine.manifest.track:
                 raise ProtocolViolation(
                     "protocol source track does not match the active track"
+                )
+            scenario_hash = payload["scenario_hash"]
+            if scenario_hash != engine.manifest.scenario_hash:
+                raise ProtocolViolation(
+                    "protocol source scenario hash does not match the active world"
                 )
             configuration_fields = {
                 "agent_manifest",
@@ -3624,11 +3773,14 @@ def _validate_replay_rows(
                 "run_id": message.run_id,
                 "world_id": world_id,
                 "track": track,
+                "scenario_hash": scenario_hash,
                 "protocol_version": message.protocol_version,
                 **{key: payload[key] for key in configuration_fields if key in payload},
             }
         validated_messages.append(dict(row))
         previous_sequence = message.sequence
+    if source_manifest is None:
+        raise ProtocolViolation("protocol trace requires a scenario-bound start")
     return "protocol", validated_messages, source_manifest
 
 
@@ -3725,7 +3877,10 @@ def replay_trace(
                     else set(ROLE_ORDER)
                 )
                 if checkpoint and required.issubset(completed_roles):
-                    if checkpoint.get("terminal"):
+                    if (
+                        checkpoint.get("terminal")
+                        or engine._supported_terminal_outcome() is not None
+                    ):
                         _complete_run(
                             engine,
                             "completed",
@@ -3825,12 +3980,10 @@ def replay_trace(
             )
             checkpoint_id = payload.get("checkpoint_id", row.get("checkpoint_id"))
             if checkpoint_id:
-                summary = str(payload.get("summary", payload.get("action", "replayed")))
                 _complete_checkpoint(
                     engine,
                     role,
                     str(checkpoint_id),
-                    summary,
                     f"replay-{checkpoint_id}-{role}",
                 )
                 completed_roles.add(role)
@@ -3845,7 +3998,10 @@ def replay_trace(
                     and str(checkpoint.get("checkpoint_id")) == str(checkpoint_id)
                     and required.issubset(completed_roles)
                 ):
-                    if checkpoint.get("terminal"):
+                    if (
+                        checkpoint.get("terminal")
+                        or engine._supported_terminal_outcome() is not None
+                    ):
                         _complete_run(
                             engine,
                             "completed",

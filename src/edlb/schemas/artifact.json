@@ -34,7 +34,18 @@
     "visibility",
     "content",
     "checksum",
-    "provenance"
+    "synthetic",
+    "provenance",
+    "gate_id",
+    "artifact_key",
+    "structured_payload",
+    "authoritative_for",
+    "recipient_role_ids",
+    "projection_origin",
+    "logical_document_id",
+    "version",
+    "supersedes_artifact_id",
+    "derived_from_artifact_ids"
   ],
   "properties": {
     "artifact_id": {
@@ -213,6 +224,9 @@
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$"
     },
+    "synthetic": {
+      "const": true
+    },
     "provenance": {
       "type": "object",
       "additionalProperties": false,
@@ -221,6 +235,8 @@
         "source_type",
         "generator",
         "generator_version",
+        "source_ids",
+        "fact_ids",
         "license"
       ],
       "properties": {
@@ -265,11 +281,105 @@
             "format": "uri"
           }
         },
+        "source_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^source-[a-z0-9-]+$"
+          }
+        },
+        "fact_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]+$"
+          }
+        },
         "license": {
           "type": "string",
           "const": "CC-BY-4.0"
         }
       }
+    },
+    "gate_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "artifact_key": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "structured_payload": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "authoritative_for": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "recipient_role_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "projection_origin": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": [
+        "source_artifact_id",
+        "source_actor_id",
+        "source_time",
+        "transformation",
+        "visible"
+      ],
+      "properties": {
+        "source_artifact_id": {"type": "string", "minLength": 1},
+        "source_actor_id": {"type": "string", "minLength": 1},
+        "source_time": {"type": "string", "format": "date-time"},
+        "transformation": {"type": "string", "minLength": 1},
+        "visible": {"const": true}
+      }
+    },
+    "logical_document_id": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "version": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "supersedes_artifact_id": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "derived_from_artifact_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+      }
+    },
+    "decision_group_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "authority_decision_actor_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "branch_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "branch_option": {
+      "type": "string",
+      "enum": ["success", "fallback"]
     }
   }
 }

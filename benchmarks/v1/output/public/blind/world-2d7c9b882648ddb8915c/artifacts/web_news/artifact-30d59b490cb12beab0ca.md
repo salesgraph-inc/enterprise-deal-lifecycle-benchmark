@@ -1,0 +1,11 @@
+# Consulting discovery update
+
+- Publisher: EDLB Synthetic Wire
+- Published: 2025-02-28T15:05:00Z
+- URL: https://edlb.example/signals/artifact-30d59b490cb12beab0ca
+
+A synthetic operations bulletin flags a new timing constraint for organizations in business services.
+The discovery source still governs the unresolved make-or-buy rationale and business-case evidence item.
+Keep the make-or-buy rationale and business-case evidence decision open until its buyer source is current.
+Preserve the prior record while the decision group reviews the change.
+Preserve the prior make-or-buy rationale and business-case evidence record until this signal has buyer support.

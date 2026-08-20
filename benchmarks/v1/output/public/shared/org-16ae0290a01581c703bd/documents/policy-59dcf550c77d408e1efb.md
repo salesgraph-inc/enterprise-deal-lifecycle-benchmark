@@ -9,7 +9,7 @@
 
 ## Control
 
-Rule: For implementation guide, Blueharbor Risk Partners may not mark binding complete until Market Relations Lead verifies underwriter appetite confirmation and complete market-selection record.
+Rule: For implementation guide, Blueharbor Risk Partners may not mark contract data validation complete until Market Relations Lead verifies underwriter appetite confirmation and complete market-selection record.
 Owner: Market Relations Lead
 Required evidence: underwriter appetite confirmation and complete market-selection record.
 Approval threshold: Exposure above USD 150,000.00 (15000000 minor units) requires written approval from Market Relations Lead.
@@ -17,4 +17,4 @@ Escalation trigger: Escalate when fewer than two viable markets respond or an in
 
 ## Recordkeeping
 
-Attach the evidence to the binding record, preserve prior versions, and record the decision date before advancing the commercial insurance placement.
+Attach the evidence to the contract data validation record, preserve prior versions, and record the decision date before advancing the commercial insurance placement.

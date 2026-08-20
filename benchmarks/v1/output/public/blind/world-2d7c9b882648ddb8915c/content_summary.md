@@ -3,20 +3,20 @@
 - Split: blind
 - Vertical: consulting
 - Seller: Fieldstone Advisory Studio
-- Buyer: Vale Westmere Group (vale-westmere-group.example)
+- Buyer: Westmere Oakline Group (westmere-oakline-group.example)
 - Simulated duration: 277 days
-- Checkpoints: 8
-- Canonical artifacts: 72
+- Checkpoints: 6
+- Canonical artifacts: 110
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
-- internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
+- transcript: 12
+- email: 29
+- internal_chat: 15
+- crm: 18
+- calendar: 6
+- document: 24
 - web_news: 6
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

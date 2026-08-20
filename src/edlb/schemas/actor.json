@@ -31,7 +31,9 @@
     "organization_id",
     "role_tags",
     "active_from",
-    "visibility"
+    "visibility",
+    "synthetic",
+    "authority"
   ],
   "properties": {
     "actor_id": {
@@ -40,7 +42,7 @@
     },
     "kind": {
       "type": "string",
-      "enum": ["seller", "buyer", "internal", "external_system"]
+      "enum": ["seller", "buyer", "internal", "external", "external_system"]
     },
     "display_name": {
       "type": "string",
@@ -73,7 +75,8 @@
           "gatekeeper",
           "competitor",
           "analyst",
-          "internal_approver"
+          "internal_approver",
+          "authority"
         ]
       }
     },
@@ -114,6 +117,32 @@
         ]
       }
     },
+    "synthetic": {
+      "const": true
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role_id", "rights", "gate_ids"],
+      "properties": {
+        "role_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+        },
+        "rights": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "gate_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
     "attributes": {
       "type": "object",
       "additionalProperties": false,
@@ -133,6 +162,10 @@
         "department": {
           "type": "string",
           "maxLength": 160
+        },
+        "organization_scope": {
+          "type": "string",
+          "enum": ["buyer", "seller", "third_party"]
         }
       }
     }

@@ -1,0 +1,102 @@
+{
+  "artifact_key": "customer_due_diligence_crm_projection",
+  "gate_id": "customer_due_diligence",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": false,
+      "basis": null,
+      "policy_evidence": null,
+      "policy_limit_minor_units": null,
+      "policy_owner": null,
+      "reason": "no_seller_exception",
+      "required": false,
+      "trigger": "none"
+    },
+    "approval_required": false,
+    "artifact_key": "customer_due_diligence_crm_projection",
+    "artifact_subtype": "crm_projection",
+    "author": {
+      "display_name": "Bryn D. Fallow-North-f9b9",
+      "email": "revops@emberline-bank.example",
+      "kind": "seller",
+      "organization_id": "org-15490f97d24ea61d5e2a",
+      "role_id": "seller.revops"
+    },
+    "author_actor_id": "act-d2cabc157626bd35a8bb",
+    "author_role_id": "seller.revops",
+    "authoritative_for": [
+      "customer_due_diligence",
+      "crm_projection"
+    ],
+    "authority_actor_ids": [
+      "act-f89a8d28248e9578c250"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-f89a8d28248e9578c250",
+        "effective_at": "2025-06-04T09:00:00Z",
+        "resolution": "pending",
+        "rights": [
+          "provide_buyer_input",
+          "accept_credit_decision",
+          "accept_preclosing_checklist",
+          "accept_return",
+          "accept_sensitivity_analysis",
+          "authorize_closing",
+          "review_closing_conditions",
+          "review_customer_due_diligence",
+          "review_customer_identity",
+          "review_independent_credit_record",
+          "review_loan_documents",
+          "review_risk_based_pricing",
+          "review_underwriting",
+          "verify_beneficial_owner"
+        ]
+      }
+    ],
+    "authority_role_id": "buyer.finance",
+    "authority_role_ids": [
+      "buyer.finance"
+    ],
+    "channel": "crm",
+    "checkpoint_id": "checkpoint-cdf9fd7841530f49a2dc",
+    "close_date": "2025-10-22",
+    "decision_owner_actor_id": "act-f89a8d28248e9578c250",
+    "decision_owner_actor_ids": [
+      "act-f89a8d28248e9578c250"
+    ],
+    "decision_state": "pending",
+    "forecast_cutoff_at": "2025-06-04T16:15:00Z",
+    "gate_id": "customer_due_diligence",
+    "monitoring_status": "ongoing_monitoring_ready",
+    "next_step": "account executive to confirm the underwriting decision with buyer authority",
+    "projection_origin": {
+      "source_actor_id": "act-f89a8d28248e9578c250",
+      "source_artifact_id": "artifact-0e27794163f9bfc50ec4",
+      "source_time": "2025-06-04T10:47:00Z",
+      "transformation": "structured_authority_projection",
+      "visible": true
+    },
+    "projection_sequence": 2,
+    "recipient_role_ids": [],
+    "recipients": [],
+    "required_signer_actor_ids": [
+      "act-f89a8d28248e9578c250"
+    ],
+    "required_signer_role_ids": [
+      "buyer.finance"
+    ],
+    "risk_profile": "moderate",
+    "source_evidence_term": "customer risk profile and ongoing-monitoring record",
+    "source_fact_ids": [
+      "banking-risk-profile-monitoring"
+    ],
+    "stage": "customer_due_diligence"
+  }
+}

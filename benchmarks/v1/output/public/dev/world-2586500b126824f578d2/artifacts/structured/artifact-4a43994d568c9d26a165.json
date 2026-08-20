@@ -1,0 +1,94 @@
+{
+  "artifact_key": "purchase_order_crm_projection",
+  "gate_id": "purchase_order",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": false,
+      "basis": {
+        "amount_minor_units": 15800000,
+        "field": "discount_percent",
+        "value": 8
+      },
+      "policy_evidence": "approved RFQ revision and contribution-margin worksheet",
+      "policy_limit_minor_units": 10000000,
+      "policy_owner": "Commercial Director",
+      "reason": "concrete_term_within_policy",
+      "required": false,
+      "trigger": "none"
+    },
+    "approval_required": false,
+    "artifact_key": "purchase_order_crm_projection",
+    "artifact_subtype": "crm_projection",
+    "author": {
+      "display_name": "Sable W. Cairn-Lumen-b102",
+      "email": "revops@northstar-fabrication.example",
+      "kind": "seller",
+      "organization_id": "org-17b7908a756b5b564453",
+      "role_id": "seller.revops"
+    },
+    "author_actor_id": "act-9a9344ec81f21ce508bb",
+    "author_role_id": "seller.revops",
+    "authoritative_for": [
+      "purchase_order",
+      "crm_projection"
+    ],
+    "authority_actor_ids": [
+      "act-05e9675395af6ab9e882"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-05e9675395af6ab9e882",
+        "effective_at": "2025-07-15T09:00:00Z",
+        "resolution": "pending",
+        "rights": [
+          "accept_award_authorization",
+          "review_purchase_order"
+        ]
+      }
+    ],
+    "authority_role_id": "manufacturing.executive_authority",
+    "authority_role_ids": [
+      "manufacturing.executive_authority"
+    ],
+    "award_authorization": "pending_order_authorization",
+    "channel": "crm",
+    "checkpoint_id": "checkpoint-e22228058aef2f60677d",
+    "close_date": "2025-07-15",
+    "decision_owner_actor_id": "act-05e9675395af6ab9e882",
+    "decision_owner_actor_ids": [
+      "act-05e9675395af6ab9e882"
+    ],
+    "decision_state": "pending",
+    "forecast_cutoff_at": "2025-07-15T15:30:00Z",
+    "gate_id": "purchase_order",
+    "next_step": "account executive to confirm the technical revalidation decision with buyer authority",
+    "projection_origin": {
+      "source_actor_id": "act-05e9675395af6ab9e882",
+      "source_artifact_id": "artifact-c09c2a4f49f0da638b2c",
+      "source_time": "2025-07-15T12:12:00Z",
+      "transformation": "structured_authority_projection",
+      "visible": true
+    },
+    "projection_sequence": 4,
+    "purchase_order_id": "purchase-order-5dee8729a4fab4795b42",
+    "recipient_role_ids": [],
+    "recipients": [],
+    "required_signer_actor_ids": [
+      "act-05e9675395af6ab9e882"
+    ],
+    "required_signer_role_ids": [
+      "manufacturing.executive_authority"
+    ],
+    "source_evidence_term": "Project Authorization Letter or purchase order with written acceptance",
+    "source_fact_ids": [
+      "manufacturing-award-authorization"
+    ],
+    "stage": "purchase_order"
+  }
+}

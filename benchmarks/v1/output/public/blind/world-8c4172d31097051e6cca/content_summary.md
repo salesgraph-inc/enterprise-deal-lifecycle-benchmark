@@ -3,20 +3,20 @@
 - Split: blind
 - Vertical: commercial_insurance
 - Seller: Blueharbor Risk Partners
-- Buyer: Juniper Stonebridge Collective (juniper-stonebridge-collective.example)
+- Buyer: Fallow Harbor Enterprises (fallow-harbor-enterprises.example)
 - Simulated duration: 232 days
-- Checkpoints: 10
-- Canonical artifacts: 72
+- Checkpoints: 6
+- Canonical artifacts: 112
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
-- internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
+- transcript: 8
+- email: 35
+- internal_chat: 11
+- crm: 18
+- calendar: 10
+- document: 24
 - web_news: 6
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

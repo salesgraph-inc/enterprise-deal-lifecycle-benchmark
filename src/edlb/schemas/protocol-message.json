@@ -44,7 +44,21 @@
         "role": {"const": "system"},
         "observation_token": {"$ref": "#/$defs/observation_token"},
         "model_metadata": {"$ref": "#/$defs/model_metadata"},
-        "payload": {"type": "object", "minProperties": 1}
+        "payload": {
+          "type": "object",
+          "required": ["world_id", "track", "scenario_hash"],
+          "properties": {
+            "world_id": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+            },
+            "track": {"type": "string", "enum": ["fixed_harness", "open_team"]},
+            "scenario_hash": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          }
+        }
       }
     },
     "observation": {
@@ -248,8 +262,7 @@
         "kind",
         "role",
         "observation_token",
-        "checkpoint_id",
-        "summary"
+        "checkpoint_id"
       ],
       "properties": {
         "protocol_version": {"type": "string", "const": "v1.0.0"},
@@ -264,8 +277,7 @@
         },
         "observation_token": {"$ref": "#/$defs/observation_token"},
         "model_metadata": {"$ref": "#/$defs/model_metadata"},
-        "checkpoint_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
-        "summary": {"type": "string", "minLength": 1}
+        "checkpoint_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"}
       }
     },
     "run_end": {

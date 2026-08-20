@@ -1,0 +1,112 @@
+{
+  "artifact_key": "artifact-key-0b21831d4e38cb57fbc8",
+  "gate_id": "credit_approval",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": false,
+      "basis": null,
+      "policy_evidence": null,
+      "policy_limit_minor_units": null,
+      "policy_owner": null,
+      "reason": "no_seller_exception",
+      "required": false,
+      "trigger": "none"
+    },
+    "approval_record": {
+      "approval_authority": "credit_officer",
+      "status": "pending"
+    },
+    "approval_required": false,
+    "artifact_key": "artifact-key-0b21831d4e38cb57fbc8",
+    "artifact_subtype": "credit_decision",
+    "author": {
+      "display_name": "Cato I. Solace-North-a2f2",
+      "email": "cato-i-solace-north-a2f2@redwood-ironwood-group.example",
+      "kind": "buyer",
+      "organization_id": "org-e8f75bd925d2561c7876",
+      "role_id": "buyer.economic_buyer"
+    },
+    "author_actor_id": "act-ab32cfcd422ff4450912",
+    "author_role_id": "buyer.economic_buyer",
+    "authoritative_for": [
+      "credit_approval",
+      "decision_state"
+    ],
+    "authority_actor_ids": [
+      "act-ab32cfcd422ff4450912"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-ab32cfcd422ff4450912",
+        "effective_at": "2025-12-01T09:00:00Z",
+        "resolution": "rejected",
+        "rights": [
+          "provide_buyer_input",
+          "accept_credit_decision",
+          "accept_preclosing_checklist",
+          "accept_return",
+          "accept_sensitivity_analysis",
+          "authorize_closing",
+          "review_closing_conditions",
+          "review_customer_due_diligence",
+          "review_customer_identity",
+          "review_independent_credit_record",
+          "review_loan_documents",
+          "review_risk_based_pricing",
+          "review_underwriting",
+          "verify_beneficial_owner"
+        ]
+      }
+    ],
+    "authority_role_id": "buyer.economic_buyer",
+    "authority_role_ids": [
+      "buyer.economic_buyer"
+    ],
+    "channel": "document",
+    "checkpoint_id": "checkpoint-b6583446308e18bb2822",
+    "decision_owner_actor_id": "act-ab32cfcd422ff4450912",
+    "decision_owner_actor_ids": [
+      "act-ab32cfcd422ff4450912"
+    ],
+    "decision_state": "rejected",
+    "exception_route": {
+      "reason": "within_delegated_authority",
+      "required": false
+    },
+    "forecast_cutoff_at": "2025-12-01T16:45:00Z",
+    "gate_id": "credit_approval",
+    "origination_separation": {
+      "approver": "independent_credit",
+      "originator": "relationship_team"
+    },
+    "recipient_role_ids": [
+      "seller.sales_manager"
+    ],
+    "recipients": [
+      {
+        "display_name": "Kiran M. Yarrow-Ashby-2e32",
+        "email": "sales.manager@emberline-bank.example",
+        "kind": "seller",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_id": "seller.sales_manager"
+      }
+    ],
+    "required_signer_actor_ids": [
+      "act-ab32cfcd422ff4450912"
+    ],
+    "required_signer_role_ids": [
+      "buyer.economic_buyer"
+    ],
+    "source_evidence_term": "separated origination and approval with routed exceptions when required",
+    "source_fact_ids": [
+      "banking-credit-separation",
+      "banking-exception-approval"
+    ]
+  }
+}

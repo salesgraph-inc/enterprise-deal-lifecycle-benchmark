@@ -1,0 +1,98 @@
+{
+  "artifact_key": "quotation_request_quotation_request_recommendation",
+  "gate_id": "quotation_request",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": false,
+      "basis": null,
+      "policy_evidence": null,
+      "policy_limit_minor_units": null,
+      "policy_owner": null,
+      "reason": "no_seller_exception",
+      "required": false,
+      "trigger": "none"
+    },
+    "approval_required": false,
+    "artifact_key": "quotation_request_quotation_request_recommendation",
+    "artifact_subtype": "quotation_request_recommendation",
+    "author": {
+      "display_name": "Indra A. Cairn-Fallow-b178",
+      "email": "indra-a-cairn-fallow-b178@underwriter.example",
+      "kind": "external",
+      "organization_id": "org-ded3d8b7845ba3807586",
+      "role_id": "insurance.underwriter_authority"
+    },
+    "author_actor_id": "act-51b248c52e0230699d37",
+    "author_role_id": "insurance.underwriter_authority",
+    "authoritative_for": [
+      "quotation_request",
+      "decision_state",
+      "crm.next_step"
+    ],
+    "authority_actor_ids": [
+      "act-51b248c52e0230699d37"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-51b248c52e0230699d37",
+        "effective_at": "2025-05-01T09:00:00Z",
+        "resolution": "accepted",
+        "rights": [
+          "accept_quotation_request_basis",
+          "review_subjectivities"
+        ]
+      }
+    ],
+    "authority_role_id": "insurance.underwriter_authority",
+    "authority_role_ids": [
+      "insurance.underwriter_authority"
+    ],
+    "channel": "email",
+    "checkpoint_id": "checkpoint-a2dddb85df282ebe23cf",
+    "decision_owner_actor_id": "act-51b248c52e0230699d37",
+    "decision_owner_actor_ids": [
+      "act-51b248c52e0230699d37"
+    ],
+    "decision_state": "accepted",
+    "forecast_cutoff_at": "2025-05-01T17:15:00Z",
+    "gate_id": "quotation_request",
+    "next_step": "account executive to confirm the quotation decision with buyer authority",
+    "quotation_request_status": "pending_review",
+    "recipient_role_ids": [
+      "seller.account_executive"
+    ],
+    "recipients": [
+      {
+        "display_name": "Jules L. Umber-Pine-d1a9",
+        "email": "account.executive@blueharbor-risk.example",
+        "kind": "seller",
+        "organization_id": "org-16ae0290a01581c703bd",
+        "role_id": "seller.account_executive"
+      }
+    ],
+    "required_signer_actor_ids": [
+      "act-51b248c52e0230699d37"
+    ],
+    "required_signer_role_ids": [
+      "insurance.underwriter_authority"
+    ],
+    "source_evidence_term": "quotation request with structured placement data",
+    "source_fact_ids": [
+      "insurance-submission-quote",
+      "insurance-structured-placement-data"
+    ],
+    "subjectivities": [
+      "signed application",
+      "loss-control survey"
+    ],
+    "underwriter_questions": [
+      "confirm loss-control remediation date"
+    ]
+  }
+}

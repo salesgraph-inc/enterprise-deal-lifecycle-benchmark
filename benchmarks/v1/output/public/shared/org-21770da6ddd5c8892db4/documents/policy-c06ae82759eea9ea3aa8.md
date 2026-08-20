@@ -9,7 +9,7 @@
 
 ## Control
 
-Rule: For commercial terms, Quarry Counsel LLP may not mark panel or rfp selection complete until Relationship Partner verifies matter scope, client decision record, and signed engagement letter.
+Rule: For commercial terms, Quarry Counsel LLP may not mark engagement letter complete until Relationship Partner verifies matter scope, client decision record, and signed engagement letter.
 Owner: Relationship Partner
 Required evidence: matter scope, client decision record, and signed engagement letter.
 Approval threshold: Exposure above USD 100,000.00 (10000000 minor units) requires written approval from Relationship Partner.
@@ -17,4 +17,4 @@ Escalation trigger: Escalate when work begins before engagement terms and respon
 
 ## Recordkeeping
 
-Attach the evidence to the panel or rfp selection record, preserve prior versions, and record the decision date before advancing the outside counsel pursuit.
+Attach the evidence to the engagement letter record, preserve prior versions, and record the decision date before advancing the outside counsel pursuit.

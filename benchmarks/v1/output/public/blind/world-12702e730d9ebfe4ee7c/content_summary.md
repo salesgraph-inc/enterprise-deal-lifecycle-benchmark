@@ -3,20 +3,20 @@
 - Split: blind
 - Vertical: consulting
 - Seller: Fieldstone Advisory Studio
-- Buyer: Meridian Umber Group (meridian-umber-group.example)
+- Buyer: Granite Alder Holdings (granite-alder-holdings.example)
 - Simulated duration: 328 days
-- Checkpoints: 11
-- Canonical artifacts: 72
+- Checkpoints: 8
+- Canonical artifacts: 107
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
-- internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
-- web_news: 6
+- transcript: 14
+- email: 25
+- internal_chat: 11
+- crm: 20
+- calendar: 9
+- document: 21
+- web_news: 7
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

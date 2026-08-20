@@ -1,0 +1,12 @@
+# Corporate Banking underwriting update
+
+- Channel: call transcript
+- Date: 2025-08-19T11:46:00Z
+- Subject: Yarrow Pinecrest Holdings commercial lending and treasury sale | underwriting review
+
+Dara H. Rook-Lumen-e05b (Champion): The USD 90,000,000.00 request has not cleared the underwriting decision group.
+Yara D. Wick-Fallow-ef67 (Account Executive): I will separate timing risk from the substantive decision.
+Dara H. Rook-Lumen-e05b (Champion): Keep the next discussion tied to the accountable buyer.
+Dara H. Rook-Lumen-e05b (Champion): Dara F. Bell-Bell-f85b recorded the covenant and closing condition revision in revision 2 for the underwriting gate; seller coverage is within underwriting policy.
+Dara H. Rook-Lumen-e05b (Champion): Treat the current repayment, capacity, collateral, guarantor, and sensitivity analysis entry as a source claim, not a forecast fact.
+Dara H. Rook-Lumen-e05b (Champion): Preserve the prior record while the decision group reviews the change.

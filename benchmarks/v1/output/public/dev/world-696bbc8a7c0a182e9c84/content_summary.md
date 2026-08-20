@@ -3,20 +3,20 @@
 - Split: dev
 - Vertical: manufacturing
 - Seller: Northstar Fabrication Cooperative
-- Buyer: Northfield Umber Enterprises (northfield-umber-enterprises.example)
-- Simulated duration: 278 days
-- Checkpoints: 12
-- Canonical artifacts: 72
+- Buyer: Tern Juniper Enterprises (tern-juniper-enterprises.example)
+- Simulated duration: 280 days
+- Checkpoints: 7
+- Canonical artifacts: 120
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
-- internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
+- transcript: 17
+- email: 34
+- internal_chat: 11
+- crm: 22
+- calendar: 9
+- document: 21
 - web_news: 6
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

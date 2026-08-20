@@ -1,0 +1,95 @@
+{
+  "artifact_key": "purchase_order_order_authorization",
+  "gate_id": "purchase_order",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": false,
+      "basis": {
+        "amount_minor_units": 15800000,
+        "field": "discount_percent",
+        "value": 8
+      },
+      "policy_evidence": "approved RFQ revision and contribution-margin worksheet",
+      "policy_limit_minor_units": 10000000,
+      "policy_owner": "Commercial Director",
+      "reason": "concrete_term_within_policy",
+      "required": false,
+      "trigger": "none"
+    },
+    "approval_required": false,
+    "artifact_key": "purchase_order_order_authorization",
+    "artifact_subtype": "order_authorization",
+    "author": {
+      "display_name": "Kiran A. Vale-Bell-ee42",
+      "email": "kiran-a-vale-bell-ee42@juniper-pinecrest-group.example",
+      "kind": "buyer",
+      "organization_id": "org-16ba4ab76803f38d28f1",
+      "role_id": "manufacturing.executive_authority"
+    },
+    "author_actor_id": "act-05e9675395af6ab9e882",
+    "author_role_id": "manufacturing.executive_authority",
+    "authoritative_for": [
+      "purchase_order",
+      "decision_state",
+      "crm.next_step"
+    ],
+    "authority_actor_ids": [
+      "act-05e9675395af6ab9e882"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-05e9675395af6ab9e882",
+        "effective_at": "2025-07-15T09:00:00Z",
+        "resolution": "accepted",
+        "rights": [
+          "accept_award_authorization",
+          "review_purchase_order"
+        ]
+      }
+    ],
+    "authority_role_id": "manufacturing.executive_authority",
+    "authority_role_ids": [
+      "manufacturing.executive_authority"
+    ],
+    "award_authorization": "pending_order_authorization",
+    "channel": "email",
+    "checkpoint_id": "checkpoint-4bcc9ef18a111cfbe0fa",
+    "decision_owner_actor_id": "act-05e9675395af6ab9e882",
+    "decision_owner_actor_ids": [
+      "act-05e9675395af6ab9e882"
+    ],
+    "decision_state": "accepted",
+    "forecast_cutoff_at": "2025-07-15T15:30:00Z",
+    "gate_id": "purchase_order",
+    "next_step": "account executive to confirm the technical revalidation decision with buyer authority",
+    "purchase_order_id": "purchase-order-c305f8f191658f0d97f0",
+    "recipient_role_ids": [
+      "seller.account_executive"
+    ],
+    "recipients": [
+      {
+        "display_name": "Avery C. Orchard-Morrow-4250",
+        "email": "account.executive@northstar-fabrication.example",
+        "kind": "seller",
+        "organization_id": "org-17b7908a756b5b564453",
+        "role_id": "seller.account_executive"
+      }
+    ],
+    "required_signer_actor_ids": [
+      "act-05e9675395af6ab9e882"
+    ],
+    "required_signer_role_ids": [
+      "manufacturing.executive_authority"
+    ],
+    "source_evidence_term": "Project Authorization Letter or purchase order with written acceptance",
+    "source_fact_ids": [
+      "manufacturing-award-authorization"
+    ]
+  }
+}

@@ -9,7 +9,7 @@
 
 ## Control
 
-Rule: For data handling, Fieldstone Advisory Studio may not mark executive approval complete until Risk and Security Lead verifies data-flow assessment, security responses, and subcontractor disclosure.
+Rule: For data handling, Fieldstone Advisory Studio may not mark knowledge transfer complete until Risk and Security Lead verifies data-flow assessment, security responses, and subcontractor disclosure.
 Owner: Risk and Security Lead
 Required evidence: data-flow assessment, security responses, and subcontractor disclosure.
 Approval threshold: Exposure above USD 50,000.00 (5000000 minor units) requires written approval from Risk and Security Lead.
@@ -17,4 +17,4 @@ Escalation trigger: Escalate when restricted data leaves an approved environment
 
 ## Recordkeeping
 
-Attach the evidence to the executive approval record, preserve prior versions, and record the decision date before advancing the strategy and operations engagement.
+Attach the evidence to the knowledge transfer record, preserve prior versions, and record the decision date before advancing the strategy and operations engagement.

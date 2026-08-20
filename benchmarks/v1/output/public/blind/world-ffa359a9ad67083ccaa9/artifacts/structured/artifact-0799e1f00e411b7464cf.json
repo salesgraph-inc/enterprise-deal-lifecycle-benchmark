@@ -1,0 +1,100 @@
+{
+  "artifact_key": "customer_identification_kyc_review",
+  "gate_id": "customer_identification",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": false,
+      "basis": null,
+      "policy_evidence": null,
+      "policy_limit_minor_units": null,
+      "policy_owner": null,
+      "reason": "no_seller_exception",
+      "required": false,
+      "trigger": "none"
+    },
+    "approval_required": false,
+    "artifact_key": "customer_identification_kyc_review",
+    "artifact_subtype": "kyc_review",
+    "author": {
+      "display_name": "Maren A. Harbor-Morrow-97b4",
+      "email": "maren-a-harbor-morrow-97b4@emberline-bank.example",
+      "kind": "internal",
+      "organization_id": "org-15490f97d24ea61d5e2a",
+      "role_id": "bank.kyc_authority"
+    },
+    "author_actor_id": "act-9b37e2948f8716497e5b",
+    "author_role_id": "bank.kyc_authority",
+    "authoritative_for": [
+      "customer_identification",
+      "banking-customer-identification"
+    ],
+    "authority_actor_ids": [
+      "act-c9ca18c56b5ad1a91083"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-c9ca18c56b5ad1a91083",
+        "effective_at": "2025-04-02T09:00:00Z",
+        "resolution": "pending",
+        "rights": [
+          "provide_buyer_input",
+          "accept_credit_decision",
+          "accept_preclosing_checklist",
+          "accept_return",
+          "accept_sensitivity_analysis",
+          "authorize_closing",
+          "review_closing_conditions",
+          "review_customer_due_diligence",
+          "review_customer_identity",
+          "review_independent_credit_record",
+          "review_loan_documents",
+          "review_risk_based_pricing",
+          "review_underwriting",
+          "verify_beneficial_owner"
+        ]
+      }
+    ],
+    "authority_role_id": "buyer.technical_evaluator",
+    "authority_role_ids": [
+      "buyer.technical_evaluator"
+    ],
+    "channel": "document",
+    "checkpoint_id": "checkpoint-dc8efa7186621ea9e523",
+    "customer_identity_status": "verified",
+    "decision_owner_actor_id": "act-c9ca18c56b5ad1a91083",
+    "decision_owner_actor_ids": [
+      "act-c9ca18c56b5ad1a91083"
+    ],
+    "decision_state": "pending",
+    "forecast_cutoff_at": "2025-04-02T16:00:00Z",
+    "gate_id": "customer_identification",
+    "recipient_role_ids": [
+      "seller.revops"
+    ],
+    "recipients": [
+      {
+        "display_name": "Niko L. Vale-Rook-4845",
+        "email": "revops@emberline-bank.example",
+        "kind": "seller",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_id": "seller.revops"
+      }
+    ],
+    "required_signer_actor_ids": [
+      "act-c9ca18c56b5ad1a91083"
+    ],
+    "required_signer_role_ids": [
+      "buyer.technical_evaluator"
+    ],
+    "source_evidence_term": "customer identity collection and verification",
+    "source_fact_ids": [
+      "banking-customer-identification"
+    ]
+  }
+}

@@ -5,28 +5,31 @@
     "business_fit": "within_fit",
     "crm_defects": [
       {
+        "checkpoint_sequence": 0,
         "defect_id": "defect-11eac08b9620d390e92a",
         "evidence_role": "technical_evaluator",
         "field": "stage",
-        "observed_value": "proposal",
-        "origin": "manual update entered before the evaluator confirmed fit",
-        "truth_value": "discovery"
+        "observed_value": "prospecting",
+        "origin": "credit stage advanced when beneficial-owner verification was still open",
+        "truth_value": "customer_identification"
       },
       {
+        "checkpoint_sequence": 1,
         "defect_id": "defect-628721227d9233cbeaf0",
         "evidence_role": "champion",
         "field": "close_date",
-        "observed_value": "2025-10-21",
-        "origin": "copied forecast from an earlier quarter",
-        "truth_value": "2025-12-02"
+        "observed_value": "2025-04-28",
+        "origin": "closing date copied before committee conditions were documented",
+        "truth_value": "2025-10-22"
       },
       {
+        "checkpoint_sequence": 2,
         "defect_id": "defect-2fcf343f5e530ba31838",
         "evidence_role": "economic_buyer",
         "field": "next_step",
-        "observed_value": "send proposal",
-        "origin": "stale next-step text left after a meeting moved",
-        "truth_value": "confirm decision group and approval path"
+        "observed_value": "confirm customer due diligence evidence and owner",
+        "origin": "documentation action remained after a covenant exception was escalated",
+        "truth_value": "account executive to confirm the underwriting decision with buyer authority"
       }
     ],
     "terminal_state": "closed_lost_competitive"
@@ -34,193 +37,261 @@
   "hidden_events": [
     {
       "actor_ids": [],
-      "available_at": "2025-03-12T09:00:00Z",
+      "artifact_ids": [],
+      "available_at": "2025-03-12T08:00:00Z",
+      "causal_parent_ids": [],
       "channel": "crm",
-      "effective_at": "2025-03-12T09:00:00Z",
+      "effective_at": "2025-03-12T08:00:00Z",
       "event_id": "event-68d3b180f6b11291a9b8",
       "kind": "crm_projection_changed",
       "payload": {
+        "checkpoint_sequence": 0,
         "defect_id": "defect-11eac08b9620d390e92a",
         "evidence_role": "technical_evaluator",
         "field": "stage",
-        "observed_value": "proposal",
-        "origin": "manual update entered before the evaluator confirmed fit",
-        "truth_value": "discovery"
+        "observed_value": "prospecting",
+        "origin": "credit stage advanced when beneficial-owner verification was still open",
+        "truth_value": "customer_identification"
       },
-      "recorded_at": "2025-03-12T09:00:00Z",
+      "recorded_at": "2025-03-12T08:00:00Z",
       "sequence": 0,
       "visibility": "oracle_only",
+      "visible_roles": [],
       "world_id": "world-11eac08b9620d390e92a"
     },
     {
       "actor_ids": [],
-      "available_at": "2025-03-12T09:00:00Z",
+      "artifact_ids": [],
+      "available_at": "2025-03-12T08:00:00Z",
+      "causal_parent_ids": [],
       "channel": "crm",
-      "effective_at": "2025-03-12T09:00:00Z",
+      "effective_at": "2025-03-12T08:00:00Z",
       "event_id": "event-e77ac593ea31b3a0e743",
       "kind": "crm_projection_changed",
       "payload": {
+        "checkpoint_sequence": 1,
         "defect_id": "defect-628721227d9233cbeaf0",
         "evidence_role": "champion",
         "field": "close_date",
-        "observed_value": "2025-10-21",
-        "origin": "copied forecast from an earlier quarter",
-        "truth_value": "2025-12-02"
+        "observed_value": "2025-04-28",
+        "origin": "closing date copied before committee conditions were documented",
+        "truth_value": "2025-10-22"
       },
-      "recorded_at": "2025-03-12T09:00:00Z",
+      "recorded_at": "2025-03-12T08:00:00Z",
       "sequence": 1,
       "visibility": "oracle_only",
+      "visible_roles": [],
       "world_id": "world-11eac08b9620d390e92a"
     },
     {
       "actor_ids": [],
-      "available_at": "2025-03-12T09:00:00Z",
+      "artifact_ids": [],
+      "available_at": "2025-03-12T08:00:00Z",
+      "causal_parent_ids": [],
       "channel": "crm",
-      "effective_at": "2025-03-12T09:00:00Z",
+      "effective_at": "2025-03-12T08:00:00Z",
       "event_id": "event-75e65514c22c27ee64d2",
       "kind": "crm_projection_changed",
       "payload": {
+        "checkpoint_sequence": 2,
         "defect_id": "defect-2fcf343f5e530ba31838",
         "evidence_role": "economic_buyer",
         "field": "next_step",
-        "observed_value": "send proposal",
-        "origin": "stale next-step text left after a meeting moved",
-        "truth_value": "confirm decision group and approval path"
+        "observed_value": "confirm customer due diligence evidence and owner",
+        "origin": "documentation action remained after a covenant exception was escalated",
+        "truth_value": "account executive to confirm the underwriting decision with buyer authority"
       },
-      "recorded_at": "2025-03-12T09:00:00Z",
+      "recorded_at": "2025-03-12T08:00:00Z",
       "sequence": 2,
       "visibility": "oracle_only",
+      "visible_roles": [],
       "world_id": "world-11eac08b9620d390e92a"
     },
     {
       "actor_ids": [],
-      "available_at": "2025-09-20T09:00:00Z",
+      "artifact_ids": [],
+      "available_at": "2025-03-12T08:50:00Z",
+      "causal_parent_ids": [
+        "event-e5578f03847a70449a48"
+      ],
       "channel": "system",
-      "effective_at": "2025-08-13T09:00:00Z",
+      "effective_at": "2025-03-12T08:20:00Z",
       "event_id": "event-0d84faf2a7d522d236cd",
       "kind": "stakeholder_departed",
       "payload": {
-        "checkpoint_id": "checkpoint-4d89d70890126b19f234",
+        "checkpoint_id": "checkpoint-abc5774399b139783be1",
         "description": "The initial champion leaves during the cycle, with a weak handoff.",
         "family": "champion_exit",
+        "trigger_event_id": "event-e5578f03847a70449a48",
         "variant": "weak_handoff"
       },
-      "recorded_at": "2025-08-14T09:00:00Z",
+      "recorded_at": "2025-03-12T08:35:00Z",
       "sequence": 3,
       "visibility": "oracle_only",
+      "visible_roles": [],
       "world_id": "world-11eac08b9620d390e92a"
     },
     {
       "actor_ids": [],
-      "available_at": "2025-12-02T17:00:00Z",
+      "artifact_ids": [],
+      "available_at": "2025-12-02T18:00:00Z",
       "causal_parent_ids": [
         "event-0d84faf2a7d522d236cd"
       ],
       "channel": "system",
-      "effective_at": "2025-12-02T17:00:00Z",
+      "effective_at": "2025-12-02T18:00:00Z",
       "event_id": "event-cbb4c2c233e3ae91bebc",
       "kind": "terminal_outcome",
       "payload": {
         "outcome": "closed_lost_competitive",
         "reason": "The champion departed without a replacement and the incumbent retained the account."
       },
-      "recorded_at": "2025-12-02T17:00:00Z",
+      "recorded_at": "2025-12-02T18:00:00Z",
       "sequence": 4,
       "visibility": "oracle_only",
+      "visible_roles": [],
       "world_id": "world-11eac08b9620d390e92a"
     }
   ],
-  "intervention_checkpoint_id": "checkpoint-4d89d70890126b19f234",
+  "intervention_checkpoint_id": "checkpoint-abc5774399b139783be1",
   "outcome_reason": "The champion departed without a replacement and the incumbent retained the account.",
   "reference_outcome": "closed_lost_competitive",
   "scenario_manifest": {
     "actor_ids": [
-      "act-4e3d0446885b7c71ba25",
-      "act-eb36c02d6daeaecd2d67",
-      "act-212c9b1143a567480599",
-      "act-c4e623b57890063bbc9c",
-      "act-6352e16c875762c96fe5",
-      "act-fb4c27ece457436230db",
-      "act-c768d4217e74ac3ae7f6",
-      "act-a38d7ac2698be30607b6",
-      "act-fed6cfcf28672702bdde",
-      "act-c40a231971ffb666ac3d"
+      "act-e00b7d4ef7de62fa38fa",
+      "act-160994c4b4412a954dfb",
+      "act-3a4f049b9f0f1b17eee6",
+      "act-14b466919f04fedd08f5",
+      "act-f89a8d28248e9578c250",
+      "act-910badac25e408fbb1aa",
+      "act-d3a5b40401f953d22960",
+      "act-07fb7f8895cb0adc9f87",
+      "act-4a43ee376c7a98b561cc",
+      "act-f5b3d9cd25f1a9419a58",
+      "act-56e2e611731800379896",
+      "act-29c72818c5a828e7ebc6",
+      "act-21c06e55bc0ff4e393e8",
+      "act-0f112a8661ddd036a335",
+      "act-4a0171f516b0ff2766ee",
+      "act-a9936998964772f862fe",
+      "act-02951c911026eb066ba7",
+      "act-d2cabc157626bd35a8bb"
     ],
     "artifact_ids": [
-      "artifact-81054ef35e2c76190647",
-      "artifact-7853c58538091ee655d0",
-      "artifact-46f68f9d5c96352c6ee1",
-      "artifact-4d89d70890126b19f234",
-      "artifact-08c4f60a1ac83805feee",
-      "artifact-90f360b412d3afb7ac98",
-      "artifact-749c74b53003861d128b",
-      "artifact-6ba68c166b4d374a9b86",
-      "artifact-3d3f8fea652f4361ac46",
-      "artifact-61e47b525c3e41603d3d",
-      "artifact-6cc6f9f631dcb54b7e97",
-      "artifact-faf90ec780c8d0865ea8",
-      "artifact-576d3b2bf0b1e57726b8",
-      "artifact-6e28bf02f109c3847c18",
-      "artifact-2979af5c81b5d9bbc216",
-      "artifact-fd04c454ac715898f4a5",
-      "artifact-9f47e258ce86b42ba66e",
-      "artifact-57f8a3b05c7ae1120cc1",
-      "artifact-5be61e7ef1c0b3306aea",
-      "artifact-c0f0738aae73acbf378c",
-      "artifact-f820acd2d200da1cc988",
-      "artifact-8796ecf0b4556628f52e",
-      "artifact-bbf8aa31d9942f7477f4",
-      "artifact-4e7d801eba72ff3a1253",
-      "artifact-3e4e39f9b0a8f49a951a",
-      "artifact-dec58ccd4f82a4d8ca57",
-      "artifact-24947064b4f1f7b7b18e",
-      "artifact-b2c50ca75a0206777322",
-      "artifact-87cd12eab121670da0d0",
-      "artifact-bf0cfe1a96f49e791be2",
-      "artifact-114641afcc37b92de353",
-      "artifact-c3c7e020701f8d8d188c",
-      "artifact-8c4d04aaedff4e82d0bf",
-      "artifact-094551fab3b6dedcbd19",
-      "artifact-a8915046c354c227a368",
-      "artifact-f276e0924f90922f4209",
-      "artifact-7e3a09492dd93f8bf5ce",
-      "artifact-63ee7330335fdf4d4816",
-      "artifact-46dfdfc82984c7416c88",
-      "artifact-7f2b70a9803fd4466256",
-      "artifact-70efcee23509117277b7",
-      "artifact-eccac02f3e11a69c954d",
-      "artifact-f439a7386695d2ff0baa",
-      "artifact-5937a65fbbc04675e725",
-      "artifact-35afb4726ed40f809a3a",
-      "artifact-f3a442c35db2b99c980a",
-      "artifact-5103cb101c1d6efc4fb5",
-      "artifact-5929239b5a587e2b30f9",
-      "artifact-21b06c389f8fe376ee9c",
-      "artifact-61b4a6e756f9dbef257c",
-      "artifact-5a1c111dc25d9db777a6",
-      "artifact-141776409c49f90aabcb",
-      "artifact-3676fabce50cba3c65b6",
-      "artifact-0d2ea400c24a3e81d063",
-      "artifact-b23f1cbe0764017097ad",
-      "artifact-6ea1975a17ff596fd805",
-      "artifact-5ff8f164e7557a4be8ac",
-      "artifact-cab38271d81a85f56852",
-      "artifact-9f7657fb926380890589",
-      "artifact-f375e7d958ed7b4d10ad",
-      "artifact-24b004749e46fa25b207",
-      "artifact-05b00eb0ee320a67df7c",
-      "artifact-d40bae4961066dcab6ce",
-      "artifact-ce1cff04aa42c360e294",
-      "artifact-74b47492bfe3acf48b5c",
-      "artifact-149d8075f4a01bdfee6f",
-      "artifact-fbbb51bb0d850478de64",
-      "artifact-ea94d244d3ae3be34d6e",
-      "artifact-3b47a9421fcc706854d7",
-      "artifact-764112cb0cab6297472f",
-      "artifact-b31c996d029286ab04ad",
-      "artifact-8ecdbf0154641bccb56f"
+      "artifact-8e51bdfff3c752c3067f",
+      "artifact-e71a62cffd4c0c1669fe",
+      "artifact-2b99c287051aad4ef026",
+      "artifact-f3485f3d083af6224450",
+      "artifact-55cdc7d5d59ce52345cd",
+      "artifact-92590be8e73663f33c4f",
+      "artifact-0bf5c506799e5ad42c9e",
+      "artifact-81f551c333213f7bc080",
+      "artifact-b612a3e718fffc70b3c5",
+      "artifact-a03cbec3f4374e5351ca",
+      "artifact-ec32cd29a6f639986b83",
+      "artifact-0704a90a71ae33f652ab",
+      "artifact-6cc26cc3122e22faff06",
+      "artifact-bdb4acf694481562bf36",
+      "artifact-4adffcd2d4116f3031a7",
+      "artifact-8953e4c59b6a476522c8",
+      "artifact-a580932117e4fb94cb25",
+      "artifact-c90e5ee3db2a0bd8497b",
+      "artifact-0f83d01ddbca50b8c652",
+      "artifact-c80b57e0d5f254ccf40a",
+      "artifact-b76e3d0af506c9330274",
+      "artifact-0655cb2da8f78021bc40",
+      "artifact-029e1d63c83fb4a1463c",
+      "artifact-ed3d094bba33d84b5a3d",
+      "artifact-f23be8230a781cf92ce0",
+      "artifact-dfbf9c230594dda42aa1",
+      "artifact-5a26384a9cf1d69a032c",
+      "artifact-ccf46a29b93bcf95333b",
+      "artifact-3c8725010a120c467336",
+      "artifact-a51c83b9b3f62a020456",
+      "artifact-f29fff9a474e7bfb3c38",
+      "artifact-d6e375964299e065b309",
+      "artifact-efffe7cabd808b5b1e7a",
+      "artifact-5a0b11621a4f089c1ebf",
+      "artifact-074b55eaa889629f6595",
+      "artifact-8a4e2122006d058f8cff",
+      "artifact-199c9ed9e42236c61ed5",
+      "artifact-10d22f66ee5d7a957686",
+      "artifact-986ceaef36f7e90b981d",
+      "artifact-e3feae3fd1cdc88c9e57",
+      "artifact-f6fda9451e17006c82b8",
+      "artifact-cd5d78abf25b837791ae",
+      "artifact-755f20da00478aa66dc9",
+      "artifact-f0a0e88a9fa8cc531671",
+      "artifact-9528a367f16f37fdf823",
+      "artifact-c6de4ecf14e6e967cabd",
+      "artifact-eb661028b8f87bddb227",
+      "artifact-d54bc645876f440d5231",
+      "artifact-00b2e7ba968d574d1ba1",
+      "artifact-9131b27d45e56c764a1e",
+      "artifact-c0bf2416154cca835185",
+      "artifact-c6f5518b11c8c8de8d27",
+      "artifact-23819f8a6301a8e2a2ae",
+      "artifact-9ca386f69315e2925a15",
+      "artifact-3ad5725347ee93885f32",
+      "artifact-042696cb52e0c830c154",
+      "artifact-d13c1eb42a5f8c3a4669",
+      "artifact-51e06697b769b776366e",
+      "artifact-6a7302bce06ddafd61ad",
+      "artifact-51faa3ef83398de4efa5",
+      "artifact-fc3443ad8081b530d1b3",
+      "artifact-78cfee525ea6b8a90672",
+      "artifact-b47bbbb259c645b4e0a5",
+      "artifact-e4d7826f1a64c669f5e6",
+      "artifact-42721dcbb695be5da258",
+      "artifact-dbf80dbd5c032ec81dc3",
+      "artifact-c3e22811093eddb0fdc8",
+      "artifact-c7b0373e0e5f9ccb298b",
+      "artifact-cdd85e24d646e84b2ca8",
+      "artifact-d41638582562ddbec0c3",
+      "artifact-59b911c9a5dddc82567c",
+      "artifact-6310c3a1bc8a307f821a",
+      "artifact-231872a507b33f07bebe",
+      "artifact-a83176399d39fee7e960",
+      "artifact-9ae0474814988dd65030",
+      "artifact-5044a1e08d8a973cfbad",
+      "artifact-8935f3f1265a955e022d",
+      "artifact-0f191885dbe1c14cda34",
+      "artifact-6a7b2747255b394bc160",
+      "artifact-bf13c44315925daa3a79",
+      "artifact-dbf37afc81044d6dfdca",
+      "artifact-cc70b52e08663fce6a7d",
+      "artifact-74079f4d689c1da8d228",
+      "artifact-640682c6de8008a6500d",
+      "artifact-3ed85414179dd37377fa",
+      "artifact-5f6e9b7230d30c128894",
+      "artifact-5b34b88a12503e71deeb",
+      "artifact-7f85a326a2cc22fa795b",
+      "artifact-fcd00ea1be3256878a06",
+      "artifact-350286aa64ec16fcfce5",
+      "artifact-76dd0ecc7355171c9bc4",
+      "artifact-d3220fa65485e86ecef4",
+      "artifact-97b712a6ee3b239a279b",
+      "artifact-7cbb4ac1505a2499c1a1",
+      "artifact-1277c451a10b5b180b9f",
+      "artifact-c0c88bd601500fb3153a",
+      "artifact-168987057ed5f61e3249",
+      "artifact-0695b2b45b2988ff2b2c",
+      "artifact-489073cc7dea1d3b7787",
+      "artifact-7ebb2e12c9028a650a24",
+      "artifact-186ee5e81430f43420cb",
+      "artifact-eafefff9370440e15bdc",
+      "artifact-f9fd58af4a3c6c53cdb8",
+      "artifact-14f4a5c271c2db925791",
+      "artifact-5e48505aa4e56ce809db",
+      "artifact-163608c44bd5ec693275",
+      "artifact-167f0d7dea889d8922c2",
+      "artifact-62dceca9876b826fe8e2",
+      "artifact-2539d9a6985c7f723b8b",
+      "artifact-f8193a1cff6eb2a57e92",
+      "artifact-55493b8eb4f243df7af5",
+      "artifact-020b13245e0969e961f3"
     ],
-    "buyer_org_id": "org-6b1294b83b337e0c3426",
+    "buyer_org_id": "org-efb5e975272324174dc1",
     "causal_skeleton": "champion_departure",
     "checkpoint_ids": [
       "checkpoint-abc5774399b139783be1",
@@ -229,90 +300,130 @@
       "checkpoint-46f68f9d5c96352c6ee1",
       "checkpoint-4d89d70890126b19f234",
       "checkpoint-08c4f60a1ac83805feee",
-      "checkpoint-90f360b412d3afb7ac98",
-      "checkpoint-749c74b53003861d128b"
+      "checkpoint-90f360b412d3afb7ac98"
     ],
     "counterfactual_variant": "b",
     "description": "Synthetic corporate banking opportunity from first meeting through a final decision window.",
     "duration_days": 265,
-    "end_at": "2025-12-02T17:00:00Z",
+    "end_at": "2025-12-02T18:00:00Z",
     "event_ids": [
-      "event-083fcac77aca0042ad2c",
-      "event-12d939170136e61a5921",
-      "event-139188cad8f066ba1af6",
+      "event-d82492370aee35b74764",
+      "event-e5578f03847a70449a48",
+      "event-d00c58a5f34600191a39",
       "event-77f19bab8b1f7731bf05",
+      "event-9702df3962ad5d7bd9ec",
+      "event-f56bbc095eed6a401dbe",
+      "event-12d939170136e61a5921",
+      "event-be0d692dbca02e831a42",
+      "event-94b1e0e5229dbb754f7e",
+      "event-139188cad8f066ba1af6",
       "event-7f80ac7d9b9c04dd0a96",
       "event-8e1d15ccd645013e7931",
-      "event-94b1e0e5229dbb754f7e",
-      "event-9702df3962ad5d7bd9ec",
       "event-a6a298be0154af64c0e6",
-      "event-be0d692dbca02e831a42",
-      "event-d00c58a5f34600191a39",
-      "event-d82492370aee35b74764",
-      "event-f56bbc095eed6a401dbe",
-      "event-16d8a39eab5b10a564b9",
-      "event-1e0ab7ccf5b1a90cfee1",
+      "event-083fcac77aca0042ad2c",
       "event-26f333bc0844f8ba69ba",
       "event-6aadf43d0e3639a97f10",
-      "event-770a087e83eec3d14992",
-      "event-912117fb610703f44ace",
       "event-98ca263eeba50087eeab",
-      "event-aead763edabc61ab9628",
-      "event-b6fccda433514be3357d",
+      "event-770a087e83eec3d14992",
       "event-c50785cb03cf1172863a",
+      "event-1e0ab7ccf5b1a90cfee1",
+      "event-912117fb610703f44ace",
       "event-da84e23272acb4026eef",
       "event-ff44fe9abe530c7fd537",
+      "event-aead763edabc61ab9628",
+      "event-16d8a39eab5b10a564b9",
+      "event-b6fccda433514be3357d",
+      "event-d021415ce3048f568f16",
+      "event-27f910f054deed4b6fb2",
+      "event-40cc35379f91124a77f3",
+      "event-f42727fcee69d22d6261",
       "event-13eca8be9af2d2e42797",
       "event-162c32de4f6382e50a09",
       "event-181a98e64aa3ce520b56",
       "event-226ad4eb7e50194eca69",
       "event-231554847090884672d7",
-      "event-27f910f054deed4b6fb2",
       "event-2f71d908749946df7a73",
-      "event-40cc35379f91124a77f3",
-      "event-d021415ce3048f568f16",
-      "event-f42727fcee69d22d6261",
+      "event-a84729956add49c8d496",
+      "event-754a9a13dcafd34e1bb8",
+      "event-f62d68a918f138d326bf",
+      "event-ea7f7d327e69189154b6",
+      "event-938c93cbe71a470817e1",
+      "event-8d4afc33fcc68e0ca609",
       "event-27bc2d750dd605a8d8ca",
       "event-2a18a3361877f1b92822",
       "event-69a60bb815c2ea23ffb2",
-      "event-754a9a13dcafd34e1bb8",
       "event-8cc6485337dd67d73091",
-      "event-8d4afc33fcc68e0ca609",
-      "event-938c93cbe71a470817e1",
-      "event-a84729956add49c8d496",
-      "event-ea7f7d327e69189154b6",
-      "event-f62d68a918f138d326bf",
+      "event-e92d2a7e337f8c53bf9d",
       "event-41f34e04b1767dc3eddc",
       "event-522388b7326ea88503ff",
       "event-7a8b00a2ddd6c889fed6",
+      "event-ef99bd566fe3fd712067",
       "event-b7440c94318122cc8359",
       "event-cdbe9eda8615220ee371",
       "event-e284499f885ab17b437b",
-      "event-e92d2a7e337f8c53bf9d",
-      "event-ef99bd566fe3fd712067",
-      "event-2573c6db86ef45aeeff2",
+      "event-d538e689a2b2b747cded",
+      "event-f3e8ab0327e4221ddcaa",
+      "event-bf81d941f7da3102a508",
       "event-397c08a0561ca5378e15",
       "event-3ebcaab3e0bbc6736658",
-      "event-7d84f8c890300f3850ab",
-      "event-bf81d941f7da3102a508",
-      "event-d538e689a2b2b747cded",
       "event-d589e65de792a0e39b8c",
-      "event-e5578f03847a70449a48",
-      "event-f3e8ab0327e4221ddcaa",
+      "event-2573c6db86ef45aeeff2",
+      "event-7d84f8c890300f3850ab",
       "event-0e303fe83e89bf064653",
+      "event-42a65b84a0411a598ffe",
       "event-30c1fe9ed17b93f53de0",
       "event-3d0b3ec1d9e8c0d81920",
-      "event-42a65b84a0411a598ffe",
-      "event-87aca71d47e0f273e667",
-      "event-d0f6d8b66a849521b831",
-      "event-45d7857cb319806962f7",
       "event-704ec79414617dd46f16",
+      "event-87aca71d47e0f273e667",
       "event-8d98fcd09b7c0da13c9b",
-      "event-ac8167690212565d2059",
-      "event-bc3fe2bb5300919570bb",
+      "event-d0f6d8b66a849521b831",
       "event-f2d9700771a65e014124",
+      "event-bc3fe2bb5300919570bb",
+      "event-ac8167690212565d2059",
+      "event-45d7857cb319806962f7",
+      "event-59377dc3ed8ec6d662e9",
+      "event-e9bdb9692844a912567c",
+      "event-b24374c2658555cb7245",
+      "event-11db2132dcd70216196d",
+      "event-3f1d18bb819468d8fab6",
+      "event-5e24060e5681d0cd806f",
+      "event-45a02e2bdfa99b6c4168",
+      "event-4b943240cbf67d3e8a6f",
+      "event-4340da1be47c19a19005",
+      "event-82fd970b0b0191c01517",
+      "event-9952b1926040e9a8a0cd",
+      "event-34523dc5fababb547cbb",
+      "event-4d819301577f97720756",
+      "event-86f989c4f9131b06869f",
+      "event-0b006cb734585cf83de6",
+      "event-b11bc0850130e0ac728a",
+      "event-54c22eb2a7bffcc3feaa",
+      "event-ae7de402ec6b7538cdc6",
+      "event-36c464fa620f8b57b140",
+      "event-f4d424cd74dfde24f132",
+      "event-013d75e67f9b183a19de",
+      "event-64f0a5215584f50e0ec3",
+      "event-e84e7496a5232d3b7e6c",
+      "event-679c89838df999977de4",
+      "event-992d03a8f066bd39d65b",
+      "event-69ab674cb0fb1c7b5ccb",
+      "event-6854e4652c7c742d27a7",
+      "event-e70d52c73342a3719c78",
+      "event-fb62d6fcd4ffd333c935",
+      "event-01e0cb03bb60cf01f224",
+      "event-24b09e58c37386375434",
+      "event-a3d323b547587bf93dc7",
+      "event-d46a366ef3091433b2ab",
+      "event-df7ef4fa3067cb806786",
+      "event-b225ca2c0e35d307898f",
+      "event-9e8e5fd4dd37a2a43597",
+      "event-22ea6d73843ef496491f",
+      "event-644a499af8e7bcb3ec91",
+      "event-a62d790cd938bebb0b18",
+      "event-ab9ae371d1a72e7abc1d",
       "event-f8c0307c3cd876be1f9d"
     ],
+    "jurisdiction": "Synthetic OCC-supervised United States national-bank lending workflow using contemporaneous OCC and BSA/AML guidance",
     "license": {
       "code": "MIT",
       "data": "CC-BY-4.0"
@@ -321,8 +432,24 @@
     "pair_id": "pair-82de0328aa5f5c2de673",
     "provenance": {
       "created_at": "2026-08-17T00:00:00Z",
+      "fact_ids": [
+        "banking-lending-authority",
+        "banking-underwriting-repayment",
+        "banking-credit-separation",
+        "banking-exception-approval",
+        "banking-preclosing-documentation",
+        "banking-customer-identification",
+        "banking-risk-profile-monitoring",
+        "banking-beneficial-owner-verification"
+      ],
       "generator": "edlb.generate",
       "generator_version": "v1.0.0",
+      "source_ids": [
+        "source-occ-loan-portfolio-management",
+        "source-ffiec-cip",
+        "source-ffiec-cdd",
+        "source-ffiec-beneficial-ownership"
+      ],
       "source_policy_ids": [
         "policy-d45235e14930c6c49f92",
         "policy-c77e361a2c1ffc6b593b",
@@ -355,6 +482,8 @@
         "policy-2ecf970d333b23733399",
         "policy-78f08789cdd58e2a5ac9"
       ],
+      "source_registry": "authoring/source_registry.json",
+      "source_registry_checksum": "sha256:b417de15a1e533a8ca77fe2680eaf9dfec155f9a91c37c641acc55fa18939b81",
       "synthetic_only": true
     },
     "release_visibility": "public",
@@ -371,12 +500,2891 @@
     "seed": 6075978088988067525,
     "seller_org_id": "org-15490f97d24ea61d5e2a",
     "split": "blind",
-    "start_at": "2025-03-12T09:00:00Z",
+    "start_at": "2025-03-12T08:00:00Z",
+    "synthetic": true,
     "terminal_outcome": "closed_lost",
-    "title": "Juniper Harbor Enterprises commercial lending and treasury sale",
+    "title": "Pinecrest Quarry Partners commercial lending and treasury sale",
     "vertical": "corporate_banking",
     "world_id": "world-11eac08b9620d390e92a"
   },
   "variant": "weak_handoff",
+  "verification_facts": {
+    "action_effect_rules": [
+      {
+        "authority_actor_id": "act-f89a8d28248e9578c250",
+        "authority_rights": [
+          "provide_buyer_input",
+          "accept_credit_decision",
+          "accept_preclosing_checklist",
+          "accept_return",
+          "accept_sensitivity_analysis",
+          "authorize_closing",
+          "review_closing_conditions",
+          "review_customer_due_diligence",
+          "review_customer_identity",
+          "review_independent_credit_record",
+          "review_loan_documents",
+          "review_risk_based_pricing",
+          "review_underwriting",
+          "verify_beneficial_owner"
+        ],
+        "branch_id": "branch-46f68f9d5c96352c6ee1",
+        "checkpoint_id": "checkpoint-abc5774399b139783be1",
+        "commitment_code": "complete_remediation",
+        "decision_code": "request_remediation_decision",
+        "document_kind": "remediation_plan",
+        "effect_id": "effect-9e230670f1576053b385",
+        "fact_type": "authority_decision_observed",
+        "gate_id": "underwriting",
+        "next_gate_id": null,
+        "next_step_type": null,
+        "purpose_code": "recover_gate",
+        "record_id": "deal-d47c4d19decdcd5d5c03",
+        "remediation_requirements": {
+          "action_code": "successor_handoff",
+          "cure_data": {
+            "handoff_actor_ids": [],
+            "stakeholder_actor_id": "act-e00b7d4ef7de62fa38fa"
+          },
+          "due_at": "2025-07-28T16:45:00Z",
+          "evidence_checksums": {
+            "artifact-8e51bdfff3c752c3067f": "sha256:faa0cad12d88964ed190bec98cf36a3da1466535bd63c251f90c1c68f2574d2c",
+            "artifact-e71a62cffd4c0c1669fe": "sha256:b995012f84fd32a7594a1b56aac66e38d2f710d30b603c6b64abfe448dc3ec47"
+          },
+          "evidence_ids": [
+            "artifact-8e51bdfff3c752c3067f",
+            "artifact-e71a62cffd4c0c1669fe"
+          ],
+          "owner_role": "account_executive"
+        },
+        "required_evidence_ids": [
+          "artifact-8e51bdfff3c752c3067f",
+          "artifact-e71a62cffd4c0c1669fe"
+        ],
+        "resolution": "pending",
+        "response_resolution": "rejected",
+        "role": "account_executive",
+        "tool_names": [
+          "communications.send"
+        ]
+      },
+      {
+        "authority_actor_id": "act-0f112a8661ddd036a335",
+        "authority_rights": [
+          "accept_sensitivity_analysis",
+          "review_underwriting"
+        ],
+        "branch_id": "branch-46f68f9d5c96352c6ee1",
+        "checkpoint_id": "checkpoint-abc5774399b139783be1",
+        "commitment_code": "complete_remediation",
+        "decision_code": "request_remediation_decision",
+        "document_kind": "remediation_plan",
+        "effect_id": "effect-83c82358c9d4ce6c699f",
+        "fact_type": "authority_decision_observed",
+        "gate_id": "underwriting",
+        "next_gate_id": null,
+        "next_step_type": null,
+        "purpose_code": "recover_gate",
+        "record_id": "deal-d47c4d19decdcd5d5c03",
+        "remediation_requirements": {
+          "action_code": "successor_handoff",
+          "cure_data": {
+            "handoff_actor_ids": [],
+            "stakeholder_actor_id": "act-e00b7d4ef7de62fa38fa"
+          },
+          "due_at": "2025-07-28T16:45:00Z",
+          "evidence_checksums": {
+            "artifact-8e51bdfff3c752c3067f": "sha256:faa0cad12d88964ed190bec98cf36a3da1466535bd63c251f90c1c68f2574d2c",
+            "artifact-e71a62cffd4c0c1669fe": "sha256:b995012f84fd32a7594a1b56aac66e38d2f710d30b603c6b64abfe448dc3ec47"
+          },
+          "evidence_ids": [
+            "artifact-8e51bdfff3c752c3067f",
+            "artifact-e71a62cffd4c0c1669fe"
+          ],
+          "owner_role": "account_executive"
+        },
+        "required_evidence_ids": [
+          "artifact-8e51bdfff3c752c3067f",
+          "artifact-e71a62cffd4c0c1669fe"
+        ],
+        "resolution": "pending",
+        "response_resolution": "rejected",
+        "role": "account_executive",
+        "tool_names": [
+          "communications.send"
+        ]
+      },
+      {
+        "authority_actor_id": "act-160994c4b4412a954dfb",
+        "authority_rights": [
+          "provide_buyer_input",
+          "accept_credit_decision",
+          "accept_preclosing_checklist",
+          "accept_return",
+          "accept_sensitivity_analysis",
+          "authorize_closing",
+          "review_closing_conditions",
+          "review_customer_due_diligence",
+          "review_customer_identity",
+          "review_independent_credit_record",
+          "review_loan_documents",
+          "review_risk_based_pricing",
+          "review_underwriting",
+          "verify_beneficial_owner"
+        ],
+        "branch_id": "branch-46f68f9d5c96352c6ee1",
+        "checkpoint_id": "checkpoint-abc5774399b139783be1",
+        "commitment_code": "complete_remediation",
+        "decision_code": "request_remediation_decision",
+        "document_kind": "remediation_plan",
+        "effect_id": "effect-b1eca2ff40971b6494d8",
+        "fact_type": "authority_decision_observed",
+        "gate_id": "underwriting",
+        "next_gate_id": null,
+        "next_step_type": null,
+        "purpose_code": "recover_gate",
+        "record_id": "deal-d47c4d19decdcd5d5c03",
+        "remediation_requirements": {
+          "action_code": "successor_handoff",
+          "cure_data": {
+            "handoff_actor_ids": [],
+            "stakeholder_actor_id": "act-e00b7d4ef7de62fa38fa"
+          },
+          "due_at": "2025-07-28T16:45:00Z",
+          "evidence_checksums": {
+            "artifact-8e51bdfff3c752c3067f": "sha256:faa0cad12d88964ed190bec98cf36a3da1466535bd63c251f90c1c68f2574d2c",
+            "artifact-e71a62cffd4c0c1669fe": "sha256:b995012f84fd32a7594a1b56aac66e38d2f710d30b603c6b64abfe448dc3ec47"
+          },
+          "evidence_ids": [
+            "artifact-8e51bdfff3c752c3067f",
+            "artifact-e71a62cffd4c0c1669fe"
+          ],
+          "owner_role": "account_executive"
+        },
+        "required_evidence_ids": [
+          "artifact-8e51bdfff3c752c3067f",
+          "artifact-e71a62cffd4c0c1669fe"
+        ],
+        "resolution": "pending",
+        "response_resolution": "rejected",
+        "role": "account_executive",
+        "tool_names": [
+          "communications.send"
+        ]
+      },
+      {
+        "authority_actor_id": null,
+        "authority_rights": [],
+        "branch_id": "branch-46f68f9d5c96352c6ee1",
+        "checkpoint_id": "checkpoint-abc5774399b139783be1",
+        "commitment_code": null,
+        "decision_code": null,
+        "document_kind": null,
+        "effect_id": "effect-47714d3fa0f7d4c5868a",
+        "fact_type": "crm_transition",
+        "gate_id": "underwriting",
+        "next_gate_id": "underwriting",
+        "next_step_type": "remediation_decision",
+        "purpose_code": null,
+        "record_id": "deal-d47c4d19decdcd5d5c03",
+        "remediation_requirements": null,
+        "required_evidence_ids": [
+          "artifact-2b99c287051aad4ef026"
+        ],
+        "resolution": null,
+        "response_resolution": null,
+        "role": "revops",
+        "tool_names": [
+          "crm.update"
+        ]
+      }
+    ],
+    "actor_activity": {
+      "act-02951c911026eb066ba7": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "sales.manager@emberline-bank.example",
+        "kind": "seller",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_tags": [
+          "sales_manager"
+        ]
+      },
+      "act-07fb7f8895cb0adc9f87": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "wren-i-vale-elm-0d0e@emberline-bank.example",
+        "kind": "internal",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_tags": [
+          "authority",
+          "gatekeeper"
+        ]
+      },
+      "act-0f112a8661ddd036a335": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "jules-z-pine-keel-81f1@emberline-bank.example",
+        "kind": "internal",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_tags": [
+          "authority",
+          "gatekeeper"
+        ]
+      },
+      "act-14b466919f04fedd08f5": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "sable-g-fallow-wick-640a@pinecrest-quarry-partners.example",
+        "kind": "buyer",
+        "organization_id": "org-efb5e975272324174dc1",
+        "role_tags": [
+          "technical_evaluator"
+        ]
+      },
+      "act-160994c4b4412a954dfb": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "dara-p-harbor-ives-4cab@pinecrest-quarry-partners.example",
+        "kind": "buyer",
+        "organization_id": "org-efb5e975272324174dc1",
+        "role_tags": [
+          "economic_buyer"
+        ]
+      },
+      "act-21c06e55bc0ff4e393e8": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "indra-y-bell-pine-39e0@third-party-condition.example",
+        "kind": "external",
+        "organization_id": "org-4b9188beb8b483721192",
+        "role_tags": [
+          "authority",
+          "gatekeeper"
+        ]
+      },
+      "act-29c72818c5a828e7ebc6": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "jules-r-orchard-north-d099@emberline-bank.example",
+        "kind": "internal",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_tags": [
+          "authority",
+          "gatekeeper"
+        ]
+      },
+      "act-3a4f049b9f0f1b17eee6": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "niko-l-north-bell-9585@pinecrest-quarry-partners.example",
+        "kind": "buyer",
+        "organization_id": "org-efb5e975272324174dc1",
+        "role_tags": [
+          "procurement"
+        ]
+      },
+      "act-4a0171f516b0ff2766ee": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "account.executive@emberline-bank.example",
+        "kind": "seller",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_tags": [
+          "account_executive"
+        ]
+      },
+      "act-4a43ee376c7a98b561cc": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "pax-x-umber-ives-f5ef@emberline-bank.example",
+        "kind": "internal",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_tags": [
+          "authority",
+          "gatekeeper"
+        ]
+      },
+      "act-56e2e611731800379896": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "hollis-n-umber-quarry-cde7@emberline-bank.example",
+        "kind": "internal",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_tags": [
+          "authority",
+          "gatekeeper"
+        ]
+      },
+      "act-910badac25e408fbb1aa": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "hollis-d-solace-morrow-98b7@pinecrest-quarry-partners.example",
+        "kind": "buyer",
+        "organization_id": "org-efb5e975272324174dc1",
+        "role_tags": [
+          "executive_sponsor"
+        ]
+      },
+      "act-a9936998964772f862fe": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "domain.specialist@emberline-bank.example",
+        "kind": "seller",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_tags": [
+          "domain_specialist"
+        ]
+      },
+      "act-d2cabc157626bd35a8bb": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "revops@emberline-bank.example",
+        "kind": "seller",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_tags": [
+          "revops"
+        ]
+      },
+      "act-d3a5b40401f953d22960": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "pax-p-solace-cairn-f63f@emberline-bank.example",
+        "kind": "internal",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_tags": [
+          "authority",
+          "gatekeeper"
+        ]
+      },
+      "act-e00b7d4ef7de62fa38fa": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": "2025-03-12T08:20:00Z",
+        "email": "emery-e-bell-bell-825c@pinecrest-quarry-partners.example",
+        "kind": "buyer",
+        "organization_id": "org-efb5e975272324174dc1",
+        "role_tags": [
+          "champion"
+        ]
+      },
+      "act-f5b3d9cd25f1a9419a58": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "dara-l-thorne-quarry-77cb@emberline-bank.example",
+        "kind": "internal",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_tags": [
+          "authority",
+          "gatekeeper"
+        ]
+      },
+      "act-f89a8d28248e9578c250": {
+        "active_from": "2025-03-12T08:00:00Z",
+        "active_until": null,
+        "email": "avery-u-wick-lumen-e4d0@pinecrest-quarry-partners.example",
+        "kind": "buyer",
+        "organization_id": "org-efb5e975272324174dc1",
+        "role_tags": [
+          "finance"
+        ]
+      }
+    },
+    "allowed_related_ids": [
+      "deal-d47c4d19decdcd5d5c03",
+      "org-15490f97d24ea61d5e2a",
+      "org-efb5e975272324174dc1"
+    ],
+    "approval_required": false,
+    "approval_required_checkpoint_ids": [],
+    "approval_requirements": [],
+    "branches": [
+      {
+        "action_checkpoint_id": "checkpoint-abc5774399b139783be1",
+        "branch_id": "branch-46f68f9d5c96352c6ee1",
+        "fallback_decision_artifact_ids": [
+          "artifact-0655cb2da8f78021bc40",
+          "artifact-029e1d63c83fb4a1463c",
+          "artifact-ed3d094bba33d84b5a3d"
+        ],
+        "recoverable": false,
+        "remedy_milestone_id": "milestone-46f68f9d5c96352c6ee1",
+        "resolution_checkpoint_id": "checkpoint-46f68f9d5c96352c6ee1",
+        "success_decision_artifact_ids": [
+          "artifact-755f20da00478aa66dc9",
+          "artifact-f0a0e88a9fa8cc531671",
+          "artifact-9528a367f16f37fdf823"
+        ],
+        "success_if_any": [
+          [
+            "effect-9e230670f1576053b385",
+            "effect-83c82358c9d4ce6c699f",
+            "effect-b1eca2ff40971b6494d8",
+            "effect-47714d3fa0f7d4c5868a"
+          ]
+        ]
+      }
+    ],
+    "buyer_organization_id": "org-efb5e975272324174dc1",
+    "checkpoint_ids": [
+      "checkpoint-abc5774399b139783be1",
+      "checkpoint-81054ef35e2c76190647",
+      "checkpoint-7853c58538091ee655d0",
+      "checkpoint-46f68f9d5c96352c6ee1",
+      "checkpoint-4d89d70890126b19f234",
+      "checkpoint-08c4f60a1ac83805feee",
+      "checkpoint-90f360b412d3afb7ac98"
+    ],
+    "checkpoint_sources": {
+      "checkpoint-08c4f60a1ac83805feee": {
+        "communication": "artifact-d6e375964299e065b309",
+        "crm": "artifact-074b55eaa889629f6595",
+        "decision": "artifact-efffe7cabd808b5b1e7a",
+        "document": "artifact-f29fff9a474e7bfb3c38",
+        "documentation_borrower_documents": "artifact-d6e375964299e065b309",
+        "documentation_crm_projection": "artifact-074b55eaa889629f6595",
+        "documentation_documentation_checklist": "artifact-f29fff9a474e7bfb3c38",
+        "documentation_documentation_clearance": "artifact-efffe7cabd808b5b1e7a",
+        "evidence": "artifact-f29fff9a474e7bfb3c38"
+      },
+      "checkpoint-46f68f9d5c96352c6ee1": {
+        "communication": "artifact-0f83d01ddbca50b8c652",
+        "crm": "artifact-f23be8230a781cf92ce0",
+        "decision": "artifact-0655cb2da8f78021bc40",
+        "document": "artifact-c80b57e0d5f254ccf40a",
+        "evidence": "artifact-0f83d01ddbca50b8c652",
+        "underwriting_borrower_financials": "artifact-0f83d01ddbca50b8c652",
+        "underwriting_crm_projection": "artifact-f23be8230a781cf92ce0",
+        "underwriting_repayment_sensitivity": "artifact-b76e3d0af506c9330274",
+        "underwriting_underwriting_analysis": "artifact-c80b57e0d5f254ccf40a",
+        "underwriting_underwriting_recommendation": "artifact-0655cb2da8f78021bc40"
+      },
+      "checkpoint-4d89d70890126b19f234": {
+        "communication": "artifact-dfbf9c230594dda42aa1",
+        "credit_approval_borrower_summary": "artifact-dfbf9c230594dda42aa1",
+        "credit_approval_credit_decision": "artifact-ccf46a29b93bcf95333b",
+        "credit_approval_credit_memo": "artifact-5a26384a9cf1d69a032c",
+        "credit_approval_crm_projection": "artifact-a51c83b9b3f62a020456",
+        "crm": "artifact-a51c83b9b3f62a020456",
+        "decision": "artifact-ccf46a29b93bcf95333b",
+        "document": "artifact-5a26384a9cf1d69a032c",
+        "evidence": "artifact-dfbf9c230594dda42aa1"
+      },
+      "checkpoint-7853c58538091ee655d0": {
+        "communication": "artifact-6cc26cc3122e22faff06",
+        "crm": "artifact-c90e5ee3db2a0bd8497b",
+        "customer_due_diligence_borrower_financials": "artifact-6cc26cc3122e22faff06",
+        "customer_due_diligence_crm_projection": "artifact-c90e5ee3db2a0bd8497b",
+        "customer_due_diligence_customer_due_diligence_analysis": "artifact-bdb4acf694481562bf36",
+        "customer_due_diligence_customer_due_diligence_recommendation": "artifact-8953e4c59b6a476522c8",
+        "customer_due_diligence_repayment_sensitivity": "artifact-4adffcd2d4116f3031a7",
+        "decision": "artifact-8953e4c59b6a476522c8",
+        "document": "artifact-bdb4acf694481562bf36",
+        "evidence": "artifact-6cc26cc3122e22faff06"
+      },
+      "checkpoint-81054ef35e2c76190647": {
+        "beneficial_ownership_beneficial_owner_declaration": "artifact-81f551c333213f7bc080",
+        "beneficial_ownership_crm_projection": "artifact-0704a90a71ae33f652ab",
+        "beneficial_ownership_customer_identity": "artifact-0bf5c506799e5ad42c9e",
+        "beneficial_ownership_kyc_clearance": "artifact-a03cbec3f4374e5351ca",
+        "beneficial_ownership_kyc_review": "artifact-b612a3e718fffc70b3c5",
+        "communication": "artifact-0bf5c506799e5ad42c9e",
+        "crm": "artifact-0704a90a71ae33f652ab",
+        "decision": "artifact-a03cbec3f4374e5351ca",
+        "document": "artifact-b612a3e718fffc70b3c5",
+        "evidence": "artifact-0bf5c506799e5ad42c9e"
+      },
+      "checkpoint-90f360b412d3afb7ac98": {
+        "closing_closing_authorization": "artifact-10d22f66ee5d7a957686",
+        "closing_conditions_precedent": "artifact-8a4e2122006d058f8cff",
+        "closing_covenant_schedule": "artifact-199c9ed9e42236c61ed5",
+        "closing_crm_projection": "artifact-cd5d78abf25b837791ae",
+        "communication": "artifact-10d22f66ee5d7a957686",
+        "crm": "artifact-cd5d78abf25b837791ae",
+        "decision": "artifact-10d22f66ee5d7a957686",
+        "document": "artifact-8a4e2122006d058f8cff",
+        "evidence": "artifact-8a4e2122006d058f8cff"
+      },
+      "checkpoint-abc5774399b139783be1": {
+        "communication": "artifact-8e51bdfff3c752c3067f",
+        "crm": "artifact-92590be8e73663f33c4f",
+        "customer_identification_beneficial_owner_declaration": "artifact-e71a62cffd4c0c1669fe",
+        "customer_identification_crm_projection": "artifact-92590be8e73663f33c4f",
+        "customer_identification_customer_identity": "artifact-8e51bdfff3c752c3067f",
+        "customer_identification_kyc_clearance": "artifact-f3485f3d083af6224450",
+        "customer_identification_kyc_review": "artifact-2b99c287051aad4ef026",
+        "decision": "artifact-f3485f3d083af6224450",
+        "document": "artifact-2b99c287051aad4ef026",
+        "evidence": "artifact-8e51bdfff3c752c3067f"
+      }
+    },
+    "crm_defects": [
+      {
+        "checkpoint_sequence": 0,
+        "defect_id": "defect-11eac08b9620d390e92a",
+        "evidence_role": "technical_evaluator",
+        "field": "stage",
+        "observed_value": "prospecting",
+        "origin": "credit stage advanced when beneficial-owner verification was still open",
+        "truth_value": "customer_identification"
+      },
+      {
+        "checkpoint_sequence": 1,
+        "defect_id": "defect-628721227d9233cbeaf0",
+        "evidence_role": "champion",
+        "field": "close_date",
+        "observed_value": "2025-04-28",
+        "origin": "closing date copied before committee conditions were documented",
+        "truth_value": "2025-10-22"
+      },
+      {
+        "checkpoint_sequence": 2,
+        "defect_id": "defect-2fcf343f5e530ba31838",
+        "evidence_role": "economic_buyer",
+        "field": "next_step",
+        "observed_value": "confirm customer due diligence evidence and owner",
+        "origin": "documentation action remained after a covenant exception was escalated",
+        "truth_value": "account executive to confirm the underwriting decision with buyer authority"
+      }
+    ],
+    "deal_id": "deal-d47c4d19decdcd5d5c03",
+    "evidence_catalog": {
+      "artifact-029e1d63c83fb4a1463c": {
+        "available_at": "2025-07-28T15:25:00Z",
+        "branch_id": "branch-46f68f9d5c96352c6ee1",
+        "branch_option": "fallback",
+        "checkpoint_ids": [],
+        "gate_id": "underwriting",
+        "gates": [],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-0655cb2da8f78021bc40": {
+        "available_at": "2025-07-28T15:25:00Z",
+        "branch_id": "branch-46f68f9d5c96352c6ee1",
+        "branch_option": "fallback",
+        "checkpoint_ids": [
+          "checkpoint-46f68f9d5c96352c6ee1"
+        ],
+        "gate_id": "underwriting",
+        "gates": [
+          "underwriting"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-0704a90a71ae33f652ab": {
+        "available_at": "2025-04-28T15:15:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-81054ef35e2c76190647"
+        ],
+        "gate_id": "beneficial_ownership",
+        "gates": [
+          "beneficial ownership"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "role_scoped"
+      },
+      "artifact-074b55eaa889629f6595": {
+        "available_at": "2025-10-22T15:30:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-08c4f60a1ac83805feee"
+        ],
+        "gate_id": "documentation",
+        "gates": [
+          "documentation"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "role_scoped"
+      },
+      "artifact-0bf5c506799e5ad42c9e": {
+        "available_at": "2025-04-28T11:47:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-81054ef35e2c76190647"
+        ],
+        "gate_id": "beneficial_ownership",
+        "gates": [
+          "beneficial ownership"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-0f83d01ddbca50b8c652": {
+        "available_at": "2025-07-28T11:25:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-46f68f9d5c96352c6ee1"
+        ],
+        "gate_id": "underwriting",
+        "gates": [
+          "underwriting"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-10d22f66ee5d7a957686": {
+        "available_at": "2025-12-02T16:39:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-90f360b412d3afb7ac98"
+        ],
+        "gate_id": "closing",
+        "gates": [
+          "closing"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-199c9ed9e42236c61ed5": {
+        "available_at": "2025-12-02T15:33:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-90f360b412d3afb7ac98"
+        ],
+        "gate_id": "closing",
+        "gates": [
+          "closing"
+        ],
+        "logical_document_id": "logical-document-f1a872f582d043d3f6a4",
+        "supersedes_artifact_id": null,
+        "version": 1,
+        "visibility": "agent_visible"
+      },
+      "artifact-2b99c287051aad4ef026": {
+        "available_at": "2025-03-12T14:30:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-abc5774399b139783be1"
+        ],
+        "gate_id": "customer_identification",
+        "gates": [
+          "customer identification"
+        ],
+        "logical_document_id": "logical-document-be25d666967ab06328d8",
+        "supersedes_artifact_id": null,
+        "version": 1,
+        "visibility": "agent_visible"
+      },
+      "artifact-3c8725010a120c467336": {
+        "available_at": "2025-09-08T15:49:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [],
+        "gate_id": "credit_approval",
+        "gates": [],
+        "logical_document_id": "logical-document-a7cdad88d6f5b78ca3e8",
+        "supersedes_artifact_id": null,
+        "version": 1,
+        "visibility": "agent_visible"
+      },
+      "artifact-4adffcd2d4116f3031a7": {
+        "available_at": "2025-06-04T13:31:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-7853c58538091ee655d0"
+        ],
+        "gate_id": "customer_due_diligence",
+        "gates": [
+          "customer due diligence"
+        ],
+        "logical_document_id": "logical-document-177ab78c0d7b188c3909",
+        "supersedes_artifact_id": null,
+        "version": 1,
+        "visibility": "agent_visible"
+      },
+      "artifact-55cdc7d5d59ce52345cd": {
+        "available_at": "2025-03-12T15:30:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [],
+        "gate_id": "customer_identification",
+        "gates": [],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-5a0b11621a4f089c1ebf": {
+        "available_at": "2025-10-22T14:05:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [],
+        "gate_id": "documentation",
+        "gates": [],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-5a26384a9cf1d69a032c": {
+        "available_at": "2025-09-08T14:38:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-4d89d70890126b19f234"
+        ],
+        "gate_id": "credit_approval",
+        "gates": [
+          "credit approval"
+        ],
+        "logical_document_id": "logical-document-22858fd51cb218a8474a",
+        "supersedes_artifact_id": null,
+        "version": 1,
+        "visibility": "agent_visible"
+      },
+      "artifact-6cc26cc3122e22faff06": {
+        "available_at": "2025-06-04T10:47:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-7853c58538091ee655d0"
+        ],
+        "gate_id": "customer_due_diligence",
+        "gates": [
+          "customer due diligence"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-755f20da00478aa66dc9": {
+        "available_at": "2025-07-28T15:25:00Z",
+        "branch_id": "branch-46f68f9d5c96352c6ee1",
+        "branch_option": "success",
+        "checkpoint_ids": [],
+        "gate_id": "underwriting",
+        "gates": [],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-81f551c333213f7bc080": {
+        "available_at": "2025-04-28T12:39:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-81054ef35e2c76190647"
+        ],
+        "gate_id": "beneficial_ownership",
+        "gates": [
+          "beneficial ownership"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-8953e4c59b6a476522c8": {
+        "available_at": "2025-06-04T14:53:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-7853c58538091ee655d0"
+        ],
+        "gate_id": "customer_due_diligence",
+        "gates": [
+          "customer due diligence"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-8a4e2122006d058f8cff": {
+        "available_at": "2025-12-02T14:27:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-90f360b412d3afb7ac98"
+        ],
+        "gate_id": "closing",
+        "gates": [
+          "closing"
+        ],
+        "logical_document_id": "logical-document-4d08d7d4c383784ae287",
+        "supersedes_artifact_id": null,
+        "version": 1,
+        "visibility": "agent_visible"
+      },
+      "artifact-8e51bdfff3c752c3067f": {
+        "available_at": "2025-03-12T12:30:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-abc5774399b139783be1"
+        ],
+        "gate_id": "customer_identification",
+        "gates": [
+          "customer identification"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-92590be8e73663f33c4f": {
+        "available_at": "2025-03-12T16:30:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-abc5774399b139783be1"
+        ],
+        "gate_id": "customer_identification",
+        "gates": [
+          "customer identification"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "role_scoped"
+      },
+      "artifact-9528a367f16f37fdf823": {
+        "available_at": "2025-07-28T15:25:00Z",
+        "branch_id": "branch-46f68f9d5c96352c6ee1",
+        "branch_option": "success",
+        "checkpoint_ids": [],
+        "gate_id": "underwriting",
+        "gates": [],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-986ceaef36f7e90b981d": {
+        "available_at": "2025-12-02T16:39:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [],
+        "gate_id": "closing",
+        "gates": [],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-a03cbec3f4374e5351ca": {
+        "available_at": "2025-04-28T14:23:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-81054ef35e2c76190647"
+        ],
+        "gate_id": "beneficial_ownership",
+        "gates": [
+          "beneficial ownership"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-a51c83b9b3f62a020456": {
+        "available_at": "2025-09-08T17:00:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-4d89d70890126b19f234"
+        ],
+        "gate_id": "credit_approval",
+        "gates": [
+          "credit approval"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "role_scoped"
+      },
+      "artifact-a580932117e4fb94cb25": {
+        "available_at": "2025-06-04T14:53:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [],
+        "gate_id": "customer_due_diligence",
+        "gates": [],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-b612a3e718fffc70b3c5": {
+        "available_at": "2025-04-28T13:31:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-81054ef35e2c76190647"
+        ],
+        "gate_id": "beneficial_ownership",
+        "gates": [
+          "beneficial ownership"
+        ],
+        "logical_document_id": "logical-document-55b97816c7ade4176ad4",
+        "supersedes_artifact_id": null,
+        "version": 1,
+        "visibility": "agent_visible"
+      },
+      "artifact-b76e3d0af506c9330274": {
+        "available_at": "2025-07-28T14:05:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-46f68f9d5c96352c6ee1"
+        ],
+        "gate_id": "underwriting",
+        "gates": [
+          "underwriting"
+        ],
+        "logical_document_id": "logical-document-1b1ade46ed099ac5d518",
+        "supersedes_artifact_id": null,
+        "version": 1,
+        "visibility": "agent_visible"
+      },
+      "artifact-bdb4acf694481562bf36": {
+        "available_at": "2025-06-04T12:09:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-7853c58538091ee655d0"
+        ],
+        "gate_id": "customer_due_diligence",
+        "gates": [
+          "customer due diligence"
+        ],
+        "logical_document_id": "logical-document-e66a21e896e077dbb6aa",
+        "supersedes_artifact_id": null,
+        "version": 1,
+        "visibility": "agent_visible"
+      },
+      "artifact-c80b57e0d5f254ccf40a": {
+        "available_at": "2025-07-28T12:45:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-46f68f9d5c96352c6ee1"
+        ],
+        "gate_id": "underwriting",
+        "gates": [
+          "underwriting"
+        ],
+        "logical_document_id": "logical-document-cd0fd1b56ff4ab04b106",
+        "supersedes_artifact_id": null,
+        "version": 1,
+        "visibility": "agent_visible"
+      },
+      "artifact-c90e5ee3db2a0bd8497b": {
+        "available_at": "2025-06-04T16:15:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-7853c58538091ee655d0"
+        ],
+        "gate_id": "customer_due_diligence",
+        "gates": [
+          "customer due diligence"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "role_scoped"
+      },
+      "artifact-ccf46a29b93bcf95333b": {
+        "available_at": "2025-09-08T15:49:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-4d89d70890126b19f234"
+        ],
+        "gate_id": "credit_approval",
+        "gates": [
+          "credit approval"
+        ],
+        "logical_document_id": "logical-document-5c334bb59ef936a6937b",
+        "supersedes_artifact_id": null,
+        "version": 1,
+        "visibility": "agent_visible"
+      },
+      "artifact-cd5d78abf25b837791ae": {
+        "available_at": "2025-12-02T17:45:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-90f360b412d3afb7ac98"
+        ],
+        "gate_id": "closing",
+        "gates": [
+          "closing"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "role_scoped"
+      },
+      "artifact-d6e375964299e065b309": {
+        "available_at": "2025-10-22T12:40:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-08c4f60a1ac83805feee"
+        ],
+        "gate_id": "documentation",
+        "gates": [
+          "documentation"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-dfbf9c230594dda42aa1": {
+        "available_at": "2025-09-08T13:27:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-4d89d70890126b19f234"
+        ],
+        "gate_id": "credit_approval",
+        "gates": [
+          "credit approval"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-e3feae3fd1cdc88c9e57": {
+        "available_at": "2025-12-02T16:39:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [],
+        "gate_id": "closing",
+        "gates": [],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-e71a62cffd4c0c1669fe": {
+        "available_at": "2025-03-12T13:30:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-abc5774399b139783be1"
+        ],
+        "gate_id": "customer_identification",
+        "gates": [
+          "customer identification"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-ec32cd29a6f639986b83": {
+        "available_at": "2025-04-28T14:23:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [],
+        "gate_id": "beneficial_ownership",
+        "gates": [],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-ed3d094bba33d84b5a3d": {
+        "available_at": "2025-07-28T15:25:00Z",
+        "branch_id": "branch-46f68f9d5c96352c6ee1",
+        "branch_option": "fallback",
+        "checkpoint_ids": [],
+        "gate_id": "underwriting",
+        "gates": [],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-efffe7cabd808b5b1e7a": {
+        "available_at": "2025-10-22T14:05:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-08c4f60a1ac83805feee"
+        ],
+        "gate_id": "documentation",
+        "gates": [
+          "documentation"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-f0a0e88a9fa8cc531671": {
+        "available_at": "2025-07-28T15:25:00Z",
+        "branch_id": "branch-46f68f9d5c96352c6ee1",
+        "branch_option": "success",
+        "checkpoint_ids": [],
+        "gate_id": "underwriting",
+        "gates": [],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-f23be8230a781cf92ce0": {
+        "available_at": "2025-07-28T16:45:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-46f68f9d5c96352c6ee1"
+        ],
+        "gate_id": "underwriting",
+        "gates": [
+          "underwriting"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "role_scoped"
+      },
+      "artifact-f29fff9a474e7bfb3c38": {
+        "available_at": "2025-10-22T11:15:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-08c4f60a1ac83805feee"
+        ],
+        "gate_id": "documentation",
+        "gates": [
+          "documentation"
+        ],
+        "logical_document_id": "logical-document-380e4a99202d7ef28f05",
+        "supersedes_artifact_id": null,
+        "version": 1,
+        "visibility": "agent_visible"
+      },
+      "artifact-f3485f3d083af6224450": {
+        "available_at": "2025-03-12T15:30:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [
+          "checkpoint-abc5774399b139783be1"
+        ],
+        "gate_id": "customer_identification",
+        "gates": [
+          "customer identification"
+        ],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      },
+      "artifact-f6fda9451e17006c82b8": {
+        "available_at": "2025-12-02T16:39:00Z",
+        "branch_id": null,
+        "branch_option": null,
+        "checkpoint_ids": [],
+        "gate_id": "closing",
+        "gates": [],
+        "logical_document_id": null,
+        "supersedes_artifact_id": null,
+        "version": null,
+        "visibility": "agent_visible"
+      }
+    },
+    "expected_amount_minor_units": 7500000000,
+    "expected_close_date": "2025-07-28",
+    "expected_terminal_outcome": "closed_lost",
+    "intervention_at": "2025-03-12T16:30:00Z",
+    "milestones": [
+      {
+        "allowed_resolutions": [
+          "deferred",
+          "inapplicable"
+        ],
+        "approval_requirement": null,
+        "authority_requirements": [
+          {
+            "actor_id": "act-56e2e611731800379896",
+            "decision_artifact_ids": [
+              "artifact-55cdc7d5d59ce52345cd"
+            ],
+            "organization_scope": "seller",
+            "rights": [
+              "review_customer_identity",
+              "verify_beneficial_owner"
+            ]
+          },
+          {
+            "actor_id": "act-14b466919f04fedd08f5",
+            "decision_artifact_ids": [
+              "artifact-f3485f3d083af6224450"
+            ],
+            "organization_scope": "buyer",
+            "rights": [
+              "provide_buyer_input",
+              "accept_credit_decision",
+              "accept_preclosing_checklist",
+              "accept_return",
+              "accept_sensitivity_analysis",
+              "authorize_closing",
+              "review_closing_conditions",
+              "review_customer_due_diligence",
+              "review_customer_identity",
+              "review_independent_credit_record",
+              "review_loan_documents",
+              "review_risk_based_pricing",
+              "review_underwriting",
+              "verify_beneficial_owner"
+            ]
+          }
+        ],
+        "branch_id": null,
+        "business_effect_requirements_by_resolution": {
+          "deferred": {
+            "crm_projection": {
+              "date_ranges": {
+                "close_date": {
+                  "not_after": "2025-12-02",
+                  "not_before": "2025-03-12"
+                },
+                "next_step_date": {
+                  "not_after": "2025-04-28",
+                  "not_before": "2025-03-12"
+                }
+              },
+              "exact_fields": {
+                "amount_minor_units": 7500000000,
+                "currency": "USD",
+                "disposition_code": "deferred",
+                "next_step_gate_id": "beneficial_ownership",
+                "next_step_type": "buyer_gate_decision",
+                "stage": "customer_identification"
+              },
+              "nonempty_fields": [
+                "next_step",
+                "next_step_decision",
+                "next_step_owner"
+              ],
+              "number_ranges": {
+                "forecast_probability": {
+                  "maximum": 1.0,
+                  "minimum": 0.0
+                }
+              },
+              "record_id": "deal-d47c4d19decdcd5d5c03",
+              "text_reference_fields": {
+                "next_step": [
+                  "next_step_gate_id"
+                ],
+                "next_step_decision": [
+                  "next_step_gate_id"
+                ]
+              },
+              "write_fields": [
+                "next_step",
+                "next_step_owner",
+                "next_step_decision",
+                "next_step_date",
+                "close_date",
+                "forecast_probability",
+                "stage",
+                "disposition_code",
+                "next_step_gate_id",
+                "next_step_type"
+              ],
+              "writer_role": "revops"
+            },
+            "decision_followup": {
+              "allowed_channels": [
+                "email",
+                "calendar"
+              ],
+              "recipient_actor_id": "act-14b466919f04fedd08f5",
+              "related_record_id": "deal-d47c4d19decdcd5d5c03",
+              "required_evidence_ids": [
+                "artifact-2b99c287051aad4ef026",
+                "artifact-55cdc7d5d59ce52345cd",
+                "artifact-8e51bdfff3c752c3067f",
+                "artifact-f3485f3d083af6224450"
+              ],
+              "required_message_facts": [
+                "customer identification",
+                "deferred"
+              ],
+              "semantic_requirements": {
+                "authority_actor_id": "act-14b466919f04fedd08f5",
+                "commitment_code": "record_before_advancing",
+                "commitment_owner_role": "account_executive",
+                "decision_code": "confirm_gate_authority",
+                "evidence_claims": [
+                  {
+                    "artifact_id": "artifact-2b99c287051aad4ef026",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "customer_identification",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-55cdc7d5d59ce52345cd",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "customer_identification",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-8e51bdfff3c752c3067f",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "customer_identification",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-f3485f3d083af6224450",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "customer_identification",
+                    "resolution": "deferred"
+                  }
+                ],
+                "gate_id": "customer_identification",
+                "purpose_code": "advance_gate",
+                "resolution": "deferred"
+              },
+              "sender_role": "account_executive"
+            },
+            "deliverable": {
+              "author_role": "domain_specialist",
+              "kind": "gate_evidence",
+              "minimum_version": 1,
+              "related_id": "deal-d47c4d19decdcd5d5c03",
+              "related_type": "opportunity",
+              "required_content_terms": [
+                "customer identification",
+                "artifact-2b99c287051aad4ef026",
+                "artifact-55cdc7d5d59ce52345cd",
+                "artifact-8e51bdfff3c752c3067f",
+                "artifact-f3485f3d083af6224450"
+              ],
+              "required_evidence_ids": [
+                "artifact-2b99c287051aad4ef026",
+                "artifact-55cdc7d5d59ce52345cd",
+                "artifact-8e51bdfff3c752c3067f",
+                "artifact-f3485f3d083af6224450"
+              ],
+              "semantic_requirements": {
+                "authority_actor_id": "act-14b466919f04fedd08f5",
+                "commitment_code": "record_before_advancing",
+                "commitment_owner_role": "account_executive",
+                "decision_code": "confirm_gate_authority",
+                "evidence_claims": [
+                  {
+                    "artifact_id": "artifact-2b99c287051aad4ef026",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "customer_identification",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-55cdc7d5d59ce52345cd",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "customer_identification",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-8e51bdfff3c752c3067f",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "customer_identification",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-f3485f3d083af6224450",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "customer_identification",
+                    "resolution": "deferred"
+                  }
+                ],
+                "gate_id": "customer_identification",
+                "purpose_code": "advance_gate",
+                "resolution": "deferred"
+              }
+            }
+          }
+        },
+        "checkpoint_id": "checkpoint-abc5774399b139783be1",
+        "chronology": {
+          "available_at": "2025-03-12T16:30:00Z",
+          "decision_times": {
+            "artifact-55cdc7d5d59ce52345cd": {
+              "available_at": "2025-03-12T15:30:00Z",
+              "created_at": "2025-03-12T14:42:00Z"
+            },
+            "artifact-f3485f3d083af6224450": {
+              "available_at": "2025-03-12T15:30:00Z",
+              "created_at": "2025-03-12T14:42:00Z"
+            }
+          },
+          "sequence": 0
+        },
+        "decision_artifact_ids": [
+          "artifact-55cdc7d5d59ce52345cd",
+          "artifact-f3485f3d083af6224450"
+        ],
+        "decision_evidence_role": "sales_manager",
+        "evidence_ids": [
+          "artifact-2b99c287051aad4ef026",
+          "artifact-55cdc7d5d59ce52345cd",
+          "artifact-8e51bdfff3c752c3067f",
+          "artifact-f3485f3d083af6224450"
+        ],
+        "evidence_requirements_by_role": {
+          "account_executive": [
+            "artifact-8e51bdfff3c752c3067f"
+          ],
+          "domain_specialist": [
+            "artifact-8e51bdfff3c752c3067f"
+          ],
+          "revops": [
+            "artifact-2b99c287051aad4ef026"
+          ],
+          "sales_manager": []
+        },
+        "gate_id": "customer_identification",
+        "lane_effects_by_resolution": {
+          "deferred": {
+            "urgency": {
+              "delta": -25,
+              "fact": "a required authority deferred the gate"
+            }
+          },
+          "inapplicable": {}
+        },
+        "milestone_id": "milestone-abc5774399b139783be1",
+        "prerequisite_milestone_ids": [],
+        "remedy_of": null,
+        "terminal_outcome_by_resolution": {}
+      },
+      {
+        "allowed_resolutions": [
+          "deferred",
+          "inapplicable"
+        ],
+        "approval_requirement": null,
+        "authority_requirements": [
+          {
+            "actor_id": "act-160994c4b4412a954dfb",
+            "decision_artifact_ids": [
+              "artifact-a03cbec3f4374e5351ca"
+            ],
+            "organization_scope": "buyer",
+            "rights": [
+              "provide_buyer_input",
+              "accept_credit_decision",
+              "accept_preclosing_checklist",
+              "accept_return",
+              "accept_sensitivity_analysis",
+              "authorize_closing",
+              "review_closing_conditions",
+              "review_customer_due_diligence",
+              "review_customer_identity",
+              "review_independent_credit_record",
+              "review_loan_documents",
+              "review_risk_based_pricing",
+              "review_underwriting",
+              "verify_beneficial_owner"
+            ]
+          },
+          {
+            "actor_id": "act-56e2e611731800379896",
+            "decision_artifact_ids": [
+              "artifact-ec32cd29a6f639986b83"
+            ],
+            "organization_scope": "seller",
+            "rights": [
+              "review_customer_identity",
+              "verify_beneficial_owner"
+            ]
+          }
+        ],
+        "branch_id": null,
+        "business_effect_requirements_by_resolution": {
+          "deferred": {
+            "crm_projection": {
+              "date_ranges": {
+                "close_date": {
+                  "not_after": "2025-12-02",
+                  "not_before": "2025-04-28"
+                },
+                "next_step_date": {
+                  "not_after": "2025-06-04",
+                  "not_before": "2025-04-28"
+                }
+              },
+              "exact_fields": {
+                "amount_minor_units": 7500000000,
+                "currency": "USD",
+                "disposition_code": "deferred",
+                "next_step_gate_id": "customer_due_diligence",
+                "next_step_type": "buyer_gate_decision"
+              },
+              "nonempty_fields": [
+                "next_step",
+                "next_step_decision",
+                "next_step_owner"
+              ],
+              "number_ranges": {
+                "forecast_probability": {
+                  "maximum": 1.0,
+                  "minimum": 0.0
+                }
+              },
+              "record_id": "deal-d47c4d19decdcd5d5c03",
+              "text_reference_fields": {
+                "next_step": [
+                  "next_step_gate_id"
+                ],
+                "next_step_decision": [
+                  "next_step_gate_id"
+                ]
+              },
+              "write_fields": [
+                "next_step",
+                "next_step_owner",
+                "next_step_decision",
+                "next_step_date",
+                "close_date",
+                "forecast_probability",
+                "disposition_code",
+                "next_step_gate_id",
+                "next_step_type"
+              ],
+              "writer_role": "revops"
+            },
+            "decision_followup": {
+              "allowed_channels": [
+                "email",
+                "calendar"
+              ],
+              "recipient_actor_id": "act-160994c4b4412a954dfb",
+              "related_record_id": "deal-d47c4d19decdcd5d5c03",
+              "required_evidence_ids": [
+                "artifact-0bf5c506799e5ad42c9e",
+                "artifact-a03cbec3f4374e5351ca",
+                "artifact-b612a3e718fffc70b3c5",
+                "artifact-ec32cd29a6f639986b83"
+              ],
+              "required_message_facts": [
+                "beneficial ownership",
+                "deferred"
+              ],
+              "semantic_requirements": {
+                "authority_actor_id": "act-160994c4b4412a954dfb",
+                "commitment_code": "record_before_advancing",
+                "commitment_owner_role": "account_executive",
+                "decision_code": "confirm_gate_authority",
+                "evidence_claims": [
+                  {
+                    "artifact_id": "artifact-0bf5c506799e5ad42c9e",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "beneficial_ownership",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-a03cbec3f4374e5351ca",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "beneficial_ownership",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-b612a3e718fffc70b3c5",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "beneficial_ownership",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-ec32cd29a6f639986b83",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "beneficial_ownership",
+                    "resolution": "deferred"
+                  }
+                ],
+                "gate_id": "beneficial_ownership",
+                "purpose_code": "advance_gate",
+                "resolution": "deferred"
+              },
+              "sender_role": "account_executive"
+            },
+            "deliverable": {
+              "author_role": "domain_specialist",
+              "kind": "gate_evidence",
+              "minimum_version": 1,
+              "related_id": "deal-d47c4d19decdcd5d5c03",
+              "related_type": "opportunity",
+              "required_content_terms": [
+                "beneficial ownership",
+                "artifact-0bf5c506799e5ad42c9e",
+                "artifact-a03cbec3f4374e5351ca",
+                "artifact-b612a3e718fffc70b3c5",
+                "artifact-ec32cd29a6f639986b83"
+              ],
+              "required_evidence_ids": [
+                "artifact-0bf5c506799e5ad42c9e",
+                "artifact-a03cbec3f4374e5351ca",
+                "artifact-b612a3e718fffc70b3c5",
+                "artifact-ec32cd29a6f639986b83"
+              ],
+              "semantic_requirements": {
+                "authority_actor_id": "act-160994c4b4412a954dfb",
+                "commitment_code": "record_before_advancing",
+                "commitment_owner_role": "account_executive",
+                "decision_code": "confirm_gate_authority",
+                "evidence_claims": [
+                  {
+                    "artifact_id": "artifact-0bf5c506799e5ad42c9e",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "beneficial_ownership",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-a03cbec3f4374e5351ca",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "beneficial_ownership",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-b612a3e718fffc70b3c5",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "beneficial_ownership",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-ec32cd29a6f639986b83",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "beneficial_ownership",
+                    "resolution": "deferred"
+                  }
+                ],
+                "gate_id": "beneficial_ownership",
+                "purpose_code": "advance_gate",
+                "resolution": "deferred"
+              }
+            }
+          }
+        },
+        "checkpoint_id": "checkpoint-81054ef35e2c76190647",
+        "chronology": {
+          "available_at": "2025-04-28T15:15:00Z",
+          "decision_times": {
+            "artifact-a03cbec3f4374e5351ca": {
+              "available_at": "2025-04-28T14:23:00Z",
+              "created_at": "2025-04-28T13:38:00Z"
+            },
+            "artifact-ec32cd29a6f639986b83": {
+              "available_at": "2025-04-28T14:23:00Z",
+              "created_at": "2025-04-28T13:38:00Z"
+            }
+          },
+          "sequence": 1
+        },
+        "decision_artifact_ids": [
+          "artifact-a03cbec3f4374e5351ca",
+          "artifact-ec32cd29a6f639986b83"
+        ],
+        "decision_evidence_role": "sales_manager",
+        "evidence_ids": [
+          "artifact-0bf5c506799e5ad42c9e",
+          "artifact-a03cbec3f4374e5351ca",
+          "artifact-b612a3e718fffc70b3c5",
+          "artifact-ec32cd29a6f639986b83"
+        ],
+        "evidence_requirements_by_role": {
+          "account_executive": [
+            "artifact-0bf5c506799e5ad42c9e"
+          ],
+          "domain_specialist": [
+            "artifact-0bf5c506799e5ad42c9e"
+          ],
+          "revops": [
+            "artifact-b612a3e718fffc70b3c5"
+          ],
+          "sales_manager": []
+        },
+        "gate_id": "beneficial_ownership",
+        "lane_effects_by_resolution": {
+          "deferred": {
+            "urgency": {
+              "delta": -25,
+              "fact": "a required authority deferred the gate"
+            }
+          },
+          "inapplicable": {}
+        },
+        "milestone_id": "milestone-81054ef35e2c76190647",
+        "prerequisite_milestone_ids": [],
+        "remedy_of": null,
+        "terminal_outcome_by_resolution": {}
+      },
+      {
+        "allowed_resolutions": [
+          "deferred",
+          "inapplicable"
+        ],
+        "approval_requirement": null,
+        "authority_requirements": [
+          {
+            "actor_id": "act-f89a8d28248e9578c250",
+            "decision_artifact_ids": [
+              "artifact-8953e4c59b6a476522c8"
+            ],
+            "organization_scope": "buyer",
+            "rights": [
+              "provide_buyer_input",
+              "accept_credit_decision",
+              "accept_preclosing_checklist",
+              "accept_return",
+              "accept_sensitivity_analysis",
+              "authorize_closing",
+              "review_closing_conditions",
+              "review_customer_due_diligence",
+              "review_customer_identity",
+              "review_independent_credit_record",
+              "review_loan_documents",
+              "review_risk_based_pricing",
+              "review_underwriting",
+              "verify_beneficial_owner"
+            ]
+          },
+          {
+            "actor_id": "act-4a43ee376c7a98b561cc",
+            "decision_artifact_ids": [
+              "artifact-a580932117e4fb94cb25"
+            ],
+            "organization_scope": "seller",
+            "rights": [
+              "accept_sensitivity_analysis",
+              "review_customer_due_diligence"
+            ]
+          }
+        ],
+        "branch_id": null,
+        "business_effect_requirements_by_resolution": {
+          "deferred": {
+            "crm_projection": {
+              "date_ranges": {
+                "close_date": {
+                  "not_after": "2025-12-02",
+                  "not_before": "2025-06-04"
+                },
+                "next_step_date": {
+                  "not_after": "2025-07-28",
+                  "not_before": "2025-06-04"
+                }
+              },
+              "exact_fields": {
+                "amount_minor_units": 7500000000,
+                "currency": "USD",
+                "disposition_code": "deferred",
+                "next_step_gate_id": "underwriting",
+                "next_step_type": "buyer_gate_decision"
+              },
+              "nonempty_fields": [
+                "next_step",
+                "next_step_decision",
+                "next_step_owner"
+              ],
+              "number_ranges": {
+                "forecast_probability": {
+                  "maximum": 1.0,
+                  "minimum": 0.0
+                }
+              },
+              "record_id": "deal-d47c4d19decdcd5d5c03",
+              "text_reference_fields": {
+                "next_step": [
+                  "next_step_gate_id"
+                ],
+                "next_step_decision": [
+                  "next_step_gate_id"
+                ]
+              },
+              "write_fields": [
+                "next_step",
+                "next_step_owner",
+                "next_step_decision",
+                "next_step_date",
+                "close_date",
+                "forecast_probability",
+                "disposition_code",
+                "next_step_gate_id",
+                "next_step_type"
+              ],
+              "writer_role": "revops"
+            },
+            "decision_followup": {
+              "allowed_channels": [
+                "email",
+                "calendar"
+              ],
+              "recipient_actor_id": "act-f89a8d28248e9578c250",
+              "related_record_id": "deal-d47c4d19decdcd5d5c03",
+              "required_evidence_ids": [
+                "artifact-6cc26cc3122e22faff06",
+                "artifact-8953e4c59b6a476522c8",
+                "artifact-a580932117e4fb94cb25",
+                "artifact-bdb4acf694481562bf36"
+              ],
+              "required_message_facts": [
+                "customer due diligence",
+                "deferred"
+              ],
+              "semantic_requirements": {
+                "authority_actor_id": "act-f89a8d28248e9578c250",
+                "commitment_code": "record_before_advancing",
+                "commitment_owner_role": "account_executive",
+                "decision_code": "confirm_gate_authority",
+                "evidence_claims": [
+                  {
+                    "artifact_id": "artifact-6cc26cc3122e22faff06",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "customer_due_diligence",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-8953e4c59b6a476522c8",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "customer_due_diligence",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-a580932117e4fb94cb25",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "customer_due_diligence",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-bdb4acf694481562bf36",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "customer_due_diligence",
+                    "resolution": "deferred"
+                  }
+                ],
+                "gate_id": "customer_due_diligence",
+                "purpose_code": "advance_gate",
+                "resolution": "deferred"
+              },
+              "sender_role": "account_executive"
+            },
+            "deliverable": {
+              "author_role": "domain_specialist",
+              "kind": "gate_evidence",
+              "minimum_version": 1,
+              "related_id": "deal-d47c4d19decdcd5d5c03",
+              "related_type": "opportunity",
+              "required_content_terms": [
+                "customer due diligence",
+                "artifact-6cc26cc3122e22faff06",
+                "artifact-8953e4c59b6a476522c8",
+                "artifact-a580932117e4fb94cb25",
+                "artifact-bdb4acf694481562bf36"
+              ],
+              "required_evidence_ids": [
+                "artifact-6cc26cc3122e22faff06",
+                "artifact-8953e4c59b6a476522c8",
+                "artifact-a580932117e4fb94cb25",
+                "artifact-bdb4acf694481562bf36"
+              ],
+              "semantic_requirements": {
+                "authority_actor_id": "act-f89a8d28248e9578c250",
+                "commitment_code": "record_before_advancing",
+                "commitment_owner_role": "account_executive",
+                "decision_code": "confirm_gate_authority",
+                "evidence_claims": [
+                  {
+                    "artifact_id": "artifact-6cc26cc3122e22faff06",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "customer_due_diligence",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-8953e4c59b6a476522c8",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "customer_due_diligence",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-a580932117e4fb94cb25",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "customer_due_diligence",
+                    "resolution": "deferred"
+                  },
+                  {
+                    "artifact_id": "artifact-bdb4acf694481562bf36",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "customer_due_diligence",
+                    "resolution": "deferred"
+                  }
+                ],
+                "gate_id": "customer_due_diligence",
+                "purpose_code": "advance_gate",
+                "resolution": "deferred"
+              }
+            }
+          }
+        },
+        "checkpoint_id": "checkpoint-7853c58538091ee655d0",
+        "chronology": {
+          "available_at": "2025-06-04T16:15:00Z",
+          "decision_times": {
+            "artifact-8953e4c59b6a476522c8": {
+              "available_at": "2025-06-04T14:53:00Z",
+              "created_at": "2025-06-04T13:51:00Z"
+            },
+            "artifact-a580932117e4fb94cb25": {
+              "available_at": "2025-06-04T14:53:00Z",
+              "created_at": "2025-06-04T13:51:00Z"
+            }
+          },
+          "sequence": 2
+        },
+        "decision_artifact_ids": [
+          "artifact-8953e4c59b6a476522c8",
+          "artifact-a580932117e4fb94cb25"
+        ],
+        "decision_evidence_role": "sales_manager",
+        "evidence_ids": [
+          "artifact-6cc26cc3122e22faff06",
+          "artifact-8953e4c59b6a476522c8",
+          "artifact-a580932117e4fb94cb25",
+          "artifact-bdb4acf694481562bf36"
+        ],
+        "evidence_requirements_by_role": {
+          "account_executive": [
+            "artifact-6cc26cc3122e22faff06"
+          ],
+          "domain_specialist": [
+            "artifact-6cc26cc3122e22faff06"
+          ],
+          "revops": [
+            "artifact-bdb4acf694481562bf36"
+          ],
+          "sales_manager": []
+        },
+        "gate_id": "customer_due_diligence",
+        "lane_effects_by_resolution": {
+          "deferred": {
+            "urgency": {
+              "delta": -25,
+              "fact": "a required authority deferred the gate"
+            }
+          },
+          "inapplicable": {}
+        },
+        "milestone_id": "milestone-7853c58538091ee655d0",
+        "prerequisite_milestone_ids": [],
+        "remedy_of": null,
+        "terminal_outcome_by_resolution": {}
+      },
+      {
+        "allowed_resolutions": [
+          "inapplicable",
+          "rejected",
+          "remedied"
+        ],
+        "approval_requirement": null,
+        "authority_requirements": [
+          {
+            "actor_id": "act-f89a8d28248e9578c250",
+            "decision_artifact_ids": [
+              "artifact-0655cb2da8f78021bc40",
+              "artifact-755f20da00478aa66dc9"
+            ],
+            "organization_scope": "buyer",
+            "rights": [
+              "provide_buyer_input",
+              "accept_credit_decision",
+              "accept_preclosing_checklist",
+              "accept_return",
+              "accept_sensitivity_analysis",
+              "authorize_closing",
+              "review_closing_conditions",
+              "review_customer_due_diligence",
+              "review_customer_identity",
+              "review_independent_credit_record",
+              "review_loan_documents",
+              "review_risk_based_pricing",
+              "review_underwriting",
+              "verify_beneficial_owner"
+            ]
+          },
+          {
+            "actor_id": "act-0f112a8661ddd036a335",
+            "decision_artifact_ids": [
+              "artifact-029e1d63c83fb4a1463c",
+              "artifact-f0a0e88a9fa8cc531671"
+            ],
+            "organization_scope": "seller",
+            "rights": [
+              "accept_sensitivity_analysis",
+              "review_underwriting"
+            ]
+          },
+          {
+            "actor_id": "act-160994c4b4412a954dfb",
+            "decision_artifact_ids": [
+              "artifact-9528a367f16f37fdf823",
+              "artifact-ed3d094bba33d84b5a3d"
+            ],
+            "organization_scope": "buyer",
+            "rights": [
+              "provide_buyer_input",
+              "accept_credit_decision",
+              "accept_preclosing_checklist",
+              "accept_return",
+              "accept_sensitivity_analysis",
+              "authorize_closing",
+              "review_closing_conditions",
+              "review_customer_due_diligence",
+              "review_customer_identity",
+              "review_independent_credit_record",
+              "review_loan_documents",
+              "review_risk_based_pricing",
+              "review_underwriting",
+              "verify_beneficial_owner"
+            ]
+          }
+        ],
+        "branch_id": "branch-46f68f9d5c96352c6ee1",
+        "business_effect_requirements_by_resolution": {
+          "rejected": {
+            "crm_projection": {
+              "date_ranges": {},
+              "exact_fields": {
+                "amount_minor_units": 7500000000,
+                "close_date": "2025-07-28",
+                "currency": "USD",
+                "disposition_code": "rejected",
+                "forecast_probability": 0.0,
+                "loss_reason": "underwriting rejected",
+                "next_step_gate_id": "underwriting",
+                "next_step_type": "archive_disposition",
+                "stage": "closed_lost"
+              },
+              "nonempty_fields": [
+                "next_step",
+                "loss_reason"
+              ],
+              "number_ranges": {},
+              "record_id": "deal-d47c4d19decdcd5d5c03",
+              "text_reference_fields": {
+                "loss_reason": [
+                  "next_step_gate_id",
+                  "disposition_code"
+                ],
+                "next_step": [
+                  "next_step_gate_id"
+                ]
+              },
+              "write_fields": [
+                "stage",
+                "forecast_probability",
+                "close_date",
+                "loss_reason",
+                "next_step",
+                "disposition_code",
+                "next_step_gate_id",
+                "next_step_type"
+              ],
+              "writer_role": "revops"
+            },
+            "decision_followup": {
+              "allowed_channels": [
+                "email",
+                "calendar"
+              ],
+              "recipient_actor_id": "act-160994c4b4412a954dfb",
+              "related_record_id": "deal-d47c4d19decdcd5d5c03",
+              "required_evidence_ids": [
+                "artifact-029e1d63c83fb4a1463c",
+                "artifact-0655cb2da8f78021bc40",
+                "artifact-0f83d01ddbca50b8c652",
+                "artifact-c80b57e0d5f254ccf40a",
+                "artifact-ed3d094bba33d84b5a3d"
+              ],
+              "required_message_facts": [
+                "underwriting",
+                "rejected"
+              ],
+              "semantic_requirements": {
+                "authority_actor_id": "act-160994c4b4412a954dfb",
+                "commitment_code": "stop_pursuit",
+                "commitment_owner_role": "revops",
+                "decision_code": "confirm_rejected_disposition",
+                "evidence_claims": [
+                  {
+                    "artifact_id": "artifact-029e1d63c83fb4a1463c",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "underwriting",
+                    "resolution": "rejected"
+                  },
+                  {
+                    "artifact_id": "artifact-0655cb2da8f78021bc40",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "underwriting",
+                    "resolution": "rejected"
+                  },
+                  {
+                    "artifact_id": "artifact-0f83d01ddbca50b8c652",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "underwriting",
+                    "resolution": "rejected"
+                  },
+                  {
+                    "artifact_id": "artifact-c80b57e0d5f254ccf40a",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "underwriting",
+                    "resolution": "rejected"
+                  },
+                  {
+                    "artifact_id": "artifact-ed3d094bba33d84b5a3d",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "underwriting",
+                    "resolution": "rejected"
+                  }
+                ],
+                "gate_id": "underwriting",
+                "purpose_code": "record_closed_lost",
+                "resolution": "rejected"
+              },
+              "sender_role": "account_executive"
+            },
+            "deliverable": {
+              "author_role": "domain_specialist",
+              "kind": "disposition_record",
+              "minimum_version": 1,
+              "related_id": "deal-d47c4d19decdcd5d5c03",
+              "related_type": "opportunity",
+              "required_content_terms": [
+                "underwriting",
+                "closed_lost",
+                "rejected",
+                "artifact-029e1d63c83fb4a1463c",
+                "artifact-0655cb2da8f78021bc40",
+                "artifact-0f83d01ddbca50b8c652",
+                "artifact-c80b57e0d5f254ccf40a",
+                "artifact-ed3d094bba33d84b5a3d"
+              ],
+              "required_evidence_ids": [
+                "artifact-029e1d63c83fb4a1463c",
+                "artifact-0655cb2da8f78021bc40",
+                "artifact-0f83d01ddbca50b8c652",
+                "artifact-c80b57e0d5f254ccf40a",
+                "artifact-ed3d094bba33d84b5a3d"
+              ],
+              "semantic_requirements": {
+                "authority_actor_id": "act-160994c4b4412a954dfb",
+                "commitment_code": "stop_pursuit",
+                "commitment_owner_role": "revops",
+                "decision_code": "confirm_rejected_disposition",
+                "evidence_claims": [
+                  {
+                    "artifact_id": "artifact-029e1d63c83fb4a1463c",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "underwriting",
+                    "resolution": "rejected"
+                  },
+                  {
+                    "artifact_id": "artifact-0655cb2da8f78021bc40",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "underwriting",
+                    "resolution": "rejected"
+                  },
+                  {
+                    "artifact_id": "artifact-0f83d01ddbca50b8c652",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "underwriting",
+                    "resolution": "rejected"
+                  },
+                  {
+                    "artifact_id": "artifact-c80b57e0d5f254ccf40a",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "underwriting",
+                    "resolution": "rejected"
+                  },
+                  {
+                    "artifact_id": "artifact-ed3d094bba33d84b5a3d",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "underwriting",
+                    "resolution": "rejected"
+                  }
+                ],
+                "gate_id": "underwriting",
+                "purpose_code": "record_closed_lost",
+                "resolution": "rejected"
+              }
+            }
+          },
+          "remedied": {
+            "crm_projection": {
+              "date_ranges": {},
+              "exact_fields": {
+                "amount_minor_units": 7500000000,
+                "close_date": "2025-07-28",
+                "currency": "USD",
+                "disposition_code": "remedied",
+                "forecast_probability": 0.0,
+                "loss_reason": "underwriting remedied",
+                "next_step_gate_id": "underwriting",
+                "next_step_type": "archive_disposition",
+                "stage": "closed_lost"
+              },
+              "nonempty_fields": [
+                "next_step",
+                "loss_reason"
+              ],
+              "number_ranges": {},
+              "record_id": "deal-d47c4d19decdcd5d5c03",
+              "text_reference_fields": {
+                "loss_reason": [
+                  "next_step_gate_id",
+                  "disposition_code"
+                ],
+                "next_step": [
+                  "next_step_gate_id"
+                ]
+              },
+              "write_fields": [
+                "stage",
+                "forecast_probability",
+                "close_date",
+                "loss_reason",
+                "next_step",
+                "disposition_code",
+                "next_step_gate_id",
+                "next_step_type"
+              ],
+              "writer_role": "revops"
+            },
+            "decision_followup": {
+              "allowed_channels": [
+                "email",
+                "calendar"
+              ],
+              "recipient_actor_id": "act-160994c4b4412a954dfb",
+              "related_record_id": "deal-d47c4d19decdcd5d5c03",
+              "required_evidence_ids": [
+                "artifact-0f83d01ddbca50b8c652",
+                "artifact-755f20da00478aa66dc9",
+                "artifact-9528a367f16f37fdf823",
+                "artifact-c80b57e0d5f254ccf40a",
+                "artifact-f0a0e88a9fa8cc531671"
+              ],
+              "required_message_facts": [
+                "underwriting",
+                "remedied"
+              ],
+              "semantic_requirements": {
+                "authority_actor_id": "act-160994c4b4412a954dfb",
+                "commitment_code": "stop_pursuit",
+                "commitment_owner_role": "revops",
+                "decision_code": "confirm_remedied_disposition",
+                "evidence_claims": [
+                  {
+                    "artifact_id": "artifact-0f83d01ddbca50b8c652",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "underwriting",
+                    "resolution": "remedied"
+                  },
+                  {
+                    "artifact_id": "artifact-755f20da00478aa66dc9",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "underwriting",
+                    "resolution": "remedied"
+                  },
+                  {
+                    "artifact_id": "artifact-9528a367f16f37fdf823",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "underwriting",
+                    "resolution": "remedied"
+                  },
+                  {
+                    "artifact_id": "artifact-c80b57e0d5f254ccf40a",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "underwriting",
+                    "resolution": "remedied"
+                  },
+                  {
+                    "artifact_id": "artifact-f0a0e88a9fa8cc531671",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "underwriting",
+                    "resolution": "remedied"
+                  }
+                ],
+                "gate_id": "underwriting",
+                "purpose_code": "record_closed_lost",
+                "resolution": "remedied"
+              },
+              "sender_role": "account_executive"
+            },
+            "deliverable": {
+              "author_role": "domain_specialist",
+              "kind": "disposition_record",
+              "minimum_version": 1,
+              "related_id": "deal-d47c4d19decdcd5d5c03",
+              "related_type": "opportunity",
+              "required_content_terms": [
+                "underwriting",
+                "closed_lost",
+                "remedied",
+                "artifact-0f83d01ddbca50b8c652",
+                "artifact-755f20da00478aa66dc9",
+                "artifact-9528a367f16f37fdf823",
+                "artifact-c80b57e0d5f254ccf40a",
+                "artifact-f0a0e88a9fa8cc531671"
+              ],
+              "required_evidence_ids": [
+                "artifact-0f83d01ddbca50b8c652",
+                "artifact-755f20da00478aa66dc9",
+                "artifact-9528a367f16f37fdf823",
+                "artifact-c80b57e0d5f254ccf40a",
+                "artifact-f0a0e88a9fa8cc531671"
+              ],
+              "semantic_requirements": {
+                "authority_actor_id": "act-160994c4b4412a954dfb",
+                "commitment_code": "stop_pursuit",
+                "commitment_owner_role": "revops",
+                "decision_code": "confirm_remedied_disposition",
+                "evidence_claims": [
+                  {
+                    "artifact_id": "artifact-0f83d01ddbca50b8c652",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "underwriting",
+                    "resolution": "remedied"
+                  },
+                  {
+                    "artifact_id": "artifact-755f20da00478aa66dc9",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "underwriting",
+                    "resolution": "remedied"
+                  },
+                  {
+                    "artifact_id": "artifact-9528a367f16f37fdf823",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "underwriting",
+                    "resolution": "remedied"
+                  },
+                  {
+                    "artifact_id": "artifact-c80b57e0d5f254ccf40a",
+                    "claim_type": "supports_gate_basis",
+                    "gate_id": "underwriting",
+                    "resolution": "remedied"
+                  },
+                  {
+                    "artifact_id": "artifact-f0a0e88a9fa8cc531671",
+                    "claim_type": "supports_gate_resolution",
+                    "gate_id": "underwriting",
+                    "resolution": "remedied"
+                  }
+                ],
+                "gate_id": "underwriting",
+                "purpose_code": "record_closed_lost",
+                "resolution": "remedied"
+              }
+            }
+          }
+        },
+        "checkpoint_id": "checkpoint-46f68f9d5c96352c6ee1",
+        "chronology": {
+          "available_at": "2025-07-28T16:45:00Z",
+          "decision_times": {
+            "artifact-029e1d63c83fb4a1463c": {
+              "available_at": "2025-07-28T15:25:00Z",
+              "created_at": "2025-07-28T14:22:00Z"
+            },
+            "artifact-0655cb2da8f78021bc40": {
+              "available_at": "2025-07-28T15:25:00Z",
+              "created_at": "2025-07-28T14:22:00Z"
+            },
+            "artifact-755f20da00478aa66dc9": {
+              "available_at": "2025-07-28T15:25:00Z",
+              "created_at": "2025-07-28T14:22:00Z"
+            },
+            "artifact-9528a367f16f37fdf823": {
+              "available_at": "2025-07-28T15:25:00Z",
+              "created_at": "2025-07-28T14:22:00Z"
+            },
+            "artifact-ed3d094bba33d84b5a3d": {
+              "available_at": "2025-07-28T15:25:00Z",
+              "created_at": "2025-07-28T14:22:00Z"
+            },
+            "artifact-f0a0e88a9fa8cc531671": {
+              "available_at": "2025-07-28T15:25:00Z",
+              "created_at": "2025-07-28T14:22:00Z"
+            }
+          },
+          "sequence": 3
+        },
+        "decision_artifact_ids": [
+          "artifact-029e1d63c83fb4a1463c",
+          "artifact-0655cb2da8f78021bc40",
+          "artifact-755f20da00478aa66dc9",
+          "artifact-9528a367f16f37fdf823",
+          "artifact-ed3d094bba33d84b5a3d",
+          "artifact-f0a0e88a9fa8cc531671"
+        ],
+        "decision_evidence_role": "sales_manager",
+        "evidence_ids": [
+          "artifact-029e1d63c83fb4a1463c",
+          "artifact-0655cb2da8f78021bc40",
+          "artifact-0f83d01ddbca50b8c652",
+          "artifact-755f20da00478aa66dc9",
+          "artifact-9528a367f16f37fdf823",
+          "artifact-c80b57e0d5f254ccf40a",
+          "artifact-ed3d094bba33d84b5a3d",
+          "artifact-f0a0e88a9fa8cc531671"
+        ],
+        "evidence_requirements_by_role": {
+          "account_executive": [
+            "artifact-0f83d01ddbca50b8c652"
+          ],
+          "domain_specialist": [
+            "artifact-0f83d01ddbca50b8c652"
+          ],
+          "revops": [
+            "artifact-c80b57e0d5f254ccf40a"
+          ],
+          "sales_manager": []
+        },
+        "gate_id": "underwriting",
+        "lane_effects_by_resolution": {
+          "inapplicable": {},
+          "rejected": {
+            "stakeholder_consensus": {
+              "delta": -30,
+              "fact": "a required authority rejected the gate"
+            }
+          },
+          "remedied": {
+            "stakeholder_consensus": {
+              "delta": 10,
+              "fact": "all required authorities accepted the remedy"
+            },
+            "validation": {
+              "delta": 10,
+              "fact": "the adverse gate was remedied with current evidence"
+            }
+          }
+        },
+        "milestone_id": "milestone-46f68f9d5c96352c6ee1",
+        "prerequisite_milestone_ids": [
+          "milestone-abc5774399b139783be1"
+        ],
+        "remedy_of": "milestone-abc5774399b139783be1",
+        "terminal_outcome_by_resolution": {
+          "rejected": "closed_lost"
+        }
+      },
+      {
+        "allowed_resolutions": [
+          "inapplicable"
+        ],
+        "approval_requirement": null,
+        "authority_requirements": [
+          {
+            "actor_id": "act-07fb7f8895cb0adc9f87",
+            "decision_artifact_ids": [
+              "artifact-3c8725010a120c467336"
+            ],
+            "organization_scope": "seller",
+            "rights": [
+              "accept_credit_decision",
+              "review_independent_credit_record"
+            ]
+          },
+          {
+            "actor_id": "act-160994c4b4412a954dfb",
+            "decision_artifact_ids": [
+              "artifact-ccf46a29b93bcf95333b"
+            ],
+            "organization_scope": "buyer",
+            "rights": [
+              "provide_buyer_input",
+              "accept_credit_decision",
+              "accept_preclosing_checklist",
+              "accept_return",
+              "accept_sensitivity_analysis",
+              "authorize_closing",
+              "review_closing_conditions",
+              "review_customer_due_diligence",
+              "review_customer_identity",
+              "review_independent_credit_record",
+              "review_loan_documents",
+              "review_risk_based_pricing",
+              "review_underwriting",
+              "verify_beneficial_owner"
+            ]
+          }
+        ],
+        "branch_id": null,
+        "business_effect_requirements_by_resolution": {},
+        "checkpoint_id": "checkpoint-4d89d70890126b19f234",
+        "chronology": {
+          "available_at": "2025-09-08T17:00:00Z",
+          "decision_times": {
+            "artifact-3c8725010a120c467336": {
+              "available_at": "2025-09-08T15:49:00Z",
+              "created_at": "2025-09-08T14:38:00Z"
+            },
+            "artifact-ccf46a29b93bcf95333b": {
+              "available_at": "2025-09-08T15:49:00Z",
+              "created_at": "2025-09-08T14:38:00Z"
+            }
+          },
+          "sequence": 4
+        },
+        "decision_artifact_ids": [
+          "artifact-3c8725010a120c467336",
+          "artifact-ccf46a29b93bcf95333b"
+        ],
+        "decision_evidence_role": "sales_manager",
+        "evidence_ids": [
+          "artifact-3c8725010a120c467336",
+          "artifact-5a26384a9cf1d69a032c",
+          "artifact-ccf46a29b93bcf95333b",
+          "artifact-dfbf9c230594dda42aa1"
+        ],
+        "evidence_requirements_by_role": {
+          "account_executive": [
+            "artifact-dfbf9c230594dda42aa1"
+          ],
+          "domain_specialist": [
+            "artifact-dfbf9c230594dda42aa1"
+          ],
+          "revops": [
+            "artifact-5a26384a9cf1d69a032c"
+          ],
+          "sales_manager": []
+        },
+        "gate_id": "credit_approval",
+        "lane_effects_by_resolution": {
+          "inapplicable": {}
+        },
+        "milestone_id": "milestone-4d89d70890126b19f234",
+        "prerequisite_milestone_ids": [
+          "milestone-46f68f9d5c96352c6ee1"
+        ],
+        "remedy_of": null,
+        "terminal_outcome_by_resolution": {}
+      },
+      {
+        "allowed_resolutions": [
+          "inapplicable"
+        ],
+        "approval_requirement": null,
+        "authority_requirements": [
+          {
+            "actor_id": "act-f5b3d9cd25f1a9419a58",
+            "decision_artifact_ids": [
+              "artifact-5a0b11621a4f089c1ebf"
+            ],
+            "organization_scope": "seller",
+            "rights": [
+              "accept_preclosing_checklist",
+              "review_loan_documents"
+            ]
+          },
+          {
+            "actor_id": "act-3a4f049b9f0f1b17eee6",
+            "decision_artifact_ids": [
+              "artifact-efffe7cabd808b5b1e7a"
+            ],
+            "organization_scope": "buyer",
+            "rights": [
+              "provide_buyer_input",
+              "accept_credit_decision",
+              "accept_preclosing_checklist",
+              "accept_return",
+              "accept_sensitivity_analysis",
+              "authorize_closing",
+              "review_closing_conditions",
+              "review_customer_due_diligence",
+              "review_customer_identity",
+              "review_independent_credit_record",
+              "review_loan_documents",
+              "review_risk_based_pricing",
+              "review_underwriting",
+              "verify_beneficial_owner"
+            ]
+          }
+        ],
+        "branch_id": null,
+        "business_effect_requirements_by_resolution": {},
+        "checkpoint_id": "checkpoint-08c4f60a1ac83805feee",
+        "chronology": {
+          "available_at": "2025-10-22T15:30:00Z",
+          "decision_times": {
+            "artifact-5a0b11621a4f089c1ebf": {
+              "available_at": "2025-10-22T14:05:00Z",
+              "created_at": "2025-10-22T12:40:00Z"
+            },
+            "artifact-efffe7cabd808b5b1e7a": {
+              "available_at": "2025-10-22T14:05:00Z",
+              "created_at": "2025-10-22T12:40:00Z"
+            }
+          },
+          "sequence": 5
+        },
+        "decision_artifact_ids": [
+          "artifact-5a0b11621a4f089c1ebf",
+          "artifact-efffe7cabd808b5b1e7a"
+        ],
+        "decision_evidence_role": "sales_manager",
+        "evidence_ids": [
+          "artifact-5a0b11621a4f089c1ebf",
+          "artifact-d6e375964299e065b309",
+          "artifact-efffe7cabd808b5b1e7a",
+          "artifact-f29fff9a474e7bfb3c38"
+        ],
+        "evidence_requirements_by_role": {
+          "account_executive": [
+            "artifact-d6e375964299e065b309"
+          ],
+          "domain_specialist": [
+            "artifact-f29fff9a474e7bfb3c38"
+          ],
+          "revops": [
+            "artifact-f29fff9a474e7bfb3c38"
+          ],
+          "sales_manager": []
+        },
+        "gate_id": "documentation",
+        "lane_effects_by_resolution": {
+          "inapplicable": {}
+        },
+        "milestone_id": "milestone-08c4f60a1ac83805feee",
+        "prerequisite_milestone_ids": [
+          "milestone-4d89d70890126b19f234"
+        ],
+        "remedy_of": null,
+        "terminal_outcome_by_resolution": {}
+      },
+      {
+        "allowed_resolutions": [
+          "inapplicable"
+        ],
+        "approval_requirement": null,
+        "authority_requirements": [
+          {
+            "actor_id": "act-160994c4b4412a954dfb",
+            "decision_artifact_ids": [
+              "artifact-10d22f66ee5d7a957686"
+            ],
+            "organization_scope": "buyer",
+            "rights": [
+              "provide_buyer_input",
+              "accept_credit_decision",
+              "accept_preclosing_checklist",
+              "accept_return",
+              "accept_sensitivity_analysis",
+              "authorize_closing",
+              "review_closing_conditions",
+              "review_customer_due_diligence",
+              "review_customer_identity",
+              "review_independent_credit_record",
+              "review_loan_documents",
+              "review_risk_based_pricing",
+              "review_underwriting",
+              "verify_beneficial_owner"
+            ]
+          },
+          {
+            "actor_id": "act-910badac25e408fbb1aa",
+            "decision_artifact_ids": [
+              "artifact-986ceaef36f7e90b981d"
+            ],
+            "organization_scope": "buyer",
+            "rights": [
+              "provide_buyer_input",
+              "accept_credit_decision",
+              "accept_preclosing_checklist",
+              "accept_return",
+              "accept_sensitivity_analysis",
+              "authorize_closing",
+              "review_closing_conditions",
+              "review_customer_due_diligence",
+              "review_customer_identity",
+              "review_independent_credit_record",
+              "review_loan_documents",
+              "review_risk_based_pricing",
+              "review_underwriting",
+              "verify_beneficial_owner"
+            ]
+          },
+          {
+            "actor_id": "act-21c06e55bc0ff4e393e8",
+            "decision_artifact_ids": [
+              "artifact-e3feae3fd1cdc88c9e57"
+            ],
+            "organization_scope": "third_party",
+            "rights": [
+              "confirm_closing_condition"
+            ]
+          },
+          {
+            "actor_id": "act-d3a5b40401f953d22960",
+            "decision_artifact_ids": [
+              "artifact-f6fda9451e17006c82b8"
+            ],
+            "organization_scope": "seller",
+            "rights": [
+              "authorize_closing",
+              "review_closing_conditions"
+            ]
+          }
+        ],
+        "branch_id": null,
+        "business_effect_requirements_by_resolution": {},
+        "checkpoint_id": "checkpoint-90f360b412d3afb7ac98",
+        "chronology": {
+          "available_at": "2025-12-02T17:45:00Z",
+          "decision_times": {
+            "artifact-10d22f66ee5d7a957686": {
+              "available_at": "2025-12-02T16:39:00Z",
+              "created_at": "2025-12-02T15:33:00Z"
+            },
+            "artifact-986ceaef36f7e90b981d": {
+              "available_at": "2025-12-02T16:39:00Z",
+              "created_at": "2025-12-02T15:33:00Z"
+            },
+            "artifact-e3feae3fd1cdc88c9e57": {
+              "available_at": "2025-12-02T16:39:00Z",
+              "created_at": "2025-12-02T15:33:00Z"
+            },
+            "artifact-f6fda9451e17006c82b8": {
+              "available_at": "2025-12-02T16:39:00Z",
+              "created_at": "2025-12-02T15:33:00Z"
+            }
+          },
+          "sequence": 6
+        },
+        "decision_artifact_ids": [
+          "artifact-10d22f66ee5d7a957686",
+          "artifact-986ceaef36f7e90b981d",
+          "artifact-e3feae3fd1cdc88c9e57",
+          "artifact-f6fda9451e17006c82b8"
+        ],
+        "decision_evidence_role": "sales_manager",
+        "evidence_ids": [
+          "artifact-10d22f66ee5d7a957686",
+          "artifact-8a4e2122006d058f8cff",
+          "artifact-986ceaef36f7e90b981d",
+          "artifact-e3feae3fd1cdc88c9e57",
+          "artifact-f6fda9451e17006c82b8"
+        ],
+        "evidence_requirements_by_role": {
+          "account_executive": [
+            "artifact-10d22f66ee5d7a957686"
+          ],
+          "domain_specialist": [
+            "artifact-8a4e2122006d058f8cff"
+          ],
+          "revops": [
+            "artifact-8a4e2122006d058f8cff"
+          ],
+          "sales_manager": []
+        },
+        "gate_id": "closing",
+        "lane_effects_by_resolution": {
+          "inapplicable": {}
+        },
+        "milestone_id": "milestone-90f360b412d3afb7ac98",
+        "prerequisite_milestone_ids": [
+          "milestone-08c4f60a1ac83805feee"
+        ],
+        "remedy_of": null,
+        "terminal_outcome_by_resolution": {}
+      }
+    ],
+    "objective_ids": [
+      "objective-abc5774399b139783be1",
+      "objective-81054ef35e2c76190647",
+      "objective-7853c58538091ee655d0",
+      "objective-46f68f9d5c96352c6ee1",
+      "objective-4d89d70890126b19f234",
+      "objective-08c4f60a1ac83805feee",
+      "objective-90f360b412d3afb7ac98"
+    ],
+    "post_intervention_evidence_refs": [
+      "artifact-029e1d63c83fb4a1463c",
+      "artifact-0655cb2da8f78021bc40",
+      "artifact-0704a90a71ae33f652ab",
+      "artifact-074b55eaa889629f6595",
+      "artifact-0bf5c506799e5ad42c9e",
+      "artifact-0f83d01ddbca50b8c652",
+      "artifact-10d22f66ee5d7a957686",
+      "artifact-199c9ed9e42236c61ed5",
+      "artifact-2b99c287051aad4ef026",
+      "artifact-3c8725010a120c467336",
+      "artifact-4adffcd2d4116f3031a7",
+      "artifact-5a0b11621a4f089c1ebf",
+      "artifact-5a26384a9cf1d69a032c",
+      "artifact-6cc26cc3122e22faff06",
+      "artifact-755f20da00478aa66dc9",
+      "artifact-81f551c333213f7bc080",
+      "artifact-8953e4c59b6a476522c8",
+      "artifact-8a4e2122006d058f8cff",
+      "artifact-8e51bdfff3c752c3067f",
+      "artifact-92590be8e73663f33c4f",
+      "artifact-9528a367f16f37fdf823",
+      "artifact-986ceaef36f7e90b981d",
+      "artifact-a03cbec3f4374e5351ca",
+      "artifact-a51c83b9b3f62a020456",
+      "artifact-a580932117e4fb94cb25",
+      "artifact-b612a3e718fffc70b3c5",
+      "artifact-b76e3d0af506c9330274",
+      "artifact-bdb4acf694481562bf36",
+      "artifact-c80b57e0d5f254ccf40a",
+      "artifact-c90e5ee3db2a0bd8497b",
+      "artifact-ccf46a29b93bcf95333b",
+      "artifact-cd5d78abf25b837791ae",
+      "artifact-d6e375964299e065b309",
+      "artifact-dfbf9c230594dda42aa1",
+      "artifact-e3feae3fd1cdc88c9e57",
+      "artifact-e71a62cffd4c0c1669fe",
+      "artifact-ec32cd29a6f639986b83",
+      "artifact-ed3d094bba33d84b5a3d",
+      "artifact-efffe7cabd808b5b1e7a",
+      "artifact-f0a0e88a9fa8cc531671",
+      "artifact-f23be8230a781cf92ce0",
+      "artifact-f29fff9a474e7bfb3c38",
+      "artifact-f6fda9451e17006c82b8"
+    ],
+    "responsible_roles": [
+      "account_executive",
+      "domain_specialist",
+      "sales_manager",
+      "revops"
+    ],
+    "seller_organization_id": "org-15490f97d24ea61d5e2a"
+  },
   "world_id": "world-11eac08b9620d390e92a"
 }

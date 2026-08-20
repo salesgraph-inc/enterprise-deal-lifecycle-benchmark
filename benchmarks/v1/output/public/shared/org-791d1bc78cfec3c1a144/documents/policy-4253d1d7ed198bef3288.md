@@ -17,4 +17,4 @@ Escalation trigger: Escalate when the bid record omits an addendum or an award d
 
 ## Recordkeeping
 
-Attach the evidence to the qualification record, preserve prior versions, and record the decision date before advancing the general contractor project pursuit.
+Attach the evidence to the qualification record, preserve prior versions, and record the decision date before advancing the federal public transportation CM/GC project pursuit.

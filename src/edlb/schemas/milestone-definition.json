@@ -1,0 +1,411 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/milestone-definition.json",
+  "title": "MilestoneDefinition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "milestone_id",
+    "checkpoint_id",
+    "gate_id",
+    "prerequisite_milestone_ids",
+    "decision_artifact_ids",
+    "evidence_ids",
+    "evidence_requirements_by_role",
+    "decision_evidence_role",
+    "authority_requirements",
+    "allowed_resolutions",
+    "approval_requirement",
+    "business_effect_requirements_by_resolution",
+    "chronology",
+    "lane_effects_by_resolution",
+    "terminal_outcome_by_resolution",
+    "remedy_of",
+    "branch_id"
+  ],
+  "properties": {
+    "milestone_id": {"$ref": "#/$defs/id"},
+    "checkpoint_id": {"$ref": "#/$defs/id"},
+    "gate_id": {"$ref": "#/$defs/id"},
+    "prerequisite_milestone_ids": {"$ref": "#/$defs/ids"},
+    "decision_artifact_ids": {"$ref": "#/$defs/nonempty_ids"},
+    "evidence_ids": {"$ref": "#/$defs/nonempty_ids"},
+    "evidence_requirements_by_role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "account_executive",
+        "domain_specialist",
+        "sales_manager",
+        "revops"
+      ],
+      "properties": {
+        "account_executive": {"$ref": "#/$defs/ids"},
+        "domain_specialist": {"$ref": "#/$defs/ids"},
+        "sales_manager": {"$ref": "#/$defs/ids"},
+        "revops": {"$ref": "#/$defs/ids"}
+      }
+    },
+    "decision_evidence_role": {"$ref": "#/$defs/role"},
+    "authority_requirements": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["actor_id", "decision_artifact_ids", "organization_scope", "rights"],
+        "properties": {
+          "actor_id": {"$ref": "#/$defs/id"},
+          "decision_artifact_ids": {"$ref": "#/$defs/nonempty_ids"},
+          "organization_scope": {"type": "string", "enum": ["buyer", "seller", "third_party"]},
+          "rights": {"$ref": "#/$defs/nonempty_ids"}
+        }
+      }
+    },
+    "allowed_resolutions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/resolution"}
+    },
+    "approval_requirement": {
+      "anyOf": [{"$ref": "#/$defs/approval_requirement"}, {"type": "null"}]
+    },
+    "business_effect_requirements_by_resolution": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/resolution"},
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decision_followup", "crm_projection", "deliverable"],
+        "properties": {
+        "decision_followup": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "allowed_channels",
+            "recipient_actor_id",
+            "related_record_id",
+            "required_evidence_ids",
+            "required_message_facts",
+            "semantic_requirements",
+            "sender_role"
+          ],
+          "properties": {
+            "allowed_channels": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "enum": ["email", "calendar"]}
+            },
+            "recipient_actor_id": {"$ref": "#/$defs/id"},
+            "related_record_id": {"$ref": "#/$defs/id"},
+            "required_evidence_ids": {"$ref": "#/$defs/nonempty_ids"},
+            "required_message_facts": {"$ref": "#/$defs/nonempty_strings"},
+            "semantic_requirements": {"$ref": "#/$defs/semantic_requirements"},
+            "sender_role": {"$ref": "#/$defs/role"}
+          }
+        },
+        "crm_projection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "date_ranges",
+            "exact_fields",
+            "nonempty_fields",
+            "number_ranges",
+            "record_id",
+            "text_reference_fields",
+            "write_fields",
+            "writer_role"
+          ],
+          "properties": {
+            "date_ranges": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["not_after", "not_before"],
+                "properties": {
+                  "not_after": {"type": "string", "format": "date"},
+                  "not_before": {"type": "string", "format": "date"}
+                }
+              }
+            },
+            "exact_fields": {"type": "object"},
+            "nonempty_fields": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "number_ranges": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["maximum", "minimum"],
+                "properties": {
+                  "maximum": {"type": "number"},
+                  "minimum": {"type": "number"}
+                }
+              }
+            },
+            "record_id": {"$ref": "#/$defs/id"},
+            "text_reference_fields": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {"$ref": "#/$defs/nonempty_strings"}
+            },
+            "write_fields": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "writer_role": {"$ref": "#/$defs/role"}
+          }
+        },
+        "deliverable": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "author_role",
+            "kind",
+            "minimum_version",
+            "related_id",
+            "related_type",
+            "required_content_terms",
+            "required_evidence_ids",
+            "semantic_requirements"
+          ],
+          "properties": {
+            "author_role": {"$ref": "#/$defs/role"},
+            "kind": {"$ref": "#/$defs/id"},
+            "minimum_version": {"type": "integer", "minimum": 1},
+            "related_id": {"$ref": "#/$defs/id"},
+            "related_type": {"$ref": "#/$defs/id"},
+            "required_content_terms": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "required_evidence_ids": {"$ref": "#/$defs/nonempty_ids"},
+            "semantic_requirements": {"$ref": "#/$defs/semantic_requirements"}
+          }
+        }
+        }
+      }
+    },
+    "chronology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "available_at",
+        "decision_times"
+      ],
+      "properties": {
+        "sequence": {"type": "integer", "minimum": 0},
+        "available_at": {"type": "string", "format": "date-time"},
+        "decision_times": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["created_at", "available_at"],
+            "properties": {
+              "created_at": {"type": "string", "format": "date-time"},
+              "available_at": {"type": "string", "format": "date-time"}
+            }
+          }
+        }
+      }
+    },
+    "lane_effects_by_resolution": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/resolution"},
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {
+          "enum": [
+            "business_fit",
+            "stakeholder_consensus",
+            "validation",
+            "commercial_terms",
+            "approvals",
+            "competition",
+            "urgency"
+          ]
+        },
+        "additionalProperties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["delta", "fact"],
+          "properties": {
+            "delta": {"type": "integer", "minimum": -100, "maximum": 100},
+            "absolute": {"type": "integer", "minimum": -100, "maximum": 100},
+            "status": {
+              "type": "string",
+              "enum": [
+                "unknown",
+                "at_risk",
+                "progressing",
+                "satisfied",
+                "blocked",
+                "failed"
+              ]
+            },
+            "sticky": {"type": "boolean"},
+            "fact": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "terminal_outcome_by_resolution": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/terminal_resolution"},
+      "additionalProperties": {
+        "type": "string",
+        "enum": [
+          "closed_won",
+          "closed_lost",
+          "no_decision",
+          "disqualified",
+          "canceled"
+        ]
+      }
+    },
+    "remedy_of": {
+      "anyOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]
+    },
+    "branch_id": {
+      "anyOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/id"}
+    },
+    "nonempty_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/id"}
+    },
+    "resolution": {
+      "type": "string",
+      "enum": ["accepted", "rejected", "deferred", "inapplicable", "remedied"]
+    },
+    "terminal_resolution": {
+      "type": "string",
+      "enum": ["accepted", "rejected", "deferred", "remedied"]
+    },
+    "nonempty_strings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "semantic_requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authority_actor_id",
+        "commitment_code",
+        "commitment_owner_role",
+        "decision_code",
+        "evidence_claims",
+        "gate_id",
+        "purpose_code",
+        "resolution"
+      ],
+      "properties": {
+        "authority_actor_id": {"$ref": "#/$defs/id"},
+        "commitment_code": {"$ref": "#/$defs/id"},
+        "commitment_owner_role": {"$ref": "#/$defs/role"},
+        "decision_code": {"$ref": "#/$defs/id"},
+        "evidence_claims": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["artifact_id", "claim_type", "gate_id", "resolution"],
+            "properties": {
+              "artifact_id": {"$ref": "#/$defs/id"},
+              "claim_type": {
+                "type": "string",
+                "enum": ["supports_gate_basis", "supports_gate_resolution"]
+              },
+              "gate_id": {"$ref": "#/$defs/id"},
+              "resolution": {"$ref": "#/$defs/resolution"}
+            }
+          }
+        },
+        "gate_id": {"$ref": "#/$defs/id"},
+        "purpose_code": {"$ref": "#/$defs/id"},
+        "resolution": {"$ref": "#/$defs/resolution"}
+      }
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "account_executive",
+        "domain_specialist",
+        "sales_manager",
+        "revops"
+      ]
+    },
+    "approval_requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amount_minor_units",
+        "approver_actor_ids",
+        "basis",
+        "checkpoint_id",
+        "gate_id",
+        "policy_evidence",
+        "policy_limit_minor_units",
+        "policy_owner",
+        "trigger"
+      ],
+      "properties": {
+        "amount_minor_units": {"type": "integer", "minimum": 0},
+        "approver_actor_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "basis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["amount_minor_units", "field", "value"],
+          "properties": {
+            "amount_minor_units": {"type": "integer", "minimum": 0},
+            "field": {"type": "string", "minLength": 1},
+            "value": {"type": "integer"}
+          }
+        },
+        "checkpoint_id": {"$ref": "#/$defs/id"},
+        "gate_id": {"$ref": "#/$defs/id"},
+        "policy_evidence": {"type": "string", "minLength": 1},
+        "policy_limit_minor_units": {"type": "integer", "minimum": 0},
+        "policy_owner": {"type": "string", "minLength": 1},
+        "trigger": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+# Corporate Banking underwriting update
+
+- Publisher: EDLB Synthetic Wire
+- Published: 2025-07-22T14:28:00Z
+- URL: https://edlb.example/signals/artifact-764e0b565dfd7e75acc4
+
+A synthetic operations bulletin flags a new timing constraint for organizations in mid-market enterprise.
+The customer due diligence source still governs the unresolved repayment, capacity, collateral, guarantor, and sensitivity analysis item.
+Keep the repayment, capacity, collateral, guarantor, and sensitivity analysis decision open until its buyer source is current.
+Preserve the prior record while the decision group reviews the change.
+Preserve the prior repayment, capacity, collateral, guarantor, and sensitivity analysis record until this signal has buyer support.

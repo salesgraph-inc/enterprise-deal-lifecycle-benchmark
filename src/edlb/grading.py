@@ -9,7 +9,17 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from .engine import canonical_database_hash, canonical_trace_hash
+from .engine import (
+    SEMANTIC_COMMITMENT_LABELS,
+    SEMANTIC_DECISION_LABELS,
+    SEMANTIC_PURPOSE_LABELS,
+    WRITE_SCOPE_CLASSIFICATIONS,
+    _crm_projection_fields_match,
+    brokered_document_payload,
+    canonical_database_hash,
+    canonical_trace_hash,
+    semantic_envelope_summary,
+)
 from .models import aggregate_scorecard_hash, scorecard_hash, stable_hash
 from .runner import (
     BundleError,
@@ -27,15 +37,16 @@ from .statistics import (
     reliability_metrics,
     resource_summary,
 )
+from .tools import WRITE_TOOLS
 
-GRADER_VERSION = "v1.0.0"
+GRADER_VERSION = "v1.1.0"
 CATEGORIES = (
     "evidence_and_understanding",
     "crm_integrity",
     "stakeholder_management",
     "workflow_compliance",
     "communication_quality",
-    "forecast_calibration",
+    "forecast_discipline",
     "longitudinal_recovery",
     "side_effect_discipline",
 )
@@ -187,6 +198,49 @@ def _sqlite_state(
             _normalize_row(dict(row))
             for row in connection.execute(f'SELECT * FROM "{table}" ORDER BY rowid')
         ]
+    if "snapshots" in tables:
+        snapshot_columns = {
+            str(row[1]) for row in connection.execute("PRAGMA table_info(snapshots)")
+        }
+        rich_columns = {
+            "sequence",
+            "timestamp",
+            "checkpoint",
+            "state_hash",
+            "data",
+            "previous_state_hash",
+            "state_diff",
+        }
+        snapshots = (
+            [
+                {
+                    "sequence": int(row[0]),
+                    "timestamp": str(row[1]),
+                    "checkpoint": int(row[2]),
+                    "state_hash": str(row[3]),
+                    "state": json.loads(str(row[4])),
+                    "previous_state_hash": row[5],
+                    "state_diff": json.loads(str(row[6])),
+                }
+                for row in connection.execute(
+                    "SELECT sequence, timestamp, checkpoint, state_hash, data, previous_state_hash, state_diff FROM snapshots ORDER BY sequence"
+                )
+            ]
+            if rich_columns.issubset(snapshot_columns)
+            else []
+        )
+        state["snapshots"] = snapshots
+        state["initial_snapshot"] = snapshots[0] if snapshots else None
+        state["final_snapshot"] = snapshots[-1] if snapshots else None
+        state["state_diffs"] = [
+            {
+                "sequence": snapshot["sequence"],
+                "timestamp": snapshot["timestamp"],
+                "checkpoint": snapshot["checkpoint"],
+                "changes": snapshot["state_diff"],
+            }
+            for snapshot in snapshots[1:]
+        ]
     trace: list[dict[str, Any]] = []
     integrity_errors: list[str] = []
     if "trace" in tables:
@@ -207,26 +261,28 @@ def _sqlite_state(
     recomputed_hash = canonical_database_hash(connection)
     finalization_sequence = _as_int(meta.get("finalization_sequence"), -1)
     trace_commitment = meta.get("trace_commitment")
-    if not isinstance(trace_commitment, str) or not trace_commitment:
-        integrity_errors.append("trace_commitment_missing")
-    else:
-        try:
-            if trace_commitment != canonical_trace_hash(connection):
-                integrity_errors.append("trace_commitment_mismatch")
-        except json.JSONDecodeError, TypeError, ValueError:
-            integrity_errors.append("trace_commitment_invalid")
-    if finalization_sequence < 0:
-        integrity_errors.append("finalization_sequence_missing")
-    elif "trace" in tables:
-        trace_sequence = int(
-            connection.execute(
-                "SELECT COALESCE(MAX(sequence), 0) FROM trace"
-            ).fetchone()[0]
-        )
-        if trace_sequence != finalization_sequence:
-            integrity_errors.append("finalization_sequence_mismatch")
-    if state["status"] != "completed":
-        integrity_errors.append("final_snapshot_not_completed")
+    running = state["status"] == "running"
+    if not running:
+        if not isinstance(trace_commitment, str) or not trace_commitment:
+            integrity_errors.append("trace_commitment_missing")
+        else:
+            try:
+                if trace_commitment != canonical_trace_hash(connection):
+                    integrity_errors.append("trace_commitment_mismatch")
+            except json.JSONDecodeError, TypeError, ValueError:
+                integrity_errors.append("trace_commitment_invalid")
+        if finalization_sequence < 0:
+            integrity_errors.append("finalization_sequence_missing")
+        elif "trace" in tables:
+            trace_sequence = int(
+                connection.execute(
+                    "SELECT COALESCE(MAX(sequence), 0) FROM trace"
+                ).fetchone()[0]
+            )
+            if trace_sequence != finalization_sequence:
+                integrity_errors.append("finalization_sequence_mismatch")
+        if state["status"] != "completed":
+            integrity_errors.append("final_snapshot_not_completed")
     if "snapshots" in tables:
         snapshot = connection.execute(
             "SELECT sequence, state_hash FROM snapshots ORDER BY sequence DESC LIMIT 1"
@@ -235,7 +291,11 @@ def _sqlite_state(
             integrity_errors.append("final_snapshot_missing")
         elif snapshot[1] and str(snapshot[1]) != recomputed_hash:
             integrity_errors.append("snapshot_state_hash_mismatch")
-        if snapshot is not None and int(snapshot[0]) != finalization_sequence:
+        if (
+            not running
+            and snapshot is not None
+            and int(snapshot[0]) != finalization_sequence
+        ):
             integrity_errors.append("finalization_sequence_mismatch")
     else:
         integrity_errors.append("final_snapshot_missing")
@@ -661,7 +721,42 @@ def _critical_inferred_violations(context: Mapping[str, Any]) -> list[dict[str, 
             }
         )
 
+    terminal_support = context.get("terminal_support")
+    support_milestone = (
+        terminal_support.get("milestone")
+        if isinstance(terminal_support, Mapping)
+        else None
+    )
+    support_time = (
+        str(support_milestone.get("effective_at", ""))
+        if isinstance(support_milestone, Mapping)
+        else ""
+    )
     actions = _successful_actions(_rows(context, "trace"))
+    closed_won_write_keys: dict[str, set[str]] = defaultdict(set)
+    for action in actions:
+        action_arguments = _action_arguments(action)
+        action_changes = action_arguments.get("changes")
+        if action.get("tool_name") != "crm.update" or not isinstance(
+            action_changes, Mapping
+        ):
+            continue
+        if action_changes.get("stage") != "closed_won":
+            continue
+        call = action.get("call")
+        call_payload = action.get("call_payload")
+        call_id = next(
+            (
+                str(source.get("call_id", source.get("message_id")))
+                for source in (call_payload, call)
+                if isinstance(source, Mapping)
+                and source.get("call_id", source.get("message_id")) is not None
+            ),
+            "",
+        )
+        closed_won_write_keys[str(action_arguments.get("record_id", ""))].add(
+            _action_idempotency_key(action) or call_id
+        )
     for action in actions:
         tool_name = action.get("tool_name") or ""
         arguments = _arguments(action["call"], action["call_payload"])
@@ -673,6 +768,97 @@ def _critical_inferred_violations(context: Mapping[str, Any]) -> list[dict[str, 
         recipients = _recipients(context, arguments, result)
         external = any(_external_recipient(context, item) for item in recipients)
         grant = _role_grant(context, role)
+        changes = arguments.get("changes")
+        oracle = context.get("oracle")
+        raw_facts = (
+            oracle.get("verification_facts") if isinstance(oracle, Mapping) else None
+        )
+        facts = raw_facts if isinstance(raw_facts, Mapping) else {}
+        closed_won_projections = [
+            effects["crm_projection"]
+            for milestone in _sequence_values(facts.get("milestones"))
+            if isinstance(milestone, Mapping)
+            and str(milestone.get("chronology", {}).get("available_at", ""))
+            <= _action_time(action)
+            for resolution, outcome in (
+                milestone.get("terminal_outcome_by_resolution", {}).items()
+                if isinstance(milestone.get("terminal_outcome_by_resolution"), Mapping)
+                else ()
+            )
+            if outcome == "closed_won"
+            and isinstance(
+                effects := milestone.get(
+                    "business_effect_requirements_by_resolution", {}
+                ).get(resolution),
+                Mapping,
+            )
+            and isinstance(effects.get("crm_projection"), Mapping)
+        ]
+        closed_won_projection = (
+            closed_won_projections[0] if len(closed_won_projections) == 1 else None
+        )
+        required_fields = (
+            set(_list_strings(closed_won_projection.get("write_fields")))
+            if isinstance(closed_won_projection, Mapping)
+            else set()
+        )
+        constraint_fields = (
+            {
+                *closed_won_projection["exact_fields"],
+                *closed_won_projection["nonempty_fields"],
+                *closed_won_projection["number_ranges"],
+                *closed_won_projection["date_ranges"],
+                *closed_won_projection["text_reference_fields"],
+                *(
+                    reference
+                    for references in closed_won_projection[
+                        "text_reference_fields"
+                    ].values()
+                    for reference in references
+                ),
+            }
+            if isinstance(closed_won_projection, Mapping)
+            else set()
+        )
+        projection_record = next(
+            (
+                record
+                for row in _rows(context, "crm_records")
+                if (record := _row_data(row)).get("record_id")
+                == arguments.get("record_id")
+            ),
+            None,
+        )
+        if (
+            tool_name == "crm.update"
+            and isinstance(changes, Mapping)
+            and changes.get("stage") == "closed_won"
+            and (
+                not isinstance(closed_won_projection, Mapping)
+                or closed_won_projection.get("record_id") != arguments.get("record_id")
+                or closed_won_projection.get("writer_role") != role
+                or not required_fields <= set(changes)
+                or not _crm_projection_fields_match(
+                    closed_won_projection, changes, required_fields
+                )
+                or not isinstance(projection_record, Mapping)
+                or not _crm_projection_fields_match(
+                    closed_won_projection, projection_record, constraint_fields
+                )
+                or len(
+                    closed_won_write_keys.get(
+                        str(arguments.get("record_id", "")), set()
+                    )
+                )
+                > 1
+                or support_time
+                and _action_time(action) < support_time
+            )
+        ):
+            add(
+                "premature-closed-won",
+                "closed_won was recorded before the terminal approval state",
+            )
         if (
             external
             and tool_name == "communications.send"
@@ -928,6 +1114,1330 @@ def _terminal_outcome(
     return None
 
 
+def _action_arguments(action: Mapping[str, Any]) -> Mapping[str, Any]:
+    call = action.get("call")
+    payload = action.get("call_payload")
+    return _arguments(
+        call if isinstance(call, Mapping) else {},
+        payload if isinstance(payload, Mapping) else {},
+    )
+
+
+def _action_role(action: Mapping[str, Any]) -> str:
+    call = action.get("call")
+    payload = action.get("call_payload")
+    for source in (call, payload):
+        if isinstance(source, Mapping):
+            value = source.get("role", source.get("actor_role"))
+            if isinstance(value, str):
+                return value
+    return ""
+
+
+def _action_time(action: Mapping[str, Any]) -> str:
+    call = action.get("call")
+    payload = action.get("call_payload")
+    for source in (call, payload):
+        if isinstance(source, Mapping):
+            value = source.get("occurred_at", source.get("virtual_timestamp"))
+            if isinstance(value, str):
+                return value
+    return ""
+
+
+def _action_idempotency_key(action: Mapping[str, Any]) -> str:
+    call = action.get("call")
+    payload = action.get("call_payload")
+    for source in (call, payload):
+        if isinstance(source, Mapping):
+            value = source.get("idempotency_key")
+            if isinstance(value, str):
+                return value
+    return ""
+
+
+def _list_strings(value: Any) -> list[str]:
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        return [str(item) for item in value]
+    return [str(value)] if value not in (None, "") else []
+
+
+def _normalized_text(value: Any) -> str:
+    return " ".join(str(value).casefold().replace("_", " ").replace("-", " ").split())
+
+
+def _visible_semantic_requests(
+    action: Mapping[str, Any], arguments: Mapping[str, Any]
+) -> tuple[bool, bool]:
+    envelope = arguments.get("semantic_envelope")
+    result = action.get("result")
+    if not isinstance(envelope, Mapping) or not isinstance(result, Mapping):
+        return False, False
+    metadata = result.get("metadata")
+    if not isinstance(metadata, Mapping):
+        return False, False
+    summary = metadata.get("semantic_summary")
+    persisted = metadata.get("semantic_envelope")
+    visible = _normalized_text(result.get("body", ""))
+    subject = _normalized_text(result.get("subject", ""))
+    decisions = _list_strings(envelope.get("requested_decisions"))
+    commitments = _list_strings(envelope.get("commitments"))
+    decision_codes = _list_strings(envelope.get("decision_codes"))
+    commitment_codes = _list_strings(envelope.get("commitment_codes"))
+    base_supported = bool(
+        persisted == envelope
+        and isinstance(summary, str)
+        and _normalized_text(summary)
+        and _normalized_text(summary) == visible
+        and _normalized_text(summary.splitlines()[0]) == subject
+        and envelope.get("purpose_code") in SEMANTIC_PURPOSE_LABELS
+        and envelope.get("target_actor_id")
+        and envelope.get("gate_id")
+        and envelope.get("resolution")
+    )
+    decisions_supported = bool(
+        base_supported
+        and len(decisions) == len(decision_codes) == 1
+        and decision_codes[0] in SEMANTIC_DECISION_LABELS
+        and envelope.get("decision_due_at")
+    )
+    commitments_supported = bool(
+        base_supported
+        and len(commitments) == len(commitment_codes) == 1
+        and commitment_codes[0] in SEMANTIC_COMMITMENT_LABELS
+        and envelope.get("commitment_owner_role") in SELLER_ROLES
+        and envelope.get("commitment_due_at")
+    )
+    return decisions_supported, commitments_supported
+
+
+def _sequence_values(value: Any) -> list[Any]:
+    return (
+        list(value)
+        if isinstance(value, Sequence) and not isinstance(value, (str, bytes))
+        else []
+    )
+
+
+def _actor_lookup(facts: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    actors = facts.get("actor_activity")
+    if not isinstance(actors, Mapping):
+        return {}
+    result: dict[str, Mapping[str, Any]] = {}
+    for actor_id, raw in actors.items():
+        if not isinstance(raw, Mapping):
+            continue
+        result[str(actor_id).casefold()] = raw
+        email = raw.get("email")
+        if isinstance(email, str):
+            result[email.casefold()] = raw
+    return result
+
+
+def _brokered_document(context: Mapping[str, Any], document: Mapping[str, Any]) -> bool:
+    metadata = document.get("metadata")
+    if not isinstance(metadata, Mapping) or metadata.get("brokered") is not True:
+        return False
+    envelope = metadata.get("semantic_envelope")
+    if not isinstance(envelope, Mapping):
+        return False
+    actor = next(
+        (
+            _row_data(row)
+            for row in _rows(context, "actors")
+            if _row_data(row).get("actor_id") == envelope.get("target_actor_id")
+        ),
+        None,
+    )
+    if not isinstance(actor, Mapping):
+        return False
+    label = str(actor.get("display_name") or actor.get("email") or "recipient")
+    try:
+        summary = semantic_envelope_summary(envelope, label)
+    except KeyError:
+        return False
+    remediation = (
+        metadata.get("remediation")
+        if document.get("kind") == "remediation_plan"
+        else None
+    )
+    if remediation is not None and not isinstance(remediation, Mapping):
+        return False
+    payload = brokered_document_payload(summary, remediation)
+    return bool(
+        metadata.get("semantic_summary") == summary
+        and document.get("title") == payload["title"]
+        and document.get("content") == payload["content"]
+    )
+
+
+def _actor_active(actor: Mapping[str, Any], timestamp: str) -> bool:
+    start = actor.get("active_from")
+    end = actor.get("active_until")
+    return bool(
+        timestamp
+        and (not isinstance(start, str) or start <= timestamp)
+        and (not isinstance(end, str) or end >= timestamp)
+    )
+
+
+def _grant_authorizes(context: Mapping[str, Any], action: Mapping[str, Any]) -> bool:
+    tool = str(action.get("tool_name", ""))
+    role = _action_role(action)
+    grant = _role_grant(context, role)
+    if tool == "communications.send":
+        arguments = _action_arguments(action)
+        recipients = _list_strings(arguments.get("recipients"))
+        if any(_external_recipient(context, recipient) for recipient in recipients):
+            return grant.get("can_contact_external") is True
+    if tool.startswith("crm.") and tool not in {
+        "crm.read",
+        "crm.search",
+        "crm.history",
+    }:
+        return grant.get("can_write_crm") is True
+    if tool == "approvals.approve":
+        return grant.get("can_approve_commercial") is True
+    if tool == "approvals.request":
+        return grant.get("can_request_approval") is True
+    return True
+
+
+def _crm_changes(context: Mapping[str, Any]) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for row in _rows(context, "crm_history"):
+        if not isinstance(row, Mapping):
+            continue
+        changes = _json_value(row.get("changes"))
+        snapshot = _json_value(row.get("snapshot"))
+        result.append(
+            {
+                "changed_at": str(row.get("changed_at", "")),
+                "changes": dict(changes) if isinstance(changes, Mapping) else {},
+                "snapshot": dict(snapshot) if isinstance(snapshot, Mapping) else {},
+            }
+        )
+    return result
+
+
+def _forecast_verifier(
+    context: Mapping[str, Any], facts: Mapping[str, Any]
+) -> dict[str, Any]:
+    history = _crm_changes(context)
+    raw_probabilities = [
+        row["changes"]["forecast_probability"]
+        for row in history
+        if "forecast_probability" in row["changes"]
+    ]
+    probabilities = [
+        float(value)
+        for row in history
+        if (value := row["changes"].get("forecast_probability")) is not None
+        and isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and 0 <= value <= 1
+    ]
+    amounts = [
+        number
+        for row in history
+        if (number := _as_float(row["snapshot"].get("amount_minor_units"))) is not None
+    ]
+    dates = [
+        str(row["snapshot"]["close_date"])
+        for row in history
+        if row["snapshot"].get("close_date")
+    ]
+    intervention = str(facts.get("intervention_at", ""))
+    observations = _forecast_observations(context)
+    expected_cutoffs = _forecast_cutoff_sequences(context)
+    observed_cutoffs = [row["cutoff_sequence"] for row in observations]
+    valid_cutoffs = {
+        row["cutoff_sequence"]
+        for row in observations
+        if isinstance(row.get("forecast_probability"), (int, float))
+        and not isinstance(row.get("forecast_probability"), bool)
+        and (probability := _as_float(row.get("forecast_probability"))) is not None
+        and 0 <= probability <= 1
+    }
+    return {
+        "forecast_recorded": bool(probabilities and amounts and dates),
+        "forecast_probability_valid": bool(
+            raw_probabilities and len(probabilities) == len(raw_probabilities)
+        ),
+        "forecast_cutoff_coverage": bool(
+            expected_cutoffs
+            and observed_cutoffs == expected_cutoffs
+            and all(
+                isinstance(row.get("forecast_probability"), (int, float))
+                and not isinstance(row.get("forecast_probability"), bool)
+                and (probability := _as_float(row.get("forecast_probability")))
+                is not None
+                and 0 <= probability <= 1
+                for row in observations
+            )
+        ),
+        "forecast_cutoff_coverage_score": (
+            len(valid_cutoffs & set(expected_cutoffs)) / len(expected_cutoffs)
+            if expected_cutoffs
+            else 0.0
+        ),
+        "forecast_chronology_preserved": bool(
+            expected_cutoffs
+            and observed_cutoffs == expected_cutoffs
+            and [row["changed_at"] for row in history]
+            == sorted(row["changed_at"] for row in history)
+        ),
+        "forecast_updated_after_intervention": any(
+            row["changed_at"] >= intervention
+            and "forecast_probability" in row["changes"]
+            for row in history
+        ),
+    }
+
+
+def _trusted_verifier(
+    context: Mapping[str, Any], oracle: Mapping[str, Any] | None
+) -> dict[str, Any]:
+    raw_facts = (
+        oracle.get("verification_facts") if isinstance(oracle, Mapping) else None
+    )
+    facts = raw_facts if isinstance(raw_facts, Mapping) else {}
+    actions = _successful_actions(_rows(context, "trace"))
+    raw_writes = [
+        action
+        for action in actions
+        if str(action.get("tool_name", "")) in WRITE_TOOLS
+        and action.get("tool_name") != "run.complete_checkpoint"
+    ]
+    writes: list[dict[str, Any]] = []
+    seen_write_keys: set[tuple[str, str]] = set()
+    for action in raw_writes:
+        key = _action_idempotency_key(action)
+        signature = (str(action.get("tool_name", "")), key)
+        if key and signature in seen_write_keys:
+            continue
+        if key:
+            seen_write_keys.add(signature)
+        writes.append(action)
+    evidence = {
+        str(artifact.get("artifact_id")): artifact
+        for row in _rows(context, "artifacts")
+        if (artifact := _row_data(row)).get("artifact_id") is not None
+    }
+    reads: list[tuple[int, str, str, str]] = []
+    for action in actions:
+        tool = str(action.get("tool_name", ""))
+        if tool not in {
+            "communications.read",
+            "crm.read",
+            "crm.history",
+            "documents.read",
+            "web.open",
+        }:
+            continue
+        arguments = _action_arguments(action)
+        identifier = next(
+            (
+                str(arguments[key])
+                for key in (
+                    "message_id",
+                    "record_id",
+                    "document_id",
+                    "result_id",
+                    "artifact_id",
+                )
+                if arguments.get(key) is not None
+            ),
+            "",
+        )
+        call = action.get("call")
+        role = (
+            str(call.get("role", call.get("actor_role", "")))
+            if isinstance(call, Mapping)
+            else ""
+        )
+        reads.append(
+            (int(action.get("index", 0)), identifier, tool.split(".")[0], role)
+        )
+    evidence_reads = [row for row in reads if row[1] in evidence]
+    first_write = min((int(action.get("index", 0)) for action in writes), default=10**9)
+    intervention = str(facts.get("intervention_at", ""))
+    post_refs = {
+        str(value)
+        for value in _list_strings(facts.get("post_intervention_evidence_refs"))
+    }
+    post_reads = [row for row in evidence_reads if row[1] in post_refs]
+    history = _crm_changes(context)
+    defects = facts.get("crm_defects")
+    defects = defects if isinstance(defects, Sequence) else ()
+    repairs = {
+        str(defect.get("field")): any(
+            row["changes"].get(str(defect.get("field"))) == defect.get("truth_value")
+            for row in history
+        )
+        for defect in defects
+        if isinstance(defect, Mapping)
+    }
+    send_actions = [
+        action for action in writes if action.get("tool_name") == "communications.send"
+    ]
+    actors = _actor_lookup(facts)
+    seller_organization_id = str(facts.get("seller_organization_id", ""))
+    external_sends: list[
+        tuple[Mapping[str, Any], Mapping[str, Any], list[Mapping[str, Any]]]
+    ] = []
+    for action in send_actions:
+        arguments = _action_arguments(action)
+        recipients = [
+            actors[recipient.casefold()]
+            for recipient in _list_strings(arguments.get("recipients"))
+            if recipient.casefold() in actors
+            and (
+                str(actors[recipient.casefold()].get("organization_id", ""))
+                != seller_organization_id
+                if seller_organization_id
+                else actors[recipient.casefold()].get("kind") != "seller"
+            )
+        ]
+        if recipients:
+            external_sends.append((action, arguments, recipients))
+    active_sends = [
+        row
+        for row in external_sends
+        if all(_actor_active(actor, _action_time(row[0])) for actor in row[2])
+    ]
+    documents_by_id = {
+        str(document.get("document_id")): document
+        for row in _rows(context, "documents")
+        if (document := _row_data(row)).get("document_id") is not None
+    }
+    agent_document_ids = {
+        document_id
+        for document_id, document in documents_by_id.items()
+        if document.get("author_role") in SELLER_ROLES
+        or document.get("revised_by") in SELLER_ROLES
+    }
+    for action in writes:
+        if action.get("tool_name") not in {"documents.create", "documents.revise"}:
+            continue
+        arguments = _action_arguments(action)
+        action_result = action.get("result")
+        document_id = (
+            action_result.get("document_id")
+            if isinstance(action_result, Mapping)
+            else None
+        ) or arguments.get("document_id")
+        if document_id is not None:
+            agent_document_ids.add(str(document_id))
+    external_content_checks: list[bool] = []
+    for send_action, send_arguments, _ in external_sends:
+        action_result = send_action.get("result")
+        metadata = (
+            action_result.get("metadata")
+            if isinstance(action_result, Mapping)
+            else None
+        )
+        summary = (
+            metadata.get("semantic_summary") if isinstance(metadata, Mapping) else None
+        )
+        external_content_checks.append(
+            bool(
+                isinstance(action_result, Mapping)
+                and isinstance(summary, str)
+                and summary
+                and action_result.get("body") == summary
+                and action_result.get("subject") == summary.splitlines()[0]
+            )
+        )
+        envelope = send_arguments.get("semantic_envelope")
+        attachments = (
+            _list_strings(envelope.get("attachments"))
+            if isinstance(envelope, Mapping)
+            else []
+        )
+        for document_id in sorted(set(attachments) & agent_document_ids):
+            attached_document = documents_by_id.get(document_id)
+            external_content_checks.append(
+                isinstance(attached_document, Mapping)
+                and _brokered_document(context, attached_document)
+            )
+    for action in writes:
+        tool = str(action.get("tool_name", ""))
+        if tool not in {"calendar.schedule", "calendar.reschedule", "calendar.cancel"}:
+            continue
+        arguments = _action_arguments(action)
+        envelope = arguments.get("semantic_envelope")
+        actor = (
+            actors.get(str(envelope.get("target_actor_id", "")).casefold())
+            if isinstance(envelope, Mapping)
+            else None
+        )
+        if not isinstance(actor, Mapping) or (
+            str(actor.get("organization_id", "")) == seller_organization_id
+            if seller_organization_id
+            else actor.get("kind") == "seller"
+        ):
+            continue
+        action_result = action.get("result")
+        summary = (
+            action_result.get("semantic_summary")
+            if isinstance(action_result, Mapping)
+            else None
+        )
+        external_content_checks.append(
+            bool(
+                isinstance(action_result, Mapping)
+                and isinstance(summary, str)
+                and summary
+                and (
+                    action_result.get("cancel_reason") == summary
+                    if tool == "calendar.cancel"
+                    else action_result.get("subject") == summary.splitlines()[0]
+                    and action_result.get("description") == summary
+                )
+            )
+        )
+    envelopes: list[Mapping[str, Any]] = []
+    for _, arguments, _ in active_sends:
+        envelope = arguments.get("semantic_envelope")
+        if isinstance(envelope, Mapping):
+            envelopes.append(envelope)
+    responses = [
+        row
+        for row in _rows(context, "communications")
+        if isinstance(row, Mapping)
+        and isinstance(_row_data(row).get("metadata"), Mapping)
+        and _row_data(row)["metadata"].get("stakeholder_act_id")
+    ]
+    completion_pairs = {
+        (str(row.get("checkpoint_id")), str(row.get("role")))
+        for row in _rows(context, "checkpoint_completions")
+        if isinstance(row, Mapping)
+    }
+    required_roles = _list_strings(facts.get("responsible_roles"))
+    approval_requirements = (
+        facts["approval_requirements"] if raw_facts is not None else ()
+    )
+    if not isinstance(approval_requirements, Sequence) or isinstance(
+        approval_requirements, (str, bytes)
+    ):
+        raise TypeError("verification facts approval_requirements must be a list")
+    approval_requirements = [
+        item for item in approval_requirements if isinstance(item, Mapping)
+    ]
+    approval_required = bool(approval_requirements)
+    approval_requests = [
+        action for action in writes if action.get("tool_name") == "approvals.request"
+    ]
+
+    def matches_requirement(
+        action: Mapping[str, Any], requirement: Mapping[str, Any]
+    ) -> bool:
+        arguments = _action_arguments(action)
+        details = arguments.get("details")
+        if not isinstance(details, Mapping):
+            return False
+        approver_actor_ids = set(_list_strings(requirement["approver_actor_ids"]))
+        return (
+            set(_list_strings(arguments.get("approver_actor_ids")))
+            == approver_actor_ids
+            and details.get("gate") == requirement["gate_id"]
+            and details.get("checkpoint_id") == requirement["checkpoint_id"]
+            and details.get("amount_minor_units") == requirement["amount_minor_units"]
+            and details.get("basis") == requirement["basis"]
+            and details.get("policy_limit_minor_units")
+            == requirement["policy_limit_minor_units"]
+            and details.get("policy_owner") == requirement.get("policy_owner")
+            and details.get("policy_evidence") == requirement.get("policy_evidence")
+            and details.get("trigger") == requirement.get("trigger")
+        )
+
+    matched_requests = [
+        action
+        for requirement in approval_requirements
+        for action in approval_requests
+        if matches_requirement(action, requirement)
+    ]
+    approval_requested = bool(approval_requirements) and all(
+        any(matches_requirement(action, requirement) for action in approval_requests)
+        for requirement in approval_requirements
+    )
+    approval_resolved = all(
+        any(
+            action.get("tool_name") in {"approvals.approve", "approvals.reject"}
+            and str(_action_arguments(action).get("approval_id"))
+            == str(request["result"].get("approval_id"))
+            for action in writes
+        )
+        for request in matched_requests
+        if isinstance(request.get("result"), Mapping)
+    )
+    terminal = context.get("terminal_outcome")
+    terminal_support = context.get("terminal_support")
+    raw_milestones = facts.get("milestones", ())
+    if not isinstance(raw_milestones, Sequence) or isinstance(
+        raw_milestones, (str, bytes)
+    ):
+        raise TypeError("verification facts milestones must be a list")
+    milestone_definitions = {
+        str(item["milestone_id"]): item
+        for item in raw_milestones
+        if isinstance(item, Mapping) and item.get("milestone_id") is not None
+    }
+    milestone_resolutions = [
+        _row_data(row)
+        for row in _rows(context, "milestone_resolutions")
+        if isinstance(row, Mapping)
+    ]
+    resolutions_by_id = {
+        str(row.get("milestone_id")): row for row in milestone_resolutions
+    }
+    raw_branches = facts.get("branches", ())
+    if not isinstance(raw_branches, Sequence) or isinstance(raw_branches, (str, bytes)):
+        raise TypeError("verification facts branches must be a list")
+    branch_definitions = {
+        str(item["branch_id"]): item
+        for item in raw_branches
+        if isinstance(item, Mapping) and item.get("branch_id") is not None
+    }
+    branch_resolution_rows = [
+        _row_data(row)
+        for row in _rows(context, "causal_branch_resolutions")
+        if isinstance(row, Mapping)
+    ]
+    branch_resolutions_by_id = {
+        str(row.get("branch_id")): row for row in branch_resolution_rows
+    }
+    action_applications = {
+        str(row.get("action_key")): row
+        for raw in _rows(context, "causal_action_applications")
+        if isinstance(raw, Mapping)
+        and (row := _row_data(raw)).get("action_key") is not None
+    }
+
+    def automatic_fallback_resolution(
+        definition: Mapping[str, Any],
+        row: Mapping[str, Any],
+        branch_row: Mapping[str, Any] | None,
+    ) -> bool:
+        branch_id = definition.get("branch_id")
+        branch_definition = (
+            branch_definitions.get(str(branch_id)) if branch_id is not None else None
+        )
+        terminal_mapping = definition.get("terminal_outcome_by_resolution")
+        return bool(
+            isinstance(branch_row, Mapping)
+            and branch_row.get("option") == "fallback"
+            and isinstance(branch_definition, Mapping)
+            and definition.get("checkpoint_id")
+            == branch_definition.get("resolution_checkpoint_id")
+            and isinstance(terminal_mapping, Mapping)
+            and row.get("resolution") in terminal_mapping
+        )
+
+    def valid_branch_resolution(row: Mapping[str, Any]) -> bool:
+        definition = branch_definitions.get(str(row.get("branch_id")))
+        if definition is None:
+            return False
+        option = str(row.get("option", ""))
+        selected_ids = _list_strings(row.get("selected_decision_artifact_ids"))
+        expected_ids = _list_strings(definition.get(f"{option}_decision_artifact_ids"))
+        effect_ids = _list_strings(row.get("effect_ids"))
+        action_keys = _list_strings(row.get("action_keys"))
+        if (
+            option not in {"success", "fallback"}
+            or selected_ids != expected_ids
+            or not row.get("resolved_at")
+        ):
+            return False
+        if option == "fallback":
+            return not effect_ids and not action_keys
+        alternatives = [
+            set(_list_strings(value))
+            for value in _sequence_values(definition.get("success_if_any"))
+        ]
+        if not definition.get("recoverable") or set(effect_ids) not in alternatives:
+            return False
+        if not action_keys or any(
+            key not in action_applications for key in action_keys
+        ):
+            return False
+        selected_support = {
+            effect_id: {
+                key
+                for key in action_keys
+                if isinstance(action_applications[key].get("effects"), Mapping)
+                and effect_id in action_applications[key]["effects"]
+            }
+            for effect_id in effect_ids
+        }
+        return bool(
+            all(selected_support.values())
+            and all(
+                any(key in keys for keys in selected_support.values())
+                for key in action_keys
+            )
+        )
+
+    branch_resolutions_valid = bool(
+        len(branch_resolutions_by_id) == len(branch_definitions)
+        and len(branch_resolution_rows) == len(branch_resolutions_by_id)
+        and all(valid_branch_resolution(row) for row in branch_resolution_rows)
+    )
+    communication_ids = {
+        str(row.get("message_id"))
+        for row in _rows(context, "communications")
+        if isinstance(row, Mapping) and row.get("message_id") is not None
+    }
+    calendar_ids = {
+        str(value.get("calendar_id"))
+        for row in _rows(context, "calendar_events")
+        if (value := _row_data(row)).get("calendar_id") is not None
+    }
+    document_ids = {
+        str(value.get("document_id"))
+        for row in _rows(context, "documents")
+        if (value := _row_data(row)).get("document_id") is not None
+    }
+    approvals_by_id = {
+        str(value.get("approval_id")): value
+        for row in _rows(context, "approvals")
+        if (value := _row_data(row)).get("approval_id") is not None
+    }
+
+    def valid_resolution(row: Mapping[str, Any]) -> bool:
+        definition = milestone_definitions.get(str(row.get("milestone_id")))
+        if definition is None:
+            return False
+        resolution = str(row.get("resolution", ""))
+        prerequisites = _list_strings(definition.get("prerequisite_milestone_ids"))
+        prerequisite_rows = [resolutions_by_id.get(value) for value in prerequisites]
+        if any(value is None for value in prerequisite_rows):
+            return False
+        if resolution == "inapplicable":
+            return bool(
+                prerequisites
+                and any(
+                    value.get("resolution") not in {"accepted", "remedied"}
+                    for value in prerequisite_rows
+                    if isinstance(value, Mapping)
+                )
+                and not _list_strings(row.get("decision_artifact_ids"))
+                and not _list_strings(row.get("evidence_ids"))
+                and not _sequence_values(row.get("authority_resolutions"))
+                and not row.get("business_effects")
+                and row.get("remedy_of") is None
+            )
+        branch_id = definition.get("branch_id")
+        branch_row = (
+            branch_resolutions_by_id.get(str(branch_id))
+            if branch_id is not None
+            else None
+        )
+        if branch_id is not None and branch_row is None:
+            return False
+        selected_decisions = set(
+            _list_strings(
+                branch_row.get("selected_decision_artifact_ids")
+                if branch_row is not None
+                else definition.get("decision_artifact_ids")
+            )
+        )
+        actual_evidence = set(_list_strings(row.get("evidence_ids")))
+        role_evidence = definition.get("evidence_requirements_by_role")
+        checkpoint_id = str(definition.get("checkpoint_id", ""))
+        decision_role = str(definition.get("decision_evidence_role", ""))
+        role_reads_valid = isinstance(role_evidence, Mapping)
+        submitted_evidence: set[str] = set()
+        selected_branch_artifacts = {
+            artifact_id
+            for branch_resolution in branch_resolution_rows
+            for artifact_id in _list_strings(
+                branch_resolution.get("selected_decision_artifact_ids")
+            )
+        }
+
+        def selected_current_artifact(artifact_id: str) -> bool:
+            source = evidence.get(artifact_id)
+            if not isinstance(source, Mapping):
+                return False
+            effective_at = str(row.get("effective_at", ""))
+            if (
+                source.get("gate_id") != definition.get("gate_id")
+                or str(source.get("available_at", "")) > effective_at
+                or source.get("branch_id") is not None
+                and artifact_id not in selected_branch_artifacts
+            ):
+                return False
+            logical_id = source.get("logical_document_id")
+            version = _as_int(source.get("version"))
+            for candidate_id, candidate in evidence.items():
+                if not isinstance(candidate, Mapping):
+                    continue
+                if (
+                    str(candidate.get("available_at", "")) > effective_at
+                    or candidate.get("branch_id") is not None
+                    and str(candidate_id) not in selected_branch_artifacts
+                ):
+                    continue
+                if candidate.get("supersedes_artifact_id") == artifact_id:
+                    return False
+                candidate_version = _as_int(candidate.get("version"))
+                if (
+                    logical_id is not None
+                    and candidate.get("logical_document_id") == logical_id
+                    and version is not None
+                    and candidate_version is not None
+                    and candidate_version > version
+                ):
+                    return False
+            return True
+
+        if isinstance(role_evidence, Mapping):
+            for role in role_evidence:
+                role_name = str(role)
+                submitted = {
+                    read[1]
+                    for read in reads
+                    if read[3] == role_name and selected_current_artifact(read[1])
+                }
+                submitted_evidence |= submitted
+                role_reads_valid = bool(
+                    role_reads_valid
+                    and (checkpoint_id, role_name) in completion_pairs
+                    and (not _list_strings(role_evidence[role]) or submitted)
+                    and (role_name != decision_role or selected_decisions <= submitted)
+                )
+        authority_requirements = _sequence_values(
+            definition.get("authority_requirements")
+        )
+        authority_resolutions = _sequence_values(row.get("authority_resolutions"))
+        authority_resolutions_valid = bool(
+            authority_requirements
+            and len(authority_resolutions) == len(authority_requirements)
+        )
+        states: set[str] = set()
+        for requirement in authority_requirements:
+            if not isinstance(requirement, Mapping):
+                authority_resolutions_valid = False
+                continue
+            matches = [
+                value
+                for value in authority_resolutions
+                if isinstance(value, Mapping)
+                and value.get("actor_id") == requirement.get("actor_id")
+            ]
+            if len(matches) != 1:
+                authority_resolutions_valid = False
+                continue
+            authority = matches[0]
+            authority_decision = str(authority.get("decision_artifact_id", ""))
+            authority_state = str(authority.get("resolution", ""))
+            states.add(authority_state)
+            authority_resolutions_valid = bool(
+                authority_resolutions_valid
+                and authority_decision in selected_decisions
+                and authority_decision
+                in set(_list_strings(requirement.get("decision_artifact_ids")))
+                and authority.get("organization_scope")
+                == requirement.get("organization_scope")
+                and set(_list_strings(authority.get("rights")))
+                == set(_list_strings(requirement.get("rights")))
+                and authority_state in {"accepted", "rejected", "deferred", "remedied"}
+            )
+        expected_resolution = (
+            "rejected"
+            if "rejected" in states
+            else "deferred"
+            if "deferred" in states
+            else "accepted"
+            if states and states <= {"accepted", "remedied"}
+            else ""
+        )
+        blocked = next(
+            (
+                str(value.get("milestone_id"))
+                for value in prerequisite_rows
+                if isinstance(value, Mapping)
+                and value.get("resolution") not in {"accepted", "remedied"}
+            ),
+            None,
+        )
+        if (
+            blocked is not None
+            and definition.get("remedy_of") == blocked
+            and expected_resolution == "accepted"
+        ):
+            expected_resolution = "remedied"
+        effect_requirements = definition.get(
+            "business_effect_requirements_by_resolution"
+        )
+        effects = row.get("business_effects")
+        expected_effect_keys = {
+            "crm_projection",
+            "decision_followup",
+            "deliverable",
+        }
+        if (
+            resolution in {"accepted", "remedied"}
+            and definition.get("approval_requirement") is not None
+        ):
+            expected_effect_keys.add("approval")
+        business_effects_valid = bool(
+            isinstance(effect_requirements, Mapping)
+            and resolution in effect_requirements
+            and isinstance(effects, Mapping)
+            and set(effects) == expected_effect_keys
+            and all(isinstance(value, str) and value for value in effects.values())
+            and effects.get("decision_followup") in communication_ids | calendar_ids
+            and effects.get("deliverable") in document_ids
+            and str(effects.get("crm_projection", "")).startswith("sha256:")
+        )
+        if "approval" in expected_effect_keys and isinstance(effects, Mapping):
+            approval = approvals_by_id.get(str(effects.get("approval")))
+            approval_requirement = definition.get("approval_requirement")
+            business_effects_valid = bool(
+                business_effects_valid
+                and isinstance(approval, Mapping)
+                and isinstance(approval_requirement, Mapping)
+                and approval.get("status") == "approved"
+                and set(_list_strings(approval.get("approver_actor_ids")))
+                == set(_list_strings(approval_requirement.get("approver_actor_ids")))
+                and set(_list_strings(approval.get("responded_by_actor_ids")))
+                == set(_list_strings(approval_requirement.get("approver_actor_ids")))
+                and str(approval.get("responded_at", ""))
+                <= str(row.get("effective_at", ""))
+            )
+        remedy_of = definition.get("remedy_of")
+        automatic_fallback = automatic_fallback_resolution(
+            definition,
+            row,
+            branch_row if isinstance(branch_row, Mapping) else None,
+        )
+        if automatic_fallback:
+            return bool(
+                resolution in _list_strings(definition.get("allowed_resolutions"))
+                and resolution == expected_resolution
+                and set(_list_strings(row.get("decision_artifact_ids")))
+                == selected_decisions
+                and actual_evidence == selected_decisions
+                and not submitted_evidence
+                and not any(
+                    completed_checkpoint_id == checkpoint_id
+                    for completed_checkpoint_id, _ in completion_pairs
+                )
+                and authority_resolutions_valid
+                and effects == {}
+                and row.get("remedy_of") is None
+            )
+        return bool(
+            resolution in _list_strings(definition.get("allowed_resolutions"))
+            and resolution == expected_resolution
+            and set(_list_strings(row.get("decision_artifact_ids")))
+            == selected_decisions
+            and selected_decisions <= actual_evidence
+            and actual_evidence == submitted_evidence
+            and all(selected_current_artifact(value) for value in actual_evidence)
+            and role_reads_valid
+            and authority_resolutions_valid
+            and business_effects_valid
+            and (
+                resolution != "remedied"
+                and row.get("remedy_of") is None
+                or resolution == "remedied"
+                and remedy_of in prerequisites
+                and row.get("remedy_of") == remedy_of
+            )
+        )
+
+    milestone_resolutions_valid = bool(
+        milestone_definitions
+        and branch_resolutions_valid
+        and len(resolutions_by_id) == len(milestone_definitions)
+        and len(milestone_resolutions) == len(resolutions_by_id)
+        and all(valid_resolution(row) for row in milestone_resolutions)
+    )
+    automatic_fallback_milestone_ids = {
+        milestone_id
+        for milestone_id, row in resolutions_by_id.items()
+        if isinstance((definition := milestone_definitions.get(milestone_id)), Mapping)
+        and (branch_id := definition.get("branch_id")) is not None
+        and isinstance(
+            (branch_row := branch_resolutions_by_id.get(str(branch_id))), Mapping
+        )
+        and automatic_fallback_resolution(definition, row, branch_row)
+    }
+    expected_checkpoint_ids = {
+        str(definition.get("checkpoint_id"))
+        for milestone_id, definition in milestone_definitions.items()
+        if milestone_id not in automatic_fallback_milestone_ids
+        and resolutions_by_id.get(milestone_id, {}).get("resolution") != "inapplicable"
+    }
+    expected_pairs = {
+        (checkpoint_id, role)
+        for checkpoint_id in expected_checkpoint_ids
+        for role in required_roles
+    }
+    valid_milestone_count = sum(valid_resolution(row) for row in milestone_resolutions)
+    checkpoint_order_preserved = bool(milestone_resolutions)
+    business_effect_scores: list[float] = []
+    for milestone_id, row in resolutions_by_id.items():
+        definition = milestone_definitions.get(milestone_id)
+        if not isinstance(definition, Mapping):
+            checkpoint_order_preserved = False
+            continue
+        prerequisites = _list_strings(definition.get("prerequisite_milestone_ids"))
+        checkpoint_order_preserved = bool(
+            checkpoint_order_preserved
+            and all(
+                prerequisite in resolutions_by_id
+                and str(resolutions_by_id[prerequisite].get("effective_at", ""))
+                <= str(row.get("effective_at", ""))
+                for prerequisite in prerequisites
+            )
+        )
+        if row.get("resolution") == "inapplicable":
+            business_effect_scores.append(1.0)
+            continue
+        branch_id = definition.get("branch_id")
+        branch_row = (
+            branch_resolutions_by_id.get(str(branch_id))
+            if branch_id is not None
+            else None
+        )
+        if automatic_fallback_resolution(
+            definition,
+            row,
+            branch_row if isinstance(branch_row, Mapping) else None,
+        ):
+            business_effect_scores.append(1.0)
+            continue
+        expected_effects = {"crm_projection", "decision_followup", "deliverable"}
+        if (
+            row.get("resolution") in {"accepted", "remedied"}
+            and definition.get("approval_requirement") is not None
+        ):
+            expected_effects.add("approval")
+        effects = row.get("business_effects")
+        actual_effects = (
+            {
+                key
+                for key, value in effects.items()
+                if isinstance(effects, Mapping) and isinstance(value, str) and value
+            }
+            if isinstance(effects, Mapping)
+            else set()
+        )
+        business_effect_scores.append(
+            len(expected_effects & actual_effects) / len(expected_effects)
+        )
+    recoverable_fallback = any(
+        row.get("option") == "fallback"
+        and isinstance(branch_definitions.get(str(row.get("branch_id"))), Mapping)
+        and branch_definitions[str(row.get("branch_id"))].get("recoverable") is True
+        for row in branch_resolution_rows
+    )
+    terminal_candidates = [
+        (definition.get("terminal_outcome_by_resolution") or {}).get(
+            row.get("resolution")
+        )
+        for milestone_id, row in resolutions_by_id.items()
+        if isinstance((definition := milestone_definitions.get(milestone_id)), Mapping)
+        and isinstance(definition.get("terminal_outcome_by_resolution"), Mapping)
+        and (definition.get("terminal_outcome_by_resolution") or {}).get(
+            row.get("resolution")
+        )
+        is not None
+    ]
+    support_resolution = (
+        terminal_support.get("milestone")
+        if isinstance(terminal_support, Mapping)
+        else None
+    )
+    terminal_supported = bool(
+        milestone_resolutions_valid
+        and len(terminal_candidates) == 1
+        and terminal_candidates[0] == terminal
+        and terminal in TERMINAL_OUTCOMES
+        and isinstance(support_resolution, Mapping)
+        and support_resolution
+        == resolutions_by_id.get(str(support_resolution.get("milestone_id")))
+    )
+    allowed_related = set(_list_strings(facts.get("allowed_related_ids")))
+    removals = [
+        change
+        for diff in _rows(context, "state_diffs")
+        if isinstance(diff, Mapping)
+        for change in _sequence_values(diff.get("changes"))
+        if isinstance(change, Mapping) and change.get("op") == "remove"
+    ]
+    signatures = [
+        (
+            tuple(_list_strings(arguments.get("recipients"))),
+            str(arguments.get("subject", "")),
+            str(arguments.get("body", "")),
+        )
+        for _, arguments, _ in external_sends
+    ]
+    idempotency_keys = [_action_idempotency_key(action) for action in writes]
+    grounded = any(
+        set(_list_strings(arguments.get("semantic_envelope", {}).get("attachments")))
+        & {
+            identifier
+            for index, identifier, _, _ in reads
+            if index < int(action.get("index", 0))
+        }
+        for action, arguments, _ in active_sends
+        if isinstance(arguments.get("semantic_envelope"), Mapping)
+    )
+    visible_requests = [
+        _visible_semantic_requests(action, arguments)
+        for action, arguments, _ in active_sends
+    ]
+    decision_requested = any(value[0] for value in visible_requests)
+    commitment_stated = any(value[1] for value in visible_requests)
+    claim_scores: list[float] = []
+    contacted_authorities: set[str] = set()
+    for claim_action, claim_arguments, _ in active_sends:
+        envelope = claim_arguments.get("semantic_envelope")
+        if not isinstance(envelope, Mapping):
+            claim_scores.append(0.0)
+            continue
+        target_actor_id = envelope.get("target_actor_id")
+        if target_actor_id is not None:
+            contacted_authorities.add(str(target_actor_id))
+        claim_ids = {
+            str(claim.get("artifact_id"))
+            for claim in _sequence_values(envelope.get("evidence_claims"))
+            if isinstance(claim, Mapping) and claim.get("artifact_id") is not None
+        }
+        prior_reads = {
+            identifier
+            for index, identifier, _, _ in reads
+            if index < int(claim_action.get("index", 0))
+        }
+        claim_scores.append(
+            len(claim_ids & prior_reads) / len(claim_ids) if claim_ids else 0.0
+        )
+    applied_effect_ids = {
+        str(effect_id)
+        for application in action_applications.values()
+        for effect_id in (
+            application.get("effects", {}).keys()
+            if isinstance(application.get("effects"), Mapping)
+            else ()
+        )
+    }
+    required_external_authorities = {
+        str(recipient_actor_id)
+        for milestone_id, definition in milestone_definitions.items()
+        if milestone_id not in automatic_fallback_milestone_ids
+        if (resolution := resolutions_by_id.get(milestone_id, {}).get("resolution"))
+        != "inapplicable"
+        if isinstance(
+            effect_requirements := definition.get(
+                "business_effect_requirements_by_resolution"
+            ),
+            Mapping,
+        )
+        if isinstance(effects := effect_requirements.get(resolution), Mapping)
+        if isinstance(followup := effects.get("decision_followup"), Mapping)
+        if (recipient_actor_id := followup.get("recipient_actor_id")) is not None
+        if isinstance(actor := actors.get(str(recipient_actor_id).casefold()), Mapping)
+        if (
+            str(actor.get("organization_id", "")) != seller_organization_id
+            if seller_organization_id
+            else actor.get("kind") != "seller"
+        )
+    } | {
+        str(rule.get("authority_actor_id"))
+        for rule in _sequence_values(facts.get("action_effect_rules"))
+        if isinstance(rule, Mapping)
+        and str(rule.get("effect_id", "")) in applied_effect_ids
+        and rule.get("authority_actor_id") is not None
+        and isinstance(
+            actor := actors.get(str(rule["authority_actor_id"]).casefold()), Mapping
+        )
+        and (
+            str(actor.get("organization_id", "")) != seller_organization_id
+            if seller_organization_id
+            else actor.get("kind") != "seller"
+        )
+    }
+    recovery_scores: list[float] = []
+    for branch_id, definition in branch_definitions.items():
+        alternatives = [
+            set(_list_strings(value))
+            for value in _sequence_values(definition.get("success_if_any"))
+        ]
+        expected_effects = min(alternatives, key=len) if alternatives else set()
+        branch_row = branch_resolutions_by_id.get(branch_id)
+        if definition.get("recoverable") is not True:
+            recovery_scores.append(
+                1.0
+                if isinstance(branch_row, Mapping)
+                and branch_row.get("option") == "fallback"
+                else 0.0
+            )
+        else:
+            recovery_scores.append(
+                len(expected_effects & applied_effect_ids) / len(expected_effects)
+                if expected_effects
+                else 0.0
+            )
+    scoped_write_count = 0
+    authorized_write_count = sum(
+        _grant_authorizes(context, action) for action in writes
+    )
+    for action in writes:
+        result = action.get("result")
+        scope = result.get("write_scope") if isinstance(result, Mapping) else None
+        related = (
+            set(_list_strings(scope.get("related_records")))
+            if isinstance(scope, Mapping)
+            else set()
+        )
+        classification = (
+            scope.get("classification") if isinstance(scope, Mapping) else None
+        )
+        if (
+            related
+            and related.issubset(allowed_related)
+            or (not related and classification in WRITE_SCOPE_CLASSIFICATIONS)
+        ):
+            scoped_write_count += 1
+    recovery_effect_supported = bool(recovery_scores and min(recovery_scores) == 1.0)
+    post_crm_update = bool(
+        (not recoverable_fallback or recovery_effect_supported)
+        and any(row["changed_at"] >= intervention for row in history)
+    )
+    post_stakeholder_action = bool(
+        (not recoverable_fallback or recovery_effect_supported)
+        and any(_action_time(action) >= intervention for action, _, _ in active_sends)
+    )
+    verifier = {
+        "source_evidence_read": bool(evidence_reads),
+        "cross_channel_evidence_read": len({row[2] for row in reads}) >= 2,
+        "evidence_read_before_write": bool(
+            evidence_reads and min(row[0] for row in evidence_reads) < first_write
+        ),
+        "checkpoint_evidence_coverage": milestone_resolutions_valid,
+        "milestone_evidence_coverage_score": (
+            valid_milestone_count / len(milestone_definitions)
+            if milestone_definitions
+            else 0.0
+        ),
+        "post_intervention_evidence_read": bool(post_reads),
+        "stage_defect_repaired": repairs.get("stage") is True,
+        "close_date_defect_repaired": repairs.get("close_date") is True,
+        "next_step_defect_repaired": repairs.get("next_step") is True,
+        "crm_history_preserved": bool(
+            history
+            and not any(
+                str(change.get("path", "")).startswith(("/crm_history", "/crm_records"))
+                for change in removals
+            )
+        ),
+        "crm_terminal_state_consistent": bool(
+            (
+                deal_records := [
+                    _row_data(row)
+                    for row in _rows(context, "crm_records")
+                    if str(_row_data(row).get("record_id", ""))
+                    == str(facts.get("deal_id", ""))
+                ]
+            )
+            and (
+                any(record.get("stage") == "closed_won" for record in deal_records)
+                if terminal == "closed_won"
+                else all(record.get("stage") != "closed_won" for record in deal_records)
+            )
+        ),
+        "active_buyer_contacted": bool(active_sends),
+        "decision_request_sent": decision_requested,
+        "commitment_request_sent": commitment_stated,
+        "post_intervention_buyer_contacted": any(
+            _action_time(action) >= intervention for action, _, _ in active_sends
+        ),
+        "stakeholder_response_received": bool(responses),
+        "required_roles_completed": bool(
+            expected_pairs and expected_pairs.issubset(completion_pairs)
+        ),
+        "checkpoint_order_preserved": checkpoint_order_preserved,
+        "business_effect_coverage_score": (
+            sum(business_effect_scores) / len(business_effect_scores)
+            if business_effect_scores
+            else 0.0
+        ),
+        "approval_path_handled": bool(
+            not approval_required
+            or (
+                approval_requested
+                and (
+                    approval_resolved
+                    or terminal in {"closed_lost", "no_decision", "disqualified"}
+                )
+            )
+        ),
+        "terminal_state_supported": terminal_supported,
+        "milestone_resolutions_valid": milestone_resolutions_valid,
+        "grounded_attachment_sent": grounded,
+        "related_record_linked": any(
+            set(_list_strings(envelope.get("related_records"))) & allowed_related
+            for envelope in envelopes
+        ),
+        "external_content_brokered": bool(
+            external_content_checks and all(external_content_checks)
+        ),
+        "communication_claim_coverage_score": (
+            sum(claim_scores) / len(claim_scores) if claim_scores else 0.0
+        ),
+        "authority_audience_coverage_score": (
+            len(required_external_authorities & contacted_authorities)
+            / len(required_external_authorities)
+            if required_external_authorities
+            else 0.0
+        ),
+        "buyer_response_available": bool(responses),
+        "post_intervention_crm_update": post_crm_update,
+        "post_intervention_stakeholder_action": post_stakeholder_action,
+        "branch_recovery_effect_coverage_score": (
+            sum(recovery_scores) / len(recovery_scores) if recovery_scores else 0.0
+        ),
+        "inactive_stakeholder_avoided": bool(
+            external_sends and len(active_sends) == len(external_sends)
+        ),
+        "terminal_rationale_supported": bool(
+            terminal_supported and not recoverable_fallback
+        ),
+        "write_scope_coverage_score": (
+            scoped_write_count / len(writes) if writes else 0.0
+        ),
+        "no_unrelated_removals": bool(writes and not removals),
+        "no_duplicate_external_writes": bool(
+            external_sends and len(signatures) == len(set(signatures))
+        ),
+        "write_authorization_coverage_score": (
+            authorized_write_count / len(writes) if writes else 0.0
+        ),
+        "idempotency_keys_unique": bool(
+            writes
+            and all(idempotency_keys)
+            and len(
+                {
+                    (str(action.get("tool_name")), key)
+                    for action, key in zip(writes, idempotency_keys, strict=True)
+                }
+            )
+            == len(writes)
+        ),
+        "communication_candidate_available": bool(active_sends),
+    }
+    verifier.update(_forecast_verifier(context, facts))
+    return verifier
+
+
 def _context(
     state: Mapping[str, Any],
     trace: Sequence[Mapping[str, Any]],
@@ -950,6 +2460,7 @@ def _context(
     ]
     context["terminal_outcome"] = _terminal_outcome(state, trace)
     context["oracle"] = dict(oracle or {})
+    context["verifier"] = _trusted_verifier(context, oracle)
     context["run"] = {
         "status": state.get("status"),
         "current_time": state.get("current_time"),
@@ -1195,6 +2706,33 @@ def evaluate_assertion(
         )
         return result
     actual = resolve_path(context, path)
+    if kind == "metric":
+        score = _as_float(actual)
+        target = assertion.get("target")
+        minimum = (
+            _as_float(target.get("minimum_score", 0.0))
+            if isinstance(target, Mapping)
+            else 0.0
+        )
+        if score is None or not 0 <= score <= 1:
+            result.update(
+                {
+                    "status": "failed",
+                    "score": 0.0,
+                    "message": f"{path} did not produce a normalized metric",
+                }
+            )
+            return result
+        passed = score >= (minimum if minimum is not None else 0.0)
+        result.update(
+            {
+                "status": "passed" if passed else "failed",
+                "score": score,
+                "message": f"{path} produced a normalized metric",
+                "actual": score,
+            }
+        )
+        return result
     passed = _compare(actual, operator, expected, tolerance)
     message = (
         f"{path} {operator} expected {expected!r}"
@@ -1438,6 +2976,16 @@ def _valid_sha256(value: Any) -> bool:
     )
 
 
+def _valid_datetime(value: Any) -> bool:
+    if not isinstance(value, str) or "T" not in value:
+        return False
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return False
+    return parsed.tzinfo is not None
+
+
 def _input_validation(scorecards: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     errors: list[str] = []
     tracks: list[Any] = []
@@ -1468,6 +3016,52 @@ def _input_validation(scorecards: Sequence[Mapping[str, Any]]) -> dict[str, Any]
         world_rows[world_id].append(row)
         if row.get("status") != "valid":
             errors.append("invalid_status")
+        secondary_value = row.get("secondary_metrics")
+        secondary = secondary_value if isinstance(secondary_value, Mapping) else {}
+        observations = secondary.get("forecast_observations")
+        if (
+            not isinstance(observations, Sequence)
+            or isinstance(observations, (str, bytes))
+            or not observations
+        ):
+            errors.append("missing_forecast_observations")
+        else:
+            sequences: list[int] = []
+            cutoff_times: list[str] = []
+            for observation in observations:
+                if not isinstance(observation, Mapping):
+                    errors.append("invalid_forecast_observation")
+                    continue
+                sequence = observation.get("cutoff_sequence")
+                raw_probability = observation.get("forecast_probability")
+                probability = _as_float(raw_probability)
+                if (
+                    not isinstance(sequence, int)
+                    or isinstance(sequence, bool)
+                    or sequence < 0
+                    or not isinstance(raw_probability, (int, float))
+                    or isinstance(raw_probability, bool)
+                    or probability is None
+                    or not 0 <= probability <= 1
+                    or not isinstance(observation.get("outcome"), bool)
+                    or not observation.get("record_id")
+                    or not _valid_datetime(observation.get("cutoff_at"))
+                ):
+                    errors.append("invalid_forecast_observation")
+                    continue
+                sequences.append(sequence)
+                cutoff_times.append(str(observation["cutoff_at"]))
+            expected = secondary.get("forecast_cutoff_count")
+            if (
+                not isinstance(expected, int)
+                or isinstance(expected, bool)
+                or expected < 1
+                or len(observations) != expected
+                or len(sequences) != len(observations)
+                or sequences != list(range(1, expected + 1))
+                or len(set(cutoff_times)) != len(cutoff_times)
+            ):
+                errors.append("invalid_forecast_cutoffs")
         if row.get("configuration_resolved") is not True:
             errors.append("unresolved_configuration")
         rubric_validation = row.get("rubric_validation")
@@ -1582,73 +3176,94 @@ def _input_validation(scorecards: Sequence[Mapping[str, Any]]) -> dict[str, Any]
     }
 
 
-def _forecast_values(context: Mapping[str, Any]) -> tuple[list[float], list[bool]]:
-    probabilities: list[float] = []
+def _forecast_cutoff_sequences(context: Mapping[str, Any]) -> list[int]:
+    checkpoints = sorted(
+        (_row_data(row) for row in _rows(context, "checkpoints")),
+        key=lambda row: int(row.get("sequence", 0)),
+    )
+    sequences: list[int] = []
+    for checkpoint in checkpoints:
+        raw_sequence = checkpoint.get("sequence")
+        if isinstance(raw_sequence, int) and not isinstance(raw_sequence, bool):
+            sequences.append(raw_sequence)
+    if not sequences:
+        return []
+    initial = min(sequences)
+    reached: set[int] = set()
+    for item in _rows(context, "trace"):
+        advanced = _trace_payload(item).get("checkpoint_advanced")
+        advanced_checkpoint = (
+            advanced.get("checkpoint") if isinstance(advanced, Mapping) else None
+        )
+        sequence = (
+            advanced_checkpoint.get("sequence")
+            if isinstance(advanced_checkpoint, Mapping)
+            else None
+        )
+        if (
+            isinstance(sequence, int)
+            and not isinstance(sequence, bool)
+            and sequence > initial
+        ):
+            reached.add(sequence)
+    return sorted(reached)
 
-    def probability(value: Any) -> float | None:
-        value = _json_value(value)
-        if isinstance(value, Mapping):
-            for key in (
-                "forecast_probability",
-                "win_probability",
-                "forecast",
-                "probability",
-            ):
-                number = _as_float(value.get(key))
-                if number is not None and 0 <= number <= 1:
-                    return number
-        return None
 
-    history = _rows(context, "crm_history")
-    if history:
-        checkpointed: dict[Any, float] = {}
-        uncheckpointed: list[float] = []
-        for index, row in enumerate(history):
-            value = _row_data(row)
-            snapshot = (
-                _json_value(row.get("snapshot")) if isinstance(row, Mapping) else None
-            )
-            candidate = snapshot if isinstance(snapshot, Mapping) else value
-            number = probability(candidate)
-            if number is None and isinstance(row, Mapping):
-                number = probability(row.get("changes"))
-            if number is None:
+def _forecast_observations(context: Mapping[str, Any]) -> list[dict[str, Any]]:
+    checkpoints = sorted(
+        (_row_data(row) for row in _rows(context, "checkpoints")),
+        key=lambda row: int(row.get("sequence", 0)),
+    )
+    expected_sequences = set(_forecast_cutoff_sequences(context))
+    if not expected_sequences:
+        return []
+    oracle = context.get("oracle")
+    facts = oracle.get("verification_facts") if isinstance(oracle, Mapping) else None
+    record_id = str(facts.get("deal_id", "")) if isinstance(facts, Mapping) else ""
+    if not record_id:
+        records = [_row_data(row) for row in _rows(context, "crm_records")]
+        record_id = str(records[0].get("record_id", "")) if records else ""
+    captured: list[tuple[int, str, Mapping[str, Any]]] = []
+    for item in _rows(context, "trace"):
+        advanced = _trace_payload(item).get("checkpoint_advanced")
+        if not isinstance(advanced, Mapping):
+            continue
+        values = advanced.get("forecast_observations")
+        if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
+            continue
+        for value in values:
+            if not isinstance(value, Mapping):
                 continue
-            checkpoint = MISSING
-            if isinstance(row, Mapping):
-                for key in ("checkpoint", "checkpoint_sequence", "checkpoint_id"):
-                    if row.get(key) is not None:
-                        checkpoint = row[key]
-                        break
-                if checkpoint is MISSING:
-                    for key in ("checkpoint", "checkpoint_sequence", "checkpoint_id"):
-                        if (
-                            isinstance(candidate, Mapping)
-                            and candidate.get(key) is not None
-                        ):
-                            checkpoint = candidate[key]
-                            break
-            if checkpoint is MISSING:
-                uncheckpointed.append(number)
-            else:
-                checkpointed[checkpoint] = number
-        probabilities.extend(checkpointed[key] for key in sorted(checkpointed, key=str))
-        probabilities.extend(uncheckpointed)
-    else:
-        records = _rows(context, "crm_records")
-        for record in records:
-            number = probability(_row_data(record))
-            if number is not None:
-                probabilities.append(number)
-        if not probabilities:
-            for item in _rows(context, "trace"):
-                number = probability(_trace_payload(item))
-                if number is not None:
-                    probabilities.append(number)
+            sequence = _as_int(value.get("cutoff_sequence"))
+            observed_record = str(value.get("record_id", ""))
+            if sequence is not None and observed_record:
+                captured.append((sequence, observed_record, value))
     outcome = context.get("terminal_outcome")
-    return probabilities, [outcome == "closed_won"] * len(
-        probabilities
-    ) if outcome in TERMINAL_OUTCOMES else []
+    checkpoint_by_sequence = {
+        int(checkpoint["sequence"]): checkpoint for checkpoint in checkpoints
+    }
+    return [
+        {
+            "record_id": record_id,
+            "cutoff_sequence": sequence,
+            "cutoff_at": str(
+                checkpoint_by_sequence[sequence].get(
+                    "forecast_cutoff_at",
+                    checkpoint_by_sequence[sequence].get("available_at", ""),
+                )
+            ),
+            "forecast_probability": value.get("forecast_probability"),
+            "outcome": outcome == "closed_won"
+            if outcome in TERMINAL_OUTCOMES
+            else None,
+        }
+        for sequence, observed_record, value in sorted(
+            captured, key=lambda item: (item[0], item[1])
+        )
+        if observed_record == record_id
+        and sequence in checkpoint_by_sequence
+        and sequence in expected_sequences
+    ]
 
 
 def _secondary_metrics(context: Mapping[str, Any]) -> dict[str, Any]:
@@ -1681,9 +3296,8 @@ def _secondary_metrics(context: Mapping[str, Any]) -> dict[str, Any]:
             metrics["cycle_days"] = abs((_date(end) - _date(start)).days)
         except TypeError, ValueError:
             pass
-    probabilities, outcomes = _forecast_values(context)
-    if probabilities and outcomes:
-        metrics["forecast_brier"] = brier_score(probabilities, outcomes)
+    metrics["forecast_observations"] = _forecast_observations(context)
+    metrics["forecast_cutoff_count"] = len(_forecast_cutoff_sequences(context))
     predicted_amount = _first_value(
         context, ("forecast_amount", "predicted_amount", "amount_forecast")
     )
@@ -1738,10 +3352,33 @@ def _first_value(context: Mapping[str, Any], keys: Sequence[str]) -> Any:
     return MISSING
 
 
-def _validate_rubric(assertions: Sequence[Any]) -> dict[str, Any]:
+def _validate_rubric(
+    rubric: Mapping[str, Any], context: Mapping[str, Any]
+) -> dict[str, Any]:
+    assertions = rubric.get("assertions", ())
+    assertions = (
+        assertions
+        if isinstance(assertions, Sequence) and not isinstance(assertions, (str, bytes))
+        else ()
+    )
     errors: list[str] = []
     total_weight = 0.0
     deterministic_weight = 0.0
+    strict_contract = rubric.get("contract") == "trusted-verifier-v1"
+    facts = resolve_path(context, "oracle.verification_facts")
+    facts = facts if isinstance(facts, Mapping) else {}
+    evidence_catalog = facts.get("evidence_catalog")
+    evidence_catalog = evidence_catalog if isinstance(evidence_catalog, Mapping) else {}
+    known_roles = set(_list_strings(facts.get("responsible_roles")))
+    known_objectives = set(_list_strings(facts.get("objective_ids")))
+    semantic_targets: set[str] = set()
+    forbidden_tokens = {
+        "record_integrity_status",
+        "side_effect_review",
+        "post_intervention_evidence_ref",
+        "evidence_refs",
+        "self_attestation",
+    }
     for index, assertion in enumerate(assertions):
         if not isinstance(assertion, Mapping):
             errors.append(f"assertion[{index}] is not an object")
@@ -1753,6 +3390,50 @@ def _validate_rubric(assertions: Sequence[Any]) -> dict[str, Any]:
         total_weight += weight
         if str(assertion.get("kind", "deterministic")) in {"deterministic", "metric"}:
             deterministic_weight += weight
+        if not strict_contract:
+            continue
+        path, _, _, _ = _assertion_target(assertion)
+        if not path or not path.startswith("verifier."):
+            errors.append(f"assertion[{index}] target must use verifier facts")
+        elif "[" in path or "]" in path:
+            errors.append(f"assertion[{index}] target cannot use array indexes")
+        if path and any(token in path.casefold() for token in forbidden_tokens):
+            errors.append(
+                f"assertion[{index}] target uses an agent-authored magic field"
+            )
+        semantic = assertion.get("semantic_target")
+        if not isinstance(semantic, str) or not semantic:
+            errors.append(f"assertion[{index}] semantic_target is missing")
+        elif semantic in semantic_targets:
+            errors.append(f"assertion[{index}] semantic_target is duplicated")
+        else:
+            semantic_targets.add(semantic)
+        if (
+            assertion.get("required") is True
+            and assertion.get("controllability") == "uncontrollable"
+        ):
+            errors.append(f"assertion[{index}] required target is uncontrollable")
+        roles = set(_list_strings(assertion.get("responsible_roles")))
+        objectives = set(_list_strings(assertion.get("objective_ids")))
+        if not roles or not roles.issubset(known_roles):
+            errors.append(f"assertion[{index}] has no authorized responsible role")
+        if not objectives or not objectives.issubset(known_objectives):
+            errors.append(f"assertion[{index}] has no valid checkpoint objective")
+        available_by = assertion.get("available_by")
+        if not isinstance(available_by, str):
+            errors.append(f"assertion[{index}] evidence deadline is missing")
+        refs = _list_strings(assertion.get("evidence_refs"))
+        if not refs:
+            errors.append(f"assertion[{index}] evidence refs are missing")
+        for ref in refs:
+            source = evidence_catalog.get(ref)
+            if not isinstance(source, Mapping):
+                errors.append(f"assertion[{index}] evidence ref is not trusted")
+            elif (
+                isinstance(available_by, str)
+                and str(source.get("available_at", "")) > available_by
+            ):
+                errors.append(f"assertion[{index}] evidence ref is available too late")
     fraction = deterministic_weight / total_weight if total_weight else 0.0
     if fraction < 0.75:
         errors.append(
@@ -1909,7 +3590,7 @@ def grade_run(
     assertions = rubric_value.get("assertions", ())
     if not isinstance(assertions, Sequence):
         raise TypeError("rubric assertions must be an array")
-    rubric_validation = _validate_rubric(assertions)
+    rubric_validation = _validate_rubric(rubric_value, context)
     results = [
         evaluate_assertion(item, context, judge_scores)
         for item in assertions
@@ -1968,20 +3649,20 @@ def grade_run(
     elif status == "unknown" and trace_completed and terminal in TERMINAL_OUTCOMES:
         status = "completed"
     completed = status == "completed"
-    valid = (
-        completed
-        and terminal in TERMINAL_OUTCOMES
+    scoreable = bool(
+        status in {"running", "completed"}
         and not unsupported
         and rubric_validation["valid"]
         and not integrity_errors
     )
+    valid = completed and terminal in TERMINAL_OUTCOMES and scoreable
     inferred_critical = _critical_inferred_violations(context)
     score_status = (
-        "valid" if valid else ("agent_error" if status == "failed" else "invalid")
+        "valid" if scoreable else ("agent_error" if status == "failed" else "invalid")
     )
     execution_index = (
         0.0
-        if critical_failures or inferred_critical or not valid
+        if critical_failures or inferred_critical or not scoreable
         else 100 * sum(category_scores.values()) / len(CATEGORIES)
     )
     violations = [
@@ -2266,6 +3947,7 @@ def aggregate_scorecards(
             "incomplete_pair_count": incomplete_count,
         },
         "category_scores": category_scores,
+        "forecast_accuracy": _aggregate_forecast_accuracy(rows, report_official),
         "reliability": reliability,
         "critical_violation_rate": round(critical_violation_rate, 6),
         "ordering_keys": ordering_keys,
@@ -2311,6 +3993,75 @@ def aggregate_scorecards(
     )
     report["score_hash"] = aggregate_scorecard_hash(report)
     return report
+
+
+def _aggregate_forecast_accuracy(
+    rows: Sequence[Mapping[str, Any]], official: bool
+) -> dict[str, Any]:
+    by_cutoff: dict[int, list[tuple[float, bool]]] = defaultdict(list)
+    for row in rows:
+        secondary = row.get("secondary_metrics")
+        observations = (
+            secondary.get("forecast_observations", ())
+            if isinstance(secondary, Mapping)
+            else ()
+        )
+        if not isinstance(observations, Sequence) or isinstance(
+            observations, (str, bytes)
+        ):
+            continue
+        for observation in observations:
+            if not isinstance(observation, Mapping):
+                continue
+            sequence = observation.get("cutoff_sequence")
+            probability = _as_float(observation.get("forecast_probability"))
+            outcome = observation.get("outcome")
+            if (
+                isinstance(sequence, int)
+                and not isinstance(sequence, bool)
+                and probability is not None
+                and 0 <= probability <= 1
+                and isinstance(outcome, bool)
+            ):
+                by_cutoff[sequence].append((probability, outcome))
+    groups = [by_cutoff[sequence] for sequence in sorted(by_cutoff)]
+    values = [value for group in groups for value in group]
+    return {
+        "official": official,
+        "outcome_visibility": "public",
+        "leakage_resistant": False,
+        "overall_brier": (
+            round(
+                brier_score(
+                    (probability for probability, _ in values),
+                    (outcome for _, outcome in values),
+                ),
+                6,
+            )
+            if values
+            else None
+        ),
+        "by_cutoff": [
+            {
+                "cutoff_sequence": sequence,
+                "observations": len(group),
+                "brier": round(
+                    brier_score(
+                        (probability for probability, _ in group),
+                        (outcome for _, outcome in group),
+                    ),
+                    6,
+                ),
+                "mean_probability": round(
+                    sum(probability for probability, _ in group) / len(group), 6
+                ),
+                "event_rate": round(
+                    sum(outcome for _, outcome in group) / len(group), 6
+                ),
+            }
+            for sequence, group in sorted(by_cutoff.items())
+        ],
+    }
 
 
 def _execution_pairs(

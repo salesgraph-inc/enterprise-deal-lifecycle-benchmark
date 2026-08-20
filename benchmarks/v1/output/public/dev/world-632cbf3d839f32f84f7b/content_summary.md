@@ -3,20 +3,20 @@
 - Split: dev
 - Vertical: legal_services
 - Seller: Quarry Counsel LLP
-- Buyer: Stonebridge Tern Collective (stonebridge-tern-collective.example)
+- Buyer: Keystone Meridian Holdings (keystone-meridian-holdings.example)
 - Simulated duration: 305 days
-- Checkpoints: 10
-- Canonical artifacts: 72
+- Checkpoints: 8
+- Canonical artifacts: 113
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
+- transcript: 12
+- email: 28
 - internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
-- web_news: 6
+- crm: 22
+- calendar: 9
+- document: 26
+- web_news: 4
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

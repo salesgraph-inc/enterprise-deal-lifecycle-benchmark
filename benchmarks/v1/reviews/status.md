@@ -2,7 +2,7 @@
 
 Status date: 2026-08-17
 
-The repository contains 72 public worlds, 5,184 artifacts, and 180 shared
+The repository contains 72 public worlds, 8,060 artifacts, and 180 shared
 seller documents. This register records release
 gates, not benchmark results.
 

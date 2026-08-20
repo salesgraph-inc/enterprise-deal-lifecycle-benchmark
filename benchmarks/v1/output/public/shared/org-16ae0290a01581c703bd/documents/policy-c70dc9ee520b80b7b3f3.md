@@ -9,12 +9,12 @@
 
 ## Control
 
-Rule: For competitive intelligence, Blueharbor Risk Partners may not mark exposure and loss data complete until Placement Operations Lead verifies submission version history, binder checklist, and policy issuance tracker.
+Rule: For competitive intelligence, Blueharbor Risk Partners may not mark additional information complete until Placement Operations Lead verifies submission version history, binder checklist, and post-placement reconciliation.
 Owner: Placement Operations Lead
-Required evidence: submission version history, binder checklist, and policy issuance tracker.
+Required evidence: submission version history, binder checklist, and post-placement reconciliation.
 Approval threshold: Exposure above USD 50,000.00 (5000000 minor units) requires written approval from Placement Operations Lead.
 Escalation trigger: Escalate when the CRM stage precedes client order or a binder term lacks source evidence.
 
 ## Recordkeeping
 
-Attach the evidence to the exposure and loss data record, preserve prior versions, and record the decision date before advancing the commercial insurance placement.
+Attach the evidence to the additional information record, preserve prior versions, and record the decision date before advancing the commercial insurance placement.

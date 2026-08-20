@@ -3,20 +3,20 @@
 - Split: train
 - Vertical: consulting
 - Seller: Fieldstone Advisory Studio
-- Buyer: Northfield Fallow Industries (northfield-fallow-industries.example)
+- Buyer: Meridian Fallow Enterprises (meridian-fallow-enterprises.example)
 - Simulated duration: 294 days
-- Checkpoints: 9
-- Canonical artifacts: 72
+- Checkpoints: 7
+- Canonical artifacts: 108
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
-- internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
-- web_news: 6
+- transcript: 11
+- email: 27
+- internal_chat: 13
+- crm: 16
+- calendar: 6
+- document: 28
+- web_news: 7
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

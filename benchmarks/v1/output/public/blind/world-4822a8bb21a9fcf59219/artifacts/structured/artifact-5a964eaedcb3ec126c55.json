@@ -1,0 +1,109 @@
+{
+  "artifact_key": "commercial_model_crm_projection",
+  "gate_id": "commercial_model",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": true,
+      "basis": {
+        "amount_minor_units": 324450000,
+        "field": "fixed_fee_minor_units",
+        "value": 324450000
+      },
+      "policy_evidence": "pricing model, margin worksheet, and approved service specification",
+      "policy_limit_minor_units": 15000000,
+      "policy_owner": "Commercial Partner",
+      "reason": "concrete_term_breaches_policy",
+      "required": true,
+      "trigger": "seller_policy_exception"
+    },
+    "approval_required": true,
+    "artifact_key": "commercial_model_crm_projection",
+    "artifact_subtype": "crm_projection",
+    "author": {
+      "display_name": "Lior V. Bell-Grove-a5a3",
+      "email": "revops@fieldstone-advisory.example",
+      "kind": "seller",
+      "organization_id": "org-1cd3b08c8fdb009592e4",
+      "role_id": "seller.revops"
+    },
+    "author_actor_id": "act-d5a01d6beae6e03e97e6",
+    "author_role_id": "seller.revops",
+    "authoritative_for": [
+      "commercial_model",
+      "crm_projection"
+    ],
+    "authority_actor_ids": [
+      "act-3dd9572be600cdc28ed3"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-3dd9572be600cdc28ed3",
+        "effective_at": "2025-09-22T09:00:00Z",
+        "resolution": "pending",
+        "rights": [
+          "accept_risk_allocation",
+          "review_pricing"
+        ]
+      }
+    ],
+    "authority_role_id": "consulting.commercial_authority",
+    "authority_role_ids": [
+      "consulting.commercial_authority"
+    ],
+    "channel": "crm",
+    "checkpoint_id": "checkpoint-2184e210a0c53c7a8bbc",
+    "close_date": "2025-12-30",
+    "decision_owner_actor_id": "act-3dd9572be600cdc28ed3",
+    "decision_owner_actor_ids": [
+      "act-3dd9572be600cdc28ed3"
+    ],
+    "decision_state": "pending",
+    "forecast_cutoff_at": "2025-09-22T16:30:00Z",
+    "gate_id": "commercial_model",
+    "next_step": "account executive to confirm the service specification decision with buyer authority",
+    "payment_basis": {
+      "days": 30,
+      "milestones": [
+        "kickoff",
+        "interim",
+        "acceptance"
+      ]
+    },
+    "pricing_basis": {
+      "blended_hourly_rate_minor_units": 1968750,
+      "fee_minor_units": 315000000,
+      "model": "fixed_fee"
+    },
+    "projection_origin": {
+      "source_actor_id": "act-36886f9a883748b2354a",
+      "source_artifact_id": "artifact-2e680aa9e283b57f4466",
+      "source_time": "2025-09-22T12:03:00Z",
+      "transformation": "structured_authority_projection",
+      "visible": true
+    },
+    "projection_sequence": 4,
+    "recipient_role_ids": [],
+    "recipients": [],
+    "required_signer_actor_ids": [
+      "act-3dd9572be600cdc28ed3"
+    ],
+    "required_signer_role_ids": [
+      "consulting.commercial_authority"
+    ],
+    "risk_allocation": {
+      "change_control": "shared",
+      "delivery_risk": "seller_bounded"
+    },
+    "source_evidence_term": "pricing mechanism, risk allocation, and payment basis",
+    "source_fact_ids": [
+      "consulting-evaluation-pricing"
+    ],
+    "stage": "commercial_model"
+  }
+}

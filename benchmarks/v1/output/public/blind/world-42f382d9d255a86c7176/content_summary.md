@@ -3,20 +3,20 @@
 - Split: blind
 - Vertical: manufacturing
 - Seller: Northstar Fabrication Cooperative
-- Buyer: Keystone Alder Industries (keystone-alder-industries.example)
+- Buyer: Granite Elmshore Industries (granite-elmshore-industries.example)
 - Simulated duration: 295 days
-- Checkpoints: 8
-- Canonical artifacts: 72
+- Checkpoints: 7
+- Canonical artifacts: 108
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
+- transcript: 16
+- email: 27
 - internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
-- web_news: 6
+- crm: 16
+- calendar: 7
+- document: 23
+- web_news: 7
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

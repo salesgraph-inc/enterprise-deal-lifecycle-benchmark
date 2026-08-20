@@ -9,7 +9,7 @@
 
 ## Control
 
-Rule: For risk escalation, Northstar Fabrication Cooperative may not mark rfq complete until Supply Chain Risk Lead verifies material traceability certificate and supplier continuity assessment.
+Rule: For risk escalation, Northstar Fabrication Cooperative may not mark purchase order complete until Supply Chain Risk Lead verifies material traceability certificate and supplier continuity assessment.
 Owner: Supply Chain Risk Lead
 Required evidence: material traceability certificate and supplier continuity assessment.
 Approval threshold: Exposure above USD 50,000.00 (5000000 minor units) requires written approval from Supply Chain Risk Lead.
@@ -17,4 +17,4 @@ Escalation trigger: Escalate when a sole-source material lacks a qualified alter
 
 ## Recordkeeping
 
-Attach the evidence to the rfq record, preserve prior versions, and record the decision date before advancing the industrial component and equipment sale.
+Attach the evidence to the purchase order record, preserve prior versions, and record the decision date before advancing the industrial component and equipment sale.

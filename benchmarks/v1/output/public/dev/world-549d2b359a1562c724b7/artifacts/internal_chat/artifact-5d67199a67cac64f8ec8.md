@@ -1,9 +1,0 @@
-# Commercial Insurance policy issuance update
-
-- Channel: internal chat
-- Date: 2025-08-31T09:00:00Z
-- Participants: Cato L. Cairn, Indra K. Orchard
-
-Cato L. Cairn: Carry the policy issuance commitment into the policy issuance checkpoint.
-Indra K. Orchard: I will attach the evidence and route any exception to the authorized approver.
-Cato L. Cairn: Rhea E. Rook confirmed a spending hold through the next planning cycle, so the policy issuance gate cannot receive approval now.

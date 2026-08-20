@@ -1,0 +1,11 @@
+# Construction qualification update
+
+- Publisher: EDLB Synthetic Wire
+- Published: 2025-02-24T14:56:00Z
+- URL: https://edlb.example/signals/artifact-4c33db1eccbfe3646e30
+
+A synthetic operations bulletin flags a new timing constraint for organizations in public transportation infrastructure.
+The qualification source still governs the unresolved CM/GC qualifications and best-value selection evidence item.
+Treat the current CM/GC qualifications and best-value selection evidence entry as a source claim, not a forecast fact.
+Preserve the prior record while the decision group reviews the change.
+Preserve the prior CM/GC qualifications and best-value selection evidence record until this signal has buyer support.

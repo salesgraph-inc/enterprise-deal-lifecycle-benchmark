@@ -3,20 +3,20 @@
 - Split: blind
 - Vertical: construction
 - Seller: Cinderline Builders Group
-- Buyer: Harbor Ironwood Industries (harbor-ironwood-industries.example)
+- Buyer: Ironwood Harbor Group (ironwood-harbor-group.example)
 - Simulated duration: 289 days
 - Checkpoints: 8
-- Canonical artifacts: 72
+- Canonical artifacts: 115
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
+- transcript: 15
+- email: 25
 - internal_chat: 12
-- crm: 12
+- crm: 22
 - calendar: 8
-- document: 10
+- document: 27
 - web_news: 6
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

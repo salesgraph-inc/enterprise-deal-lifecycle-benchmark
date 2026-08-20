@@ -1,0 +1,107 @@
+{
+  "artifact_key": "pricing_crm_projection",
+  "gate_id": "pricing",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": false,
+      "basis": null,
+      "policy_evidence": null,
+      "policy_limit_minor_units": null,
+      "policy_owner": null,
+      "reason": "no_seller_exception",
+      "required": false,
+      "trigger": "none"
+    },
+    "approval_required": false,
+    "approved_return": 0.085,
+    "artifact_key": "pricing_crm_projection",
+    "artifact_subtype": "crm_projection",
+    "author": {
+      "display_name": "Niko L. Vale-Rook-4845",
+      "email": "revops@emberline-bank.example",
+      "kind": "seller",
+      "organization_id": "org-15490f97d24ea61d5e2a",
+      "role_id": "seller.revops"
+    },
+    "author_actor_id": "act-22467e3e5f728f8302ed",
+    "author_role_id": "seller.revops",
+    "authoritative_for": [
+      "pricing",
+      "crm_projection"
+    ],
+    "authority_actor_ids": [
+      "act-e07da6d19f58926e9b15"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-e07da6d19f58926e9b15",
+        "effective_at": "2025-09-26T09:00:00Z",
+        "resolution": "pending",
+        "rights": [
+          "provide_buyer_input",
+          "accept_credit_decision",
+          "accept_preclosing_checklist",
+          "accept_return",
+          "accept_sensitivity_analysis",
+          "authorize_closing",
+          "review_closing_conditions",
+          "review_customer_due_diligence",
+          "review_customer_identity",
+          "review_independent_credit_record",
+          "review_loan_documents",
+          "review_risk_based_pricing",
+          "review_underwriting",
+          "verify_beneficial_owner"
+        ]
+      }
+    ],
+    "authority_role_id": "buyer.finance",
+    "authority_role_ids": [
+      "buyer.finance"
+    ],
+    "channel": "crm",
+    "checkpoint_id": "checkpoint-1699ec4cb8dcb14da569",
+    "close_date": "2025-12-29",
+    "decision_owner_actor_id": "act-e07da6d19f58926e9b15",
+    "decision_owner_actor_ids": [
+      "act-e07da6d19f58926e9b15"
+    ],
+    "decision_state": "pending",
+    "fee_waiver": 0,
+    "forecast_cutoff_at": "2025-09-26T15:45:00Z",
+    "gate_id": "pricing",
+    "next_step": "account executive to confirm the credit approval decision with buyer authority",
+    "pricing_basis": {
+      "base_rate": "SOFR",
+      "model": "risk_based_spread",
+      "spread_basis_points": 95
+    },
+    "projection_origin": {
+      "source_actor_id": "act-e07da6d19f58926e9b15",
+      "source_artifact_id": "artifact-eeff7d22233513a9aba9",
+      "source_time": "2025-09-26T12:33:00Z",
+      "transformation": "structured_authority_projection",
+      "visible": true
+    },
+    "projection_sequence": 4,
+    "recipient_role_ids": [],
+    "recipients": [],
+    "required_signer_actor_ids": [
+      "act-e07da6d19f58926e9b15"
+    ],
+    "required_signer_role_ids": [
+      "buyer.finance"
+    ],
+    "source_evidence_term": "risk-based pricing within documented lending authority",
+    "source_fact_ids": [
+      "banking-lending-authority"
+    ],
+    "stage": "pricing"
+  }
+}

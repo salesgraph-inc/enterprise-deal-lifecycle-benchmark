@@ -1,0 +1,110 @@
+{
+  "artifact_key": "quotation_crm_projection",
+  "gate_id": "quotation",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": true,
+      "basis": {
+        "amount_minor_units": 8000000,
+        "field": "annual_premium_minor_units",
+        "value": 8000000
+      },
+      "policy_evidence": "quote comparison, commission disclosure, and client order",
+      "policy_limit_minor_units": 10000000,
+      "policy_owner": "Broking Director",
+      "reason": "concrete_term_within_policy",
+      "required": false,
+      "trigger": "seller_policy_exception"
+    },
+    "approval_required": false,
+    "artifact_key": "quotation_crm_projection",
+    "artifact_subtype": "crm_projection",
+    "author": {
+      "display_name": "Greer E. Umber-Solace-6e66",
+      "email": "revops@blueharbor-risk.example",
+      "kind": "seller",
+      "organization_id": "org-16ae0290a01581c703bd",
+      "role_id": "seller.revops"
+    },
+    "author_actor_id": "act-c61792439dbeb4b85e56",
+    "author_role_id": "seller.revops",
+    "authoritative_for": [
+      "quotation",
+      "crm_projection"
+    ],
+    "authority_actor_ids": [
+      "act-51b248c52e0230699d37"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-51b248c52e0230699d37",
+        "effective_at": "2025-07-04T09:00:00Z",
+        "resolution": "pending",
+        "rights": [
+          "accept_quotation_request_basis",
+          "review_subjectivities"
+        ]
+      }
+    ],
+    "authority_role_id": "insurance.underwriter_authority",
+    "authority_role_ids": [
+      "insurance.underwriter_authority"
+    ],
+    "channel": "crm",
+    "checkpoint_id": "checkpoint-1a5f68965899b176fcf8",
+    "close_date": "2025-10-30",
+    "commissions": {
+      "broker_minor_units": 800000,
+      "carrier_fee_minor_units": 320000,
+      "total_minor_units": 1120000
+    },
+    "decision_owner_actor_id": "act-51b248c52e0230699d37",
+    "decision_owner_actor_ids": [
+      "act-51b248c52e0230699d37"
+    ],
+    "decision_state": "pending",
+    "exclusions": [
+      "known_pollution_without_endorsement"
+    ],
+    "forecast_cutoff_at": "2025-07-04T15:00:00Z",
+    "gate_id": "quotation",
+    "limits": {
+      "aggregate_minor_units": 640000000,
+      "each_claim_minor_units": 320000000
+    },
+    "next_step": "account executive to confirm the client order decision with buyer authority",
+    "premium_to_each_claim_limit": 0.025,
+    "premiums": {
+      "annual_minor_units": 8000000,
+      "total_term_minor_units": 16000000
+    },
+    "projection_origin": {
+      "source_actor_id": "act-51b248c52e0230699d37",
+      "source_artifact_id": "artifact-5b4e5160abb8a554acff",
+      "source_time": "2025-07-04T11:57:00Z",
+      "transformation": "structured_authority_projection",
+      "visible": true
+    },
+    "projection_sequence": 2,
+    "recipient_role_ids": [],
+    "recipients": [],
+    "required_signer_actor_ids": [
+      "act-51b248c52e0230699d37"
+    ],
+    "required_signer_role_ids": [
+      "insurance.underwriter_authority"
+    ],
+    "source_evidence_term": "quotation with limits, premiums, commissions, and exclusions",
+    "source_fact_ids": [
+      "insurance-submission-quote",
+      "insurance-structured-placement-data"
+    ],
+    "stage": "quotation"
+  }
+}

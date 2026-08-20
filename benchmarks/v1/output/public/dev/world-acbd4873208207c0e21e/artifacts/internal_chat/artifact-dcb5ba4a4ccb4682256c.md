@@ -1,0 +1,11 @@
+# Consulting commercial model update
+
+- Channel: internal chat
+- Date: 2025-07-14T14:26:00Z
+- Participants: Orin E. Fallow-Juniper-1ac6, Wren I. Juniper-Umber-1fee
+
+Orin E. Fallow-Juniper-1ac6: Carry the scope commitment into the commercial model checkpoint.
+Wren I. Juniper-Umber-1fee: I will attach the evidence and route any exception to the authorized approver.
+Orin E. Fallow-Juniper-1ac6: Any change to pricing mechanism, risk allocation, and payment basis needs its own buyer-backed date and source.
+Orin E. Fallow-Juniper-1ac6: Separate the dated buyer record from the current forecast assumption.
+Orin E. Fallow-Juniper-1ac6: Wren I. Juniper-Umber-1fee recorded evaluation matrix disclosed for the commercial model gate in the buyer's evaluation record.

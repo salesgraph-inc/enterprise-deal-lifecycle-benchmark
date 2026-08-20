@@ -287,6 +287,16 @@ class CliTest(unittest.TestCase):
                 manifest["pair_id"] = (
                     f"pair-blind-fixture-{vertical}-{vertical_index // 2:02d}"
                 )
+                manifest.update(
+                    {
+                        "counterfactual_variant": "a"
+                        if vertical_index % 2 == 0
+                        else "b",
+                        "causal_skeleton": "champion_departure",
+                        "terminal_outcome": "closed_lost",
+                        "seed": index,
+                    }
+                )
                 manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
             public = [
                 runner.validate_world_bundle(path.parent)
@@ -329,6 +339,16 @@ class CliTest(unittest.TestCase):
                     "base_facts_equal": True,
                     "pre_intervention_artifacts_equal": True,
                     "post_intervention_artifact_differences": 1,
+                    "post_intervention_changes_are_declared_descendants": True,
+                    "causal_event_graph_valid": True,
+                    "action_contracts_isomorphic": True,
+                    "pre_intervention_events_equal": True,
+                    "pre_intervention_hidden_events_equal": True,
+                    "terminal_mappings_isomorphic": True,
+                    "milestone_contracts_isomorphic": True,
+                    "branch_contracts_isomorphic": True,
+                    "selected_evidence_contracts_isomorphic": True,
+                    "reference_trace_causal_material_isomorphic": True,
                     "allowed_differences": [
                         "opaque_public_identity_projection",
                         "declared_intervention",

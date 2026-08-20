@@ -1,0 +1,11 @@
+# Manufacturing quality and capacity review update
+
+- Publisher: EDLB Synthetic Wire
+- Published: 2025-08-28T12:26:00Z
+- URL: https://edlb.example/signals/artifact-f76213d9009b9e5be6b6
+
+A synthetic trade bulletin reviews timing pressure around the quality and capacity review stage of a industrial component and equipment sale.
+The open process capability, capacity, run-at-rate, and launch-readiness evidence question still points back to the apqp review record.
+The next review should test process capability, capacity, run-at-rate, and launch-readiness evidence against a dated buyer reply.
+Keep unresolved ownership visible until the buyer responds.
+Keep the process capability, capacity, run-at-rate, and launch-readiness evidence forecast unchanged until a dated buyer source confirms the signal.

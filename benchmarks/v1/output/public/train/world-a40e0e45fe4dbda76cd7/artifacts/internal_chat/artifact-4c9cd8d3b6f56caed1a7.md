@@ -1,9 +1,0 @@
-# Corporate Banking covenants and closing update
-
-- Channel: internal chat
-- Date: 2025-11-09T09:00:00Z
-- Participants: Kiran K. Pine, Orin M. Umber
-
-Kiran K. Pine: The USD 95,000,000.00 amount is unchanged, but covenants and closing still has an open dependency.
-Orin M. Umber: I will flag the stale projection and avoid overwriting the audit history.
-Kiran K. Pine: Orin M. Umber disclosed that the incumbent is being benchmarked at the covenants and closing gate and requested a comparable response.

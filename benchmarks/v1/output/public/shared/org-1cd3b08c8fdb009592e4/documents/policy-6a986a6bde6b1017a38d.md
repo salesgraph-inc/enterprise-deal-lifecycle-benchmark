@@ -9,12 +9,12 @@
 
 ## Control
 
-Rule: For discount policy, Fieldstone Advisory Studio may not mark staffing complete until Commercial Partner verifies pricing model, margin worksheet, and approved statement of work.
+Rule: For discount policy, Fieldstone Advisory Studio may not mark delivery resourcing complete until Commercial Partner verifies pricing model, margin worksheet, and approved service specification.
 Owner: Commercial Partner
-Required evidence: pricing model, margin worksheet, and approved statement of work.
+Required evidence: pricing model, margin worksheet, and approved service specification.
 Approval threshold: Exposure above USD 150,000.00 (15000000 minor units) requires written approval from Commercial Partner.
 Escalation trigger: Escalate when discount exceeds 10 percent or engagement margin falls below 35 percent.
 
 ## Recordkeeping
 
-Attach the evidence to the staffing record, preserve prior versions, and record the decision date before advancing the strategy and operations engagement.
+Attach the evidence to the delivery resourcing record, preserve prior versions, and record the decision date before advancing the strategy and operations engagement.

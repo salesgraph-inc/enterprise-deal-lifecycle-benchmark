@@ -11,8 +11,8 @@
   underwriting decisions, legal advice, or employee evaluation
 
 The generated data contains all 72 worlds publicly, 24 each in train, dev, and
-blind splits. Each world has 72 artifacts. The full pack therefore contains 72
-worlds, 5,184 artifacts, 716 checkpoint windows, 180 shared seller documents,
+blind splits. Each world has 100 to 120 artifacts. The full pack therefore contains 72
+worlds, 8,060 artifacts, 576 checkpoint windows, 180 shared seller documents,
 36 counterfactual pairs, and 4 rich renderings. No benchmark performance,
 human-review result, stakeholder-model selection, or judge-calibration result
 is claimed.
@@ -75,6 +75,11 @@ news signals. The public contract defines role-scoped APIs for CRM,
 communications, calendar, documents, approvals, web, team messages, and run
 control. Audio, browser UI, live SaaS integrations, and live web access are
 excluded from v1.
+
+External messages, calendar text, and agent-authored document payloads are
+rendered from validated semantic envelopes. Agent text remains only in the
+committed call trace. External sends reject attached agent documents whose
+persisted broker payload no longer matches its envelope.
 
 Events have separate effective, recorded, and available times. This prevents
 an agent from discovering a fact before it should be visible. CRM is a mutable
@@ -155,30 +160,56 @@ intervention and its legitimate descendants.
 
 Vertical process gates follow process references, not copied records:
 
-- Manufacturing uses supplier qualification and quality controls informed by
-  the [Neapco Supplier Requirements Manual](https://www.neapco.com/wp-content/uploads/2024/01/Neapco-Supplier-Requirements-Manual.pdf).
-- Construction uses qualification, bidding, safety, bonding, and award stages
-  informed by [AGC guidelines](https://www.agc.org/sites/default/files/Files/Programs%20%26%20Industry%20Relations/CM_GC_Guidelines.pdf).
-- Commercial insurance uses submission, underwriting, quote, order, binding,
-  and issuance concepts informed by [ACORD ePlacing guidance](https://www.acord.org/docs/default-source/ruschlikon-documents-newsletters/ruschlikon-member-resources/best-practice-guide-%28eplacing%29.pdf?sfvrsn=791d006f_4).
-- Consulting uses discovery, scope, procurement, and approval concepts
+- Manufacturing models the Neapco supplier program, not manufacturing generally.
+  Its qualification and quality controls are informed by the
+  [Neapco Supplier Requirements Manual](https://www.neapco.com/wp-content/uploads/2024/01/Neapco-Supplier-Requirements-Manual.pdf).
+- Construction is a synthetic composite of a direct federal FAR construction
+  acquisition and nonbinding public-transportation CM/GC practice. It is not an
+  FTA grant-recipient procurement or a unified legal regime. CM/GC concepts come
+  from [AGC Highway CM/GC Best Practices](https://www.agc.org/sites/default/files/Files/Programs%20%26%20Industry%20Relations/Highway_CMGC_Best_Practices_Final_03-11.pdf),
+  while site-visit, solicitation, award, and bond controls use the
+  [FAR FAC 2025-03 archive](https://www.acquisition.gov/sites/default/files/archives/far/pdf/2025-03.pdf).
+- Commercial insurance models the Lloyd's January 2023 digital placement
+  journey. It uses submission, additional information, quotation
+  request, quotation, client order, binding, contract-data validation, and
+  post-placement concepts informed by the
+  [Lloyd's Digital Placement Customer Journey V2](https://assets.lloyds.com/media/b4b96d50-27c7-41e5-a322-ebf7f2f7e1ea/Customer%20Journey%20V2%20January%202023.pdf).
+- Consulting models United Kingdom central government departments and
+  arm's-length bodies. Its discovery, scope, procurement, and
+  knowledge-transfer readiness concepts are
   informed by the [Consultancy Playbook](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/1103954/The_Consultancy_Playbook_Version_1.1_September_2022.pdf).
-- Legal services uses conflicts, panel selection, fee, security, and
-  engagement concepts informed by [GSK's outside-counsel initiative](https://www.acc.com/sites/default/files/2019-12/GlaxoSmithKline-Outside-Counsel-Selection-Initiative-OCSI.pdf).
-- Corporate banking uses diligence, underwriting, approval, documentation,
-  and closing concepts informed by the [OCC lending handbook](https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/files/lending-loan-portfolio-risk-management/pub-ch-lending-loan-portfolio.pdf).
+- Legal services models California professional-conduct rules with GSK-specific
+  outside-counsel sourcing. Its conflicts, panel selection, fee,
+  confidentiality, and engagement concepts are informed by
+  [GSK's outside-counsel initiative](https://www.acc.com/sites/default/files/2019-12/GlaxoSmithKline-Outside-Counsel-Selection-Initiative-OCSI.pdf)
+  and the [State Bar of California's 2018 Rules of Professional Conduct](https://www.calbar.ca.gov/sites/default/files/portals/0/documents/rules/New-Rules-of-Professional-Conduct-2018.pdf).
+- Corporate banking models an OCC-supervised United States national bank. Its
+  diligence, underwriting, approval, documentation, and closing concepts are
+  informed by the contemporaneous
+  [OCC Loan Portfolio Management handbook](https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/files/lending-loan-portfolio-risk-management/pub-ch-loan-portfolio-mgmt-previous.pdf)
+  and then-applicable BSA/AML examination manual. FinCEN's February 2026
+  account-opening relief and May 2026 FAQ updates postdate every modeled BSA
+  onboarding checkpoint and are outside those checkpoints' applicability. See the current
+  [FinCEN CDD Rule FAQs](https://www.fincen.gov/resources/statutes-and-regulations/cdd-rule-faqs).
+
+All remote originals are represented by official URLs, retrieval dates, byte
+counts, and content hashes. Their full files are not redistributed.
 
 ## Evaluation
 
 The primary result is an Execution Index from eight equally weighted
 categories: evidence and account understanding, CRM integrity, stakeholder
-management, workflow compliance, communication, forecast calibration,
+management, workflow compliance, communication, forecast discipline,
 longitudinal recovery, and side-effect discipline. A confirmed critical
 violation sets the world score to zero. Strict Cycle Pass requires every
 required assertion and every critical condition to pass.
+Integrity-valid running runs receive provisional partial EI but cannot earn
+Strict Cycle Pass; failed, invalid, or integrity-broken runs score zero.
 
-Terminal outcome, revenue, margin, close date, cycle length, and forecast error
-are reported separately. Win rate and revenue are not the headline score.
+Terminal outcome, revenue, margin, close date, cycle length, and forecast accuracy
+are reported separately. Forecast accuracy uses canonical pre-exposure snapshots
+and raw Brier scores by cutoff. Public outcomes make this a leakage-sensitive
+diagnostic, not a leakage-resistant measure. Win rate and revenue are not the headline score.
 Every official system run must have exactly three trials. Reports include pass@1,
 pass@3, pass^3, paired confidence intervals, resource use, and invalid-action
 counts.

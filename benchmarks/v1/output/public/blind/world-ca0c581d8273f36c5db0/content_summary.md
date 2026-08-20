@@ -3,20 +3,20 @@
 - Split: blind
 - Vertical: commercial_insurance
 - Seller: Blueharbor Risk Partners
-- Buyer: Oakline Umber Enterprises (oakline-umber-enterprises.example)
+- Buyer: Keystone Redwood Holdings (keystone-redwood-holdings.example)
 - Simulated duration: 283 days
-- Checkpoints: 8
-- Canonical artifacts: 72
+- Checkpoints: 7
+- Canonical artifacts: 101
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
-- internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
-- web_news: 6
+- transcript: 8
+- email: 30
+- internal_chat: 14
+- crm: 19
+- calendar: 6
+- document: 20
+- web_news: 4
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

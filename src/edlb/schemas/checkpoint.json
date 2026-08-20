@@ -9,13 +9,33 @@
     "world_id",
     "sequence",
     "available_at",
+    "forecast_cutoff_at",
     "window_start",
     "window_end",
     "status",
+    "synthetic",
     "objective_ids",
     "visible_artifact_ids",
+    "released_event_ids",
     "required_roles",
-    "terminal"
+    "terminal",
+    "visible_gate",
+    "label",
+    "business_objective",
+    "decision_condition",
+    "role_deliverables",
+    "completion_conditions",
+    "policy_entrypoints",
+    "gate_id",
+    "source_fact_ids",
+    "required_artifact_keys",
+    "required_artifact_roles",
+    "authority_role_ids",
+    "authority_rights",
+    "required_payload_fields",
+    "decision_route",
+    "recovery_decisions",
+    "availability_delay_bounds"
   ],
   "properties": {
     "checkpoint_id": {
@@ -28,10 +48,13 @@
     },
     "sequence": {
       "type": "integer",
-      "minimum": 0,
-      "maximum": 11
+      "minimum": 0
     },
     "available_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "forecast_cutoff_at": {
       "type": "string",
       "format": "date-time"
     },
@@ -45,7 +68,10 @@
     },
     "status": {
       "type": "string",
-      "enum": ["pending", "active", "complete", "failed"]
+      "enum": ["pending", "active", "complete", "failed", "skipped"]
+    },
+    "synthetic": {
+      "const": true
     },
     "objective_ids": {
       "type": "array",
@@ -88,6 +114,118 @@
     },
     "terminal": {
       "type": "boolean"
+    },
+    "visible_gate": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "business_objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "decision_condition": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "role_deliverables": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "account_executive",
+        "domain_specialist",
+        "sales_manager",
+        "revops"
+      ],
+      "properties": {
+        "account_executive": {"type": "string", "minLength": 1},
+        "domain_specialist": {"type": "string", "minLength": 1},
+        "sales_manager": {"type": "string", "minLength": 1},
+        "revops": {"type": "string", "minLength": 1}
+      }
+    },
+    "completion_conditions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "policy_entrypoints": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+      }
+    },
+    "gate_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "source_fact_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "required_artifact_keys": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "required_artifact_roles": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["evidence", "supporting", "decision", "projection"]
+      }
+    },
+    "authority_role_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "authority_rights": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "required_payload_fields": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "decision_route": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "recovery_decisions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "availability_delay_bounds": {
+      "type": "object",
+      "required": ["min_minutes", "max_minutes"],
+      "additionalProperties": false,
+      "properties": {
+        "min_minutes": {"type": "integer", "minimum": 0},
+        "max_minutes": {"type": "integer", "minimum": 0}
+      }
     }
   }
 }

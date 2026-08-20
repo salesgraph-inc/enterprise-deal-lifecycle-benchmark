@@ -47,6 +47,7 @@ def _string(
     pattern: str | None = None,
     values: Sequence[str] | None = None,
     date_time: bool = False,
+    description: str | None = None,
 ) -> dict[str, Any]:
     result: dict[str, Any] = {
         "type": "string",
@@ -59,6 +60,8 @@ def _string(
         result["enum"] = list(values)
     if date_time:
         result["format"] = "date-time"
+    if description is not None:
+        result["description"] = description
     return result
 
 
@@ -101,17 +104,152 @@ LIMIT = {"type": "integer", "minimum": 1, "maximum": 100}
 ROLE = _string(values=SELLER_ROLES, maximum=32)
 RECIPIENT = _string(minimum=1, maximum=254)
 STRING_LIST = _array(_string(maximum=1000), maximum=100)
+PURPOSE_CODES = (
+    "advance_gate",
+    "close_won",
+    "coordinate_meeting",
+    "request_information",
+    "record_closed_lost",
+    "record_disqualified",
+    "record_no_decision",
+    "recover_gate",
+    "share_document",
+    "update_account",
+)
+DECISION_CODES = (
+    "confirm_attendance",
+    "confirm_closing_authority",
+    "confirm_deferred_disposition",
+    "confirm_gate_authority",
+    "confirm_remedied_disposition",
+    "confirm_rejected_disposition",
+    "request_information",
+    "request_remediation_decision",
+)
+COMMITMENT_CODES = (
+    "defer_outreach",
+    "follow_up",
+    "handoff_delivery",
+    "provide_information",
+    "record_before_advancing",
+    "complete_remediation",
+    "stop_pursuit",
+)
+RESOLUTION_CODES = (
+    "accepted",
+    "deferred",
+    "pending",
+    "rejected",
+    "remedied",
+    "unknown",
+)
+EVIDENCE_CLAIM = _object(
+    {
+        "artifact_id": ID,
+        "claim_type": _string(
+            values=(
+                "context_only",
+                "supports_gate_basis",
+                "supports_gate_resolution",
+            ),
+            description="Use context_only for background, supports_gate_basis for gate evidence, and supports_gate_resolution only for the authoritative decision record.",
+        ),
+        "gate_id": ID,
+        "resolution": _string(values=RESOLUTION_CODES),
+    },
+    ("artifact_id", "claim_type", "gate_id", "resolution"),
+)
+OPTIONAL_TIMESTAMP = {"anyOf": [_string(date_time=True, maximum=64), {"type": "null"}]}
 SEMANTIC_ENVELOPE = _object(
     {
+        "target_actor_id": {
+            **ID,
+            "description": "The actor receiving or governing this action.",
+        },
         "purpose": _string(minimum=1, maximum=1000),
-        "related_records": STRING_LIST,
-        "requested_decisions": STRING_LIST,
-        "commitments": STRING_LIST,
+        "purpose_code": _string(
+            values=PURPOSE_CODES,
+            description="Use advance_gate or a record_* code only for an evidence-backed disposition. Use coordinate_meeting, request_information, share_document, or update_account for non-disposition work.",
+        ),
+        "gate_id": ID,
+        "resolution": _string(
+            values=RESOLUTION_CODES,
+            description="Use accepted, deferred, rejected, or remedied only when supported by an authoritative decision. Use pending or unknown for non-disposition work.",
+        ),
+        "related_records": _array(ID, minimum=1, maximum=100, unique=True),
+        "requested_decisions": _array(_string(minimum=1, maximum=1000), maximum=100),
+        "decision_codes": _array(
+            _string(
+                values=DECISION_CODES,
+                description="Classifies each requested decision. Leave empty when no decision is requested.",
+            ),
+            maximum=10,
+            unique=True,
+        ),
+        "commitments": _array(_string(minimum=1, maximum=1000), maximum=100),
+        "commitment_codes": _array(
+            _string(
+                values=COMMITMENT_CODES,
+                description="Classifies each commitment. Leave empty when no commitment is made.",
+            ),
+            maximum=10,
+            unique=True,
+        ),
+        "commitment_owner_role": ROLE,
+        "decision_due_at": OPTIONAL_TIMESTAMP,
+        "commitment_due_at": OPTIONAL_TIMESTAMP,
         "attachments": _array(ID, maximum=100, unique=True),
+        "evidence_claims": _array(EVIDENCE_CLAIM, maximum=100, unique=True),
     },
-    ("purpose", "related_records", "requested_decisions", "commitments", "attachments"),
+    (
+        "target_actor_id",
+        "purpose",
+        "purpose_code",
+        "gate_id",
+        "resolution",
+        "related_records",
+        "requested_decisions",
+        "decision_codes",
+        "commitments",
+        "commitment_codes",
+        "commitment_owner_role",
+        "decision_due_at",
+        "commitment_due_at",
+        "attachments",
+        "evidence_claims",
+    ),
 )
 NONEMPTY_OBJECT = {"type": "object", "additionalProperties": True, "minProperties": 1}
+REMEDIATION_PLAN = _object(
+    {
+        "cure_data": NONEMPTY_OBJECT,
+        "gate_id": ID,
+        "owner_role": ROLE,
+    },
+    (
+        "cure_data",
+        "gate_id",
+        "owner_role",
+    ),
+)
+CRM_CHANGES = _object(
+    {
+        "forecast_probability": {"type": "number", "minimum": 0, "maximum": 1},
+        "next_step_type": _string(
+            values=(
+                "archive_disposition",
+                "buyer_gate_decision",
+                "delivery_handoff",
+                "monitor_reentry",
+                "remediation_decision",
+            )
+        ),
+        "next_step_gate_id": ID,
+        "disposition_code": _string(values=RESOLUTION_CODES),
+    },
+    minimum=1,
+    additional=True,
+)
 
 
 ARGUMENT_SCHEMAS: dict[str, dict[str, Any]] = {
@@ -119,7 +257,7 @@ ARGUMENT_SCHEMAS: dict[str, dict[str, Any]] = {
     "crm.read": _object({"record_id": ID}, ("record_id",)),
     "crm.history": _object({"record_id": ID}, ("record_id",)),
     "crm.update": _object(
-        {"record_id": ID, "changes": NONEMPTY_OBJECT}, ("record_id", "changes")
+        {"record_id": ID, "changes": CRM_CHANGES}, ("record_id", "changes")
     ),
     "crm.merge": _object(
         {"source_id": ID, "target_id": ID}, ("source_id", "target_id")
@@ -142,7 +280,7 @@ ARGUMENT_SCHEMAS: dict[str, dict[str, Any]] = {
             "body": TEXT,
             "semantic_envelope": SEMANTIC_ENVELOPE,
         },
-        ("channel", "recipients", "subject", "body"),
+        ("channel", "recipients", "subject", "body", "semantic_envelope"),
     ),
     "calendar.list": _object({"limit": LIMIT}),
     "calendar.schedule": _object(
@@ -183,11 +321,14 @@ ARGUMENT_SCHEMAS: dict[str, dict[str, Any]] = {
             "title": _string(minimum=1, maximum=1000),
             "content": TEXT,
             "kind": _string(minimum=1, maximum=64),
+            "remediation": REMEDIATION_PLAN,
+            "semantic_envelope": SEMANTIC_ENVELOPE,
         },
-        ("title", "content"),
+        ("title", "content", "semantic_envelope"),
     ),
     "documents.revise": _object(
-        {"document_id": ID, "content": TEXT}, ("document_id", "content")
+        {"document_id": ID, "content": TEXT, "semantic_envelope": SEMANTIC_ENVELOPE},
+        ("document_id", "content", "semantic_envelope"),
     ),
     "documents.attach": _object(
         {
@@ -205,11 +346,12 @@ ARGUMENT_SCHEMAS: dict[str, dict[str, Any]] = {
     ),
     "approvals.request": _object(
         {
-            "approver_role": _string(values=(*SELLER_ROLES, "system"), maximum=32),
+            "approver_actor_ids": _array(ID, minimum=1, unique=True),
             "purpose": _string(minimum=1, maximum=1000),
             "details": NONEMPTY_OBJECT,
+            "semantic_envelope": SEMANTIC_ENVELOPE,
         },
-        ("approver_role", "purpose", "details"),
+        ("approver_actor_ids", "purpose", "details", "semantic_envelope"),
     ),
     "approvals.approve": _object(
         {"approval_id": ID, "note": _string(maximum=4000)}, ("approval_id",)
@@ -222,22 +364,17 @@ ARGUMENT_SCHEMAS: dict[str, dict[str, Any]] = {
     "team.inbox": _object({"limit": LIMIT}),
     "team.search": _object({"query": QUERY, "limit": LIMIT}),
     "team.send": _object(
-        {"recipients": _array(ROLE, minimum=1, maximum=4, unique=True), "body": TEXT},
-        ("recipients", "body"),
+        {
+            "recipients": _array(ROLE, minimum=1, maximum=4, unique=True),
+            "body": TEXT,
+            "checkpoint_id": ID,
+        },
+        ("recipients", "body", "checkpoint_id"),
     ),
     "run.status": _object({}),
     "run.yield": _object({}),
-    "run.complete_checkpoint": _object(
-        {"checkpoint_id": ID, "summary": _string(minimum=1, maximum=4000)},
-        ("checkpoint_id", "summary"),
-    ),
+    "run.complete_checkpoint": _object({"checkpoint_id": ID}, ("checkpoint_id",)),
 }
-ARGUMENT_SCHEMAS["communications.send"]["allOf"] = [
-    {
-        "if": {"properties": {"channel": {"const": "email"}}},
-        "then": {"required": ["semantic_envelope"]},
-    }
-]
 SUPPORTED = frozenset(ARGUMENT_SCHEMAS)
 WRITE_TOOLS = frozenset(
     name for name in SUPPORTED if name.rsplit(".", 1)[1] in WRITE_ACTIONS
@@ -324,6 +461,17 @@ def _validate_value(value: Any, schema: Mapping[str, Any], path: str) -> None:
             "maximum" in schema and value > int(schema["maximum"])
         ):
             raise ProtocolError(f"{path} is outside its allowed range")
+    elif expected == "number":
+        if (
+            not isinstance(value, (int, float))
+            or isinstance(value, bool)
+            or not math.isfinite(value)
+        ):
+            raise ProtocolError(f"{path} must be a finite number")
+        if value < schema.get("minimum", value) or (
+            "maximum" in schema and value > schema["maximum"]
+        ):
+            raise ProtocolError(f"{path} is outside its allowed range")
     else:
         _json_value(value, path)
     if "enum" in schema and value not in schema["enum"]:
@@ -373,11 +521,11 @@ class ToolDispatcher:
             raise ProtocolError("arguments must be an object")
         _validate_value(call.arguments, ARGUMENT_SCHEMAS[call.tool_name], "arguments")
         if (
-            call.tool_name == "communications.send"
-            and call.arguments.get("channel") == "email"
-            and "semantic_envelope" not in call.arguments
+            call.tool_name == "documents.create"
+            and call.arguments.get("kind") == "remediation_plan"
+            and "remediation" not in call.arguments
         ):
-            raise ProtocolError("email writes require semantic_envelope")
+            raise ProtocolError("remediation plans require structured remediation")
         if call.tool_name in WRITE_TOOLS and not call.idempotency_key:
             raise IdempotencyError("write tool calls require an idempotency key")
         if (
@@ -472,12 +620,15 @@ class ToolDispatcher:
                 str(args["content"]),
                 str(args.get("kind", "document")),
                 key,
+                semantic_envelope=args.get("semantic_envelope"),
+                remediation=args.get("remediation"),
             )
         if name == "documents.revise":
             return self.engine.documents_revise(
                 role,
                 str(args["document_id"]),
                 str(args["content"]),
+                semantic_envelope=args["semantic_envelope"],
                 idempotency_key=key,
             )
         if name == "documents.attach":
@@ -495,10 +646,11 @@ class ToolDispatcher:
         if name == "approvals.request":
             return self.engine.approvals_request(
                 role,
-                str(args["approver_role"]),
+                [str(item) for item in args["approver_actor_ids"]],
                 str(args["purpose"]),
                 dict(args["details"]),
                 key,
+                args["semantic_envelope"],
             )
         if name == "approvals.approve":
             return self.engine.approvals_approve(
@@ -522,7 +674,11 @@ class ToolDispatcher:
             )
         if name == "team.send":
             return self.engine.team_send(
-                role, args["recipients"], str(args["body"]), key
+                role,
+                args["recipients"],
+                str(args["body"]),
+                str(args["checkpoint_id"]),
+                key,
             )
         if name == "run.status":
             return self.engine.run_status(role)
@@ -530,7 +686,9 @@ class ToolDispatcher:
             return self.engine.run_yield(role)
         if name == "run.complete_checkpoint":
             return self.engine.complete_checkpoint(
-                role, str(args["checkpoint_id"]), str(args["summary"]), key
+                role,
+                str(args["checkpoint_id"]),
+                key,
             )
         raise ProtocolError(f"unsupported tool: {name!r}")
 
@@ -603,15 +761,16 @@ class ToolDispatcher:
         try:
             self.engine.record_tool_attempt(call.role)
             self._validate_call(call)
-            data = self._execute(call)
-            if call.tool_name in WRITE_TOOLS and isinstance(data, Mapping):
-                self.engine.apply_agent_action(
+            if call.tool_name in WRITE_TOOLS:
+                data = self.engine.execute_agent_write(
                     call.idempotency_key or call.call_id,
                     call.role,
                     call.tool_name,
                     call.arguments,
-                    data,
+                    lambda: self._execute(call),
                 )
+            else:
+                data = self._execute(call)
             result = data if isinstance(data, Mapping) else {"items": data}
             output = ToolResult(call.call_id, True, result=result)
             token_usage, cost_minor_units = _trace_metrics(data)
@@ -631,6 +790,7 @@ class ToolDispatcher:
                 token_usage=token_usage,
                 cost_minor_units=cost_minor_units,
             )
+            self.engine._save_snapshot()
             return output
         except (
             KeyError,
@@ -656,6 +816,7 @@ class ToolDispatcher:
                 message_id=result_message_id,
                 latency_ms=max(0, int((time.monotonic() - started) * 1000)),
             )
+            self.engine._save_snapshot()
             return output
 
 

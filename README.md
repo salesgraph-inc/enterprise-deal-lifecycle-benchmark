@@ -8,11 +8,11 @@ valid terminal outcome.
 ## Current release state
 
 The v1 runtime and generated data are present. The repository contains all 72
-worlds publicly, 24 each in train, dev, and blind splits. Every world has 72
-artifacts, for 5,184 artifacts, and the authoring pack contains 180 shared
+worlds publicly, 24 each in train, dev, and blind splits. Each world has 100 to
+120 artifacts, for 8,060 artifacts, and the authoring pack contains 180 shared
 seller documents.
 
-Across the full pack there are 72 worlds, 5,184 artifacts, 716 checkpoint
+Across the full pack there are 72 worlds, 8,060 artifacts, 576 checkpoint
 windows, 180 shared seller documents, 36 counterfactual pairs, and 4 rich
 renderings.
 
@@ -127,7 +127,7 @@ The generated packs are stored at:
 benchmarks/v1/output/public/train/   public train worlds
 benchmarks/v1/output/public/dev/     public dev worlds
 benchmarks/v1/output/public/blind/   public blind worlds
-benchmarks/v1/authoring/             blueprints and shared documents
+benchmarks/v1/authoring/             blueprints, source evidence, and shared documents
 benchmarks/v1/baselines/             diagnostic provider trials, not leaderboard results
 ~~~
 
@@ -175,7 +175,9 @@ edlb validate benchmarks/v1
 The current generated records are summarized in
 benchmarks/v1/authoring/validation.json and
 benchmarks/v1/output/manifest.json. The public manifest reports 72 worlds,
-5,184 artifacts, and 36 counterfactual pair diffs.
+8,060 artifacts, and 36 counterfactual pair diffs.
+
+Consulting manifests carry the tracked [Consultancy Playbook attribution](benchmarks/v1/authoring/attributions.json).
 
 ## Pending release gates
 
@@ -205,7 +207,11 @@ trademark or legal clearance.
 The contract draws on outcome-based evaluation in [Tau2-Bench](https://github.com/sierra-research/tau2-bench/blob/main/docs/evaluation.md), final-state verification in [EnterpriseOps Gym](https://github.com/ServiceNow/EnterpriseOps-Gym), the discussion of expert-authored work products in [GDPval](https://openai.com/index/gdpval/), event-first synthetic generation in [ESL-Bench](https://arxiv.org/html/2604.02834), and verifier design guidance in [The Art of Building Verifiers](https://arxiv.org/html/2604.06240v1). Harvey LAB informed separation between task data, runtime, agents, and evaluation, but its code and structure are not copied.
 
 Vertical process references are listed in BENCHMARK_CARD.md and are used as
-process guidance only. They are not data sources for copied customer records.
+process guidance only. Each world declares its modeled applicability, which is
+not a claim of universal legal or industry coverage. Remote originals are not
+redistributed. Run `python scripts/verify_source_evidence.py` to stream and
+verify all 11 official source URLs against their recorded byte counts and
+SHA-256 hashes. A host challenge or unavailable source fails closed.
 
 ## Licensing
 

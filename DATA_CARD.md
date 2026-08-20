@@ -4,8 +4,8 @@
 
 EDLB v1 is a generated synthetic dataset for longitudinal enterprise sales
 evaluation. The pack contains all 72 worlds publicly, 24 each in train, dev,
-and blind splits. Each world contains 72 artifacts, for 5,184 artifacts
-overall, 716 checkpoint windows are defined across the pack, 180 shared seller
+and blind splits. Each world contains 100 to 120 artifacts, for 8,060 artifacts
+overall, 576 checkpoint windows are defined across the pack, 180 shared seller
 documents are indexed in the authoring pack, there are 36 counterfactual pairs,
 and 4 rich renderings.
 
@@ -168,6 +168,8 @@ focused-tested.
 On 2026-08-17, a preliminary PyPI check for edlb returned 404 and an exact
 phrase GitHub search returned zero results. These observations are not formal
 trademark or legal clearance.
+
+Consulting manifests link the tracked [Consultancy Playbook attribution](benchmarks/v1/authoring/attributions.json).
 
 ## Licensing
 

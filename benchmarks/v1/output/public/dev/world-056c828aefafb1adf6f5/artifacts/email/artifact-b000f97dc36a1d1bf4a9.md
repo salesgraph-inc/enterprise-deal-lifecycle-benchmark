@@ -1,0 +1,16 @@
+# Legal Services panel or rfp selection update
+
+- From: account.executive@quarry-counsel.example
+- To: maren-e-keel-vale-f23c@cairn-dovetail-group.example
+- Date: 2025-04-11T13:33:00Z
+- Subject: Cairn Dovetail Group outside counsel pursuit | panel or rfp selection review
+
+Hi Maren E. Keel-Vale-f23c,
+
+Today we agreed not to advance beyond panel or rfp selection until the source record is reconciled. Please reply with corrections to the owner, amount, or timing.
+Compare any new mini-RFI and sourcing-room comparison statement with the dated record before replacing it.
+Separate the dated buyer record from the current forecast assumption.
+An automated reply says Cato Q. Pine-Umber-006a is no longer with Cairn Dovetail Group; no replacement owner is named for the panel or rfp selection work.
+
+Regards,
+Dara V. North-Pine-38fb

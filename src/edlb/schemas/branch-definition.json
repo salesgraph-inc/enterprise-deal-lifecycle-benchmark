@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/branch-definition.json",
+  "title": "BranchDefinition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["branch_id", "action_checkpoint_id", "resolution_checkpoint_id", "remedy_milestone_id", "recoverable", "success_if_any", "success_decision_artifact_ids", "fallback_decision_artifact_ids"],
+  "properties": {
+    "branch_id": {"$ref": "#/$defs/id"},
+    "action_checkpoint_id": {"$ref": "#/$defs/id"},
+    "resolution_checkpoint_id": {"$ref": "#/$defs/id"},
+    "remedy_milestone_id": {"$ref": "#/$defs/id"},
+    "recoverable": {"type": "boolean"},
+    "success_if_any": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/nonempty_ids"}},
+    "success_decision_artifact_ids": {"$ref": "#/$defs/nonempty_ids"},
+    "fallback_decision_artifact_ids": {"$ref": "#/$defs/nonempty_ids"}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "nonempty_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}}
+  }
+}

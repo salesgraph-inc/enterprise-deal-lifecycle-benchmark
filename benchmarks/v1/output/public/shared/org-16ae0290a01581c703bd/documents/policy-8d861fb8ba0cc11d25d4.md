@@ -9,7 +9,7 @@
 
 ## Control
 
-Rule: For data handling, Blueharbor Risk Partners may not mark policy issuance complete until Insurance Compliance Officer verifies sanctions screening, surplus-lines review, and disclosure checklist.
+Rule: For data handling, Blueharbor Risk Partners may not mark post placement complete until Insurance Compliance Officer verifies sanctions screening, surplus-lines review, and disclosure checklist.
 Owner: Insurance Compliance Officer
 Required evidence: sanctions screening, surplus-lines review, and disclosure checklist.
 Approval threshold: Exposure above USD 50,000.00 (5000000 minor units) requires written approval from Insurance Compliance Officer.
@@ -17,4 +17,4 @@ Escalation trigger: Escalate when a required disclosure is unsigned or a placeme
 
 ## Recordkeeping
 
-Attach the evidence to the policy issuance record, preserve prior versions, and record the decision date before advancing the commercial insurance placement.
+Attach the evidence to the post placement record, preserve prior versions, and record the decision date before advancing the commercial insurance placement.

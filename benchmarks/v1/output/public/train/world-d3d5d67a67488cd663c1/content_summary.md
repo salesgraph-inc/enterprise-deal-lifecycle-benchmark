@@ -3,20 +3,20 @@
 - Split: train
 - Vertical: commercial_insurance
 - Seller: Blueharbor Risk Partners
-- Buyer: Juniper Keystone Industries (juniper-keystone-industries.example)
+- Buyer: Harbor Vale Group (harbor-vale-group.example)
 - Simulated duration: 249 days
-- Checkpoints: 11
-- Canonical artifacts: 72
+- Checkpoints: 7
+- Canonical artifacts: 120
 - Shared seller documents: 30
 
 ## Channels
 
 - transcript: 10
-- email: 14
-- internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
-- web_news: 6
+- email: 36
+- internal_chat: 16
+- crm: 21
+- calendar: 7
+- document: 25
+- web_news: 5
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

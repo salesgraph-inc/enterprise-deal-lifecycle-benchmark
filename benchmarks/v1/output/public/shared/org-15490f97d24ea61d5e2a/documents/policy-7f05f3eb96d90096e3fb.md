@@ -9,10 +9,10 @@
 
 ## Control
 
-Rule: For margin guardrails, Emberline Commercial Bank may not mark pricing complete until Credit Committee Chair verifies underwriting memorandum, risk rating, and repayment sensitivity.
-Owner: Credit Committee Chair
+Rule: For margin guardrails, Emberline Commercial Bank may not mark pricing complete until Senior Credit Approver verifies underwriting memorandum, risk rating, and repayment sensitivity.
+Owner: Senior Credit Approver
 Required evidence: underwriting memorandum, risk rating, and repayment sensitivity.
-Approval threshold: Exposure above USD 10,000,000.00 (1000000000 minor units) requires written approval from Credit Committee Chair.
+Approval threshold: Exposure above USD 10,000,000.00 (1000000000 minor units) requires written approval from Senior Credit Approver.
 Escalation trigger: Escalate when any exception breaches delegated credit authority or debt-service coverage falls below 1.25.
 
 ## Recordkeeping

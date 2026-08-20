@@ -9,7 +9,6 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 causal = import_module("edlb.causal")
-grade_run = import_module("edlb.grading").grade_run
 ScenarioManifest = import_module("edlb.models").ScenarioManifest
 Event = import_module("edlb.models").Event
 ToolCall = import_module("edlb.protocol").ToolCall
@@ -31,6 +30,7 @@ WORLD = next(
 
 
 def activate(engine: object) -> None:
+    engine.seed_crm_record("deal-1", {"stage": "new"})
     engine.advance_checkpoint(idempotency_key="activate")
 
 
@@ -39,8 +39,7 @@ def complete_checkpoint(engine: object, checkpoint_id: str) -> None:
         engine.complete_checkpoint(
             role,
             checkpoint_id,
-            "reviewed",
-            f"complete-{checkpoint_id}-{role}",
+            idempotency_key=f"complete-{checkpoint_id}-{role}",
         )
 
 
@@ -83,7 +82,7 @@ class CausalEngineTest(unittest.TestCase):
         self.assertNotIn("pair_id", serialized)
         self.assertNotIn("terminal_outcome", serialized)
 
-    def test_public_event_effects_wait_for_available_at(self) -> None:
+    def test_public_events_do_not_grant_milestone_progress(self) -> None:
         with make_engine() as engine:
             self.assertEqual(
                 engine.causal_lanes()["stakeholder_consensus"]["score"], 20
@@ -94,7 +93,7 @@ class CausalEngineTest(unittest.TestCase):
             engine.advance_checkpoint(idempotency_key="advance-next")
             consensus = engine.causal_lanes()["stakeholder_consensus"]
             self.assertEqual(engine.current_time, NEXT)
-            self.assertEqual(consensus["score"], -30)
+            self.assertEqual(consensus["score"], 20)
             self.assertIn("event-later", engine.causal_state()["event_ids"])
 
     def test_seeded_crm_visibility_gates_search_read_and_history(self) -> None:
@@ -138,9 +137,9 @@ class CausalEngineTest(unittest.TestCase):
                 self.assertTrue(result.ok)
                 states.append(engine.causal_state())
         self.assertEqual(states[0], states[1])
-        self.assertEqual(states[0]["lanes"]["stakeholder_consensus"]["score"], 32)
+        self.assertEqual(states[0]["lanes"]["stakeholder_consensus"]["score"], 20)
 
-    def test_positive_causal_gain_is_capped_once_per_tool_and_checkpoint(self) -> None:
+    def test_generic_actions_never_grant_milestone_progress(self) -> None:
         with make_engine() as engine:
             activate(engine)
             dispatcher = ToolDispatcher(engine)
@@ -162,7 +161,7 @@ class CausalEngineTest(unittest.TestCase):
                 )
                 self.assertTrue(result.ok)
             self.assertEqual(
-                engine.causal_lanes()["stakeholder_consensus"]["score"], 32
+                engine.causal_lanes()["stakeholder_consensus"]["score"], 20
             )
             effects = [
                 row[0]
@@ -171,42 +170,7 @@ class CausalEngineTest(unittest.TestCase):
                 )
             ]
             self.assertEqual(len(effects), 2)
-            self.assertEqual(effects[1], "{}")
-
-    def test_sticky_failed_lane_rejects_later_positive_actions(self) -> None:
-        with make_engine() as engine:
-            activate(engine)
-            engine._apply_lane_effects(
-                {
-                    "stakeholder_consensus": {
-                        "absolute": -100,
-                        "status": "failed",
-                        "sticky": True,
-                        "fact": "decision group rejected the motion",
-                    }
-                },
-                "terminal-intervention",
-            )
-            result = ToolDispatcher(engine).dispatch(
-                ToolCall(
-                    "email-after-failure",
-                    "communications.send",
-                    "account_executive",
-                    {
-                        "channel": "email",
-                        "recipients": ["buyer@example.test"],
-                        "subject": "Next step",
-                        "body": "Please confirm.",
-                        "semantic_envelope": ENVELOPE,
-                    },
-                    "email-after-failure",
-                )
-            )
-            self.assertTrue(result.ok)
-            lane = engine.causal_lanes()["stakeholder_consensus"]
-            self.assertEqual(lane["score"], -100)
-            self.assertEqual(lane["status"], "failed")
-            self.assertTrue(lane["sticky"])
+            self.assertEqual(effects, ["{}", "{}"])
 
     def test_agent_event_views_hide_causal_truth(self) -> None:
         with make_engine() as engine:
@@ -346,27 +310,18 @@ class CausalEngineTest(unittest.TestCase):
             expected = source.causal_state()
             trace = [item.to_dict() for item in source.trace_events()]
         with make_engine() as target:
+            target.seed_crm_record("deal-1", {"stage": "new"})
             replay_trace(target, trace)
             self.assertEqual(target.causal_state(), expected)
 
-    def test_terminal_outcome_is_computed_from_supported_state(self) -> None:
+    def test_terminal_outcome_requires_an_explicit_resolution_mapping(self) -> None:
         with make_engine() as engine:
             activate(engine)
             complete_checkpoint(engine, "cp-0")
             engine.advance_checkpoint(idempotency_key="advance-next")
             complete_checkpoint(engine, "cp-1")
-            result = engine.run_complete(idempotency_key="finish")
-            self.assertEqual(result["result"]["terminal_outcome"], "no_decision")
-            self.assertNotEqual(
-                result["result"]["terminal_outcome"], engine.scenario.terminal_outcome
-            )
-            score = grade_run(
-                {"status": "completed", "terminal_outcome": "no_decision"},
-                {"assertions": []},
-            )
-            self.assertEqual(
-                score["secondary_metrics"]["terminal_outcome"], "no_decision"
-            )
+            with self.assertRaisesRegex(Exception, "supported terminal resolution"):
+                engine.run_complete(idempotency_key="finish")
 
 
 if __name__ == "__main__":

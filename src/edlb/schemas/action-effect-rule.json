@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edlb.example/schemas/v1/action-effect-rule.json",
+  "title": "ActionEffectRule",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["effect_id", "branch_id", "checkpoint_id", "fact_type", "role", "gate_id", "record_id", "tool_names", "required_evidence_ids", "authority_actor_id", "authority_rights", "next_gate_id", "purpose_code", "decision_code", "commitment_code", "resolution", "document_kind", "next_step_type", "remediation_requirements", "response_resolution"],
+  "properties": {
+    "effect_id": {"$ref": "#/$defs/id"},
+    "branch_id": {"$ref": "#/$defs/id"},
+    "checkpoint_id": {"$ref": "#/$defs/id"},
+    "fact_type": {"type": "string", "enum": ["authority_decision_observed", "crm_transition", "internal_approval"]},
+    "role": {"type": "string", "enum": ["account_executive", "domain_specialist", "sales_manager", "revops"]},
+    "gate_id": {"$ref": "#/$defs/id"},
+    "record_id": {"$ref": "#/$defs/id"},
+    "tool_names": {"$ref": "#/$defs/nonempty_ids"},
+    "required_evidence_ids": {"$ref": "#/$defs/ids"},
+    "authority_actor_id": {"anyOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+    "authority_rights": {"$ref": "#/$defs/ids"},
+    "next_gate_id": {"anyOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+    "purpose_code": {"anyOf": [{"type": "string", "enum": ["recover_gate"]}, {"type": "null"}]},
+    "decision_code": {"anyOf": [{"type": "string", "enum": ["request_remediation_decision"]}, {"type": "null"}]},
+    "commitment_code": {"anyOf": [{"type": "string", "enum": ["complete_remediation"]}, {"type": "null"}]},
+    "resolution": {"anyOf": [{"type": "string", "enum": ["pending"]}, {"type": "null"}]},
+    "document_kind": {"anyOf": [{"type": "string", "enum": ["remediation_plan"]}, {"type": "null"}]},
+    "next_step_type": {"anyOf": [{"type": "string", "enum": ["remediation_decision"]}, {"type": "null"}]},
+    "remediation_requirements": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["action_code", "cure_data", "due_at", "evidence_checksums", "evidence_ids", "owner_role"],
+          "properties": {
+            "action_code": {"$ref": "#/$defs/id"},
+            "cure_data": {"type": "object", "minProperties": 1},
+            "due_at": {"type": "string", "format": "date-time"},
+            "evidence_checksums": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}},
+            "evidence_ids": {"$ref": "#/$defs/nonempty_ids"},
+            "owner_role": {"type": "string", "enum": ["account_executive", "domain_specialist", "sales_manager", "revops"]}
+          }
+        },
+        {"type": "null"}
+      ]
+    },
+    "response_resolution": {"anyOf": [{"type": "string", "enum": ["accepted", "rejected", "deferred"]}, {"type": "null"}]}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "ids": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+    "nonempty_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}}
+  }
+}

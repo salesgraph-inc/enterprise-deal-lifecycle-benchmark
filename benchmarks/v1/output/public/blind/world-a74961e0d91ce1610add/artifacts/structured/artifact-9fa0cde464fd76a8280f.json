@@ -1,0 +1,94 @@
+{
+  "artifact_key": "quality_and_capacity_review_crm_projection",
+  "gate_id": "quality_and_capacity_review",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": false,
+      "basis": null,
+      "policy_evidence": null,
+      "policy_limit_minor_units": null,
+      "policy_owner": null,
+      "reason": "no_seller_exception",
+      "required": false,
+      "trigger": "none"
+    },
+    "approval_required": false,
+    "artifact_key": "quality_and_capacity_review_crm_projection",
+    "artifact_subtype": "crm_projection",
+    "author": {
+      "display_name": "Tavi Z. Rook-Rook-79eb",
+      "email": "revops@northstar-fabrication.example",
+      "kind": "seller",
+      "organization_id": "org-17b7908a756b5b564453",
+      "role_id": "seller.revops"
+    },
+    "author_actor_id": "act-58dbb1b043e42e27d21f",
+    "author_role_id": "seller.revops",
+    "authoritative_for": [
+      "quality_and_capacity_review",
+      "crm_projection"
+    ],
+    "authority_actor_ids": [
+      "act-c97307e29ef7c3fb1740"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-c97307e29ef7c3fb1740",
+        "effective_at": "2025-07-15T09:00:00Z",
+        "resolution": "pending",
+        "rights": [
+          "accept_capacity_plan",
+          "accept_revalidated_capacity",
+          "review_ppap",
+          "review_revalidation"
+        ]
+      }
+    ],
+    "authority_role_id": "manufacturing.plant_authority",
+    "authority_role_ids": [
+      "manufacturing.plant_authority"
+    ],
+    "capacity_commitment": 25000,
+    "channel": "crm",
+    "checkpoint_id": "checkpoint-081f4bf3ec738396c020",
+    "close_date": "2025-08-21",
+    "decision_owner_actor_id": "act-c97307e29ef7c3fb1740",
+    "decision_owner_actor_ids": [
+      "act-c97307e29ef7c3fb1740"
+    ],
+    "decision_state": "pending",
+    "forecast_cutoff_at": "2025-07-15T16:45:00Z",
+    "gate_id": "quality_and_capacity_review",
+    "next_step": "account executive to confirm the purchase order decision with buyer authority",
+    "ppap_status": "submitted",
+    "projection_origin": {
+      "source_actor_id": "act-c97307e29ef7c3fb1740",
+      "source_artifact_id": "artifact-3883ed0ffa8cef8a0e75",
+      "source_time": "2025-07-15T12:24:00Z",
+      "transformation": "structured_authority_projection",
+      "visible": true
+    },
+    "projection_sequence": 5,
+    "recipient_role_ids": [],
+    "recipients": [],
+    "required_signer_actor_ids": [
+      "act-c97307e29ef7c3fb1740"
+    ],
+    "required_signer_role_ids": [
+      "manufacturing.plant_authority"
+    ],
+    "run_at_rate": 1200,
+    "source_evidence_term": "process capability, capacity, run-at-rate, and launch-readiness evidence",
+    "source_fact_ids": [
+      "manufacturing-apqp-ppap",
+      "manufacturing-capacity-validation"
+    ],
+    "stage": "quality_and_capacity_review"
+  }
+}

@@ -3,20 +3,20 @@
 - Split: dev
 - Vertical: consulting
 - Seller: Fieldstone Advisory Studio
-- Buyer: Pinecrest Umber Industries (pinecrest-umber-industries.example)
+- Buyer: Umber Redwood Group (umber-redwood-group.example)
 - Simulated duration: 311 days
-- Checkpoints: 10
-- Canonical artifacts: 72
+- Checkpoints: 6
+- Canonical artifacts: 100
 - Shared seller documents: 30
 
 ## Channels
 
-- transcript: 10
-- email: 14
-- internal_chat: 12
-- crm: 12
-- calendar: 8
-- document: 10
-- web_news: 6
+- transcript: 11
+- email: 25
+- internal_chat: 11
+- crm: 16
+- calendar: 7
+- document: 26
+- web_news: 4
 
 All identities, domains, records, messages, and external signals are synthetic. No real PII is included.

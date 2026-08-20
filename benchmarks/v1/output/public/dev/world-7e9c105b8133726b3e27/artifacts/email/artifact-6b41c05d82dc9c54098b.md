@@ -1,0 +1,16 @@
+# Construction qualification update
+
+- From: account.executive@cinderline-builders.example
+- To: sable-c-vale-rook-584a@stonebridge-oakline-industries.example
+- Date: 2025-01-20T13:26:00Z
+- Subject: Stonebridge Oakline Industries federal public transportation CM/GC project pursuit | qualification review
+
+Hi Sable C. Vale-Rook-584a,
+
+Before the USD 28,000,000.00 request moves, the qualification group needs a clear decision and accountable owner. Please reply with the remaining limit and expected decision date.
+An automated reply from Indra S. Ives-Dovetail-2b88 directs the qualification questions to Lior P. Elm-Thorne-b72b, who confirms ownership.
+Treat the current CM/GC qualifications and best-value selection evidence entry as a source claim, not a forecast fact.
+Preserve the prior record while the decision group reviews the change.
+
+Regards,
+Jules V. Vale-Solace-7281

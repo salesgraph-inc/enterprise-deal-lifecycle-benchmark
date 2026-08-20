@@ -9,7 +9,7 @@
 
 ## Control
 
-Rule: For case study index, Northstar Fabrication Cooperative may not mark supplier qualification complete until Supplier Quality Director verifies signed supplier qualification checklist and sample inspection report.
+Rule: For case study index, Northstar Fabrication Cooperative may not mark rfq complete until Supplier Quality Director verifies signed supplier qualification checklist and sample inspection report.
 Owner: Supplier Quality Director
 Required evidence: signed supplier qualification checklist and sample inspection report.
 Approval threshold: Exposure above USD 25,000.00 (2500000 minor units) requires written approval from Supplier Quality Director.
@@ -17,4 +17,4 @@ Escalation trigger: Escalate when sample defects exceed 100 ppm or a required PP
 
 ## Recordkeeping
 
-Attach the evidence to the supplier qualification record, preserve prior versions, and record the decision date before advancing the industrial component and equipment sale.
+Attach the evidence to the rfq record, preserve prior versions, and record the decision date before advancing the industrial component and equipment sale.

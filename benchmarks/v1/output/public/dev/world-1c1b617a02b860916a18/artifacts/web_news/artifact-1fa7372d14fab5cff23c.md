@@ -1,0 +1,11 @@
+# Manufacturing supplier qualification update
+
+- Publisher: EDLB Synthetic Wire
+- Published: 2025-03-03T12:40:00Z
+- URL: https://edlb.example/signals/artifact-1fa7372d14fab5cff23c
+
+A synthetic trade bulletin reviews timing pressure around the supplier qualification stage of a industrial component and equipment sale.
+The open supplier self-assessment and qualification assessment question still points back to the rfq record.
+The next review should test supplier self-assessment and qualification assessment against a dated buyer reply.
+Keep unresolved ownership visible until the buyer responds.
+Keep the supplier self-assessment and qualification assessment forecast unchanged until a dated buyer source confirms the signal.

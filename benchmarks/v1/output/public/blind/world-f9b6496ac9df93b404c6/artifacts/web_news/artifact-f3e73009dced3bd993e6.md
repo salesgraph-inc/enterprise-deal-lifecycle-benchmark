@@ -1,0 +1,11 @@
+# Legal Services matter scope update
+
+- Publisher: EDLB Synthetic Wire
+- Published: 2025-07-10T17:04:00Z
+- URL: https://edlb.example/signals/artifact-f3e73009dced3bd993e6
+
+A synthetic issuer update reports a business condition that may alter the matter scope review.
+Carry the unresolved matter scope, staffing, and quality comparison item with its accountable buyer role.
+Use the latest dated buyer statement when the records conflict.
+The dated panel or rfp selection note remains the traceable source for matter scope, staffing, and quality comparison.
+Record any effect on matter scope, staffing, and quality comparison separately from the external signal.

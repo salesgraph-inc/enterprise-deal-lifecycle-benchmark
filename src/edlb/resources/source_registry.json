@@ -1,0 +1,1849 @@
+{
+  "registry_version": "v1.5.0",
+  "retrieved_at": "2026-08-19",
+  "sources": [
+    {
+      "source_id": "source-neapco-supplier-requirements",
+      "publisher": "Neapco",
+      "title": "Supplier Requirements Manual",
+      "vertical": "manufacturing",
+      "url": "https://www.neapco.com/wp-content/uploads/2024/01/Neapco-Supplier-Requirements-Manual.pdf",
+      "sections": [
+        "1.3 Request for Quotation, p. 4",
+        "1.4 Supplier Qualification, p. 5",
+        "1.5 Sourcing Evaluation and 1.6 Business Award, p. 5",
+        "2. APQP, PPAP, and Launch, pp. 6-8",
+        "2.5 Product Quality, 2.6 Capacity Planning and Evaluation, and 2.9 Run at Rate, pp. 8-10"
+      ],
+      "content_type": "application/pdf",
+      "version_date": "2022-05-31",
+      "retrieved_at": "2026-08-19",
+      "retrieval_sha256": "sha256:04289988a2af6914efbbcbf00281564eb2c6f6c40a541df7491c55ca7797875b",
+      "retrieval_method": "verified_official_hash_only",
+      "retrieval_bytes": 2929326,
+      "license_classification": "copyrighted-facts-only",
+      "allowed_use": [
+        "process_fact_derivation",
+        "synthetic_scenario_design"
+      ],
+      "prohibited_use": [
+        "source_text_reproduction",
+        "form_or_template_reproduction"
+      ],
+      "fact_ids": [
+        "manufacturing-rfq-response",
+        "manufacturing-supplier-qualification",
+        "manufacturing-award-authorization",
+        "manufacturing-apqp-ppap",
+        "manufacturing-capacity-validation"
+      ],
+      "gate_fact_ids": {
+        "rfq": [
+          "manufacturing-rfq-response"
+        ],
+        "technical_validation": [
+          "manufacturing-rfq-response"
+        ],
+        "supplier_qualification": [
+          "manufacturing-supplier-qualification"
+        ],
+        "sample_or_pilot": [
+          "manufacturing-supplier-qualification"
+        ],
+        "apqp_review": [
+          "manufacturing-apqp-ppap"
+        ],
+        "quality_and_capacity_review": [
+          "manufacturing-apqp-ppap",
+          "manufacturing-capacity-validation"
+        ],
+        "purchase_order": [
+          "manufacturing-award-authorization"
+        ],
+        "technical_revalidation": [
+          "manufacturing-capacity-validation"
+        ]
+      },
+      "claims": [
+        {
+          "fact_id": "manufacturing-rfq-response",
+          "bounded_claim": "A supplier RFQ response addresses each RFQ section, supplies requested supporting material and cost breakdowns, and meets the stated due date.",
+          "location": {
+            "section": "1.3 Request for Quotation",
+            "printed_page": 4,
+            "physical_page": 4
+          },
+          "allowed_gates": [
+            "rfq",
+            "technical_validation"
+          ],
+          "interpretation_limit": "Supports an RFQ response and technical feasibility record, not buyer acceptance, a price approval, or an order.",
+          "transformation_code": "rfq_response_to_evidence",
+          "source_version": "Supplier Requirements Manual",
+          "source_date": "2022-05-31",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Neapco, Supplier Requirements Manual, May 31, 2022",
+          "source_id": "source-neapco-supplier-requirements",
+          "claim": "A supplier RFQ response addresses each RFQ section, supplies requested supporting material and cost breakdowns, and meets the stated due date.",
+          "section": "1.3 Request for Quotation",
+          "printed_page": 4,
+          "physical_page": 4,
+          "source_version_date": "2022-05-31"
+        },
+        {
+          "fact_id": "manufacturing-supplier-qualification",
+          "bounded_claim": "Supplier qualification uses a self-assessment and may include an on-site assessment before a supplier is placed on the approved supplier list.",
+          "location": {
+            "section": "1.4 Supplier Qualification",
+            "printed_page": 5,
+            "physical_page": 5
+          },
+          "allowed_gates": [
+            "sample_or_pilot",
+            "supplier_qualification"
+          ],
+          "interpretation_limit": "Supports qualification evidence and sample review, not a claim that the synthetic seller passed an actual audit.",
+          "transformation_code": "supplier_qualification_to_evidence",
+          "source_version": "Supplier Requirements Manual",
+          "source_date": "2022-05-31",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Neapco, Supplier Requirements Manual, May 31, 2022",
+          "source_id": "source-neapco-supplier-requirements",
+          "claim": "Supplier qualification uses a self-assessment and may include an on-site assessment before a supplier is placed on the approved supplier list.",
+          "section": "1.4 Supplier Qualification",
+          "printed_page": 5,
+          "physical_page": 5,
+          "source_version_date": "2022-05-31"
+        },
+        {
+          "fact_id": "manufacturing-award-authorization",
+          "bounded_claim": "Neapco may issue a Project Authorization Letter or purchase order, and the supplier is expected to accept the award in writing within five business days.",
+          "location": {
+            "section": "1.5 Sourcing Evaluation and 1.6 Business Award",
+            "printed_page": 5,
+            "physical_page": 5
+          },
+          "allowed_gates": [
+            "purchase_order"
+          ],
+          "interpretation_limit": "Supports award and order authorization semantics, not a terminal restart or an executive approval invented by the generator.",
+          "transformation_code": "award_authorization_to_order_evidence",
+          "source_version": "Supplier Requirements Manual",
+          "source_date": "2022-05-31",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Neapco, Supplier Requirements Manual, May 31, 2022",
+          "source_id": "source-neapco-supplier-requirements",
+          "claim": "Neapco may issue a Project Authorization Letter or purchase order, and the supplier is expected to accept the award in writing within five business days.",
+          "section": "1.5 Sourcing Evaluation and 1.6 Business Award",
+          "printed_page": 5,
+          "physical_page": 5,
+          "source_version_date": "2022-05-31"
+        },
+        {
+          "fact_id": "manufacturing-apqp-ppap",
+          "bounded_claim": "The launch process uses APQP and PPAP review records, including a production-part approval decision before launch.",
+          "location": {
+            "section": "2. APQP, PPAP, and Launch",
+            "printed_page": [
+              6,
+              7,
+              8
+            ],
+            "physical_page": [
+              6,
+              7,
+              8
+            ]
+          },
+          "allowed_gates": [
+            "apqp_review",
+            "quality_and_capacity_review"
+          ],
+          "interpretation_limit": "Supports review and approval evidence, not a guaranteed launch, capacity reservation, or commercial commitment.",
+          "transformation_code": "apqp_ppap_to_launch_evidence",
+          "source_version": "Supplier Requirements Manual",
+          "source_date": "2022-05-31",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Neapco, Supplier Requirements Manual, May 31, 2022",
+          "source_id": "source-neapco-supplier-requirements",
+          "claim": "The launch process uses APQP and PPAP review records, including a production-part approval decision before launch.",
+          "section": "2. APQP, PPAP, and Launch",
+          "printed_page": [
+            6,
+            7,
+            8
+          ],
+          "physical_page": [
+            6,
+            7,
+            8
+          ],
+          "source_version_date": "2022-05-31"
+        },
+        {
+          "fact_id": "manufacturing-capacity-validation",
+          "bounded_claim": "Supplier capacity and launch readiness are checked through capacity evaluation, annual requalification, and run-at-rate evidence.",
+          "location": {
+            "section": "2.5 Product Quality, 2.6 Capacity Planning and Evaluation, and 2.9 Run at Rate",
+            "printed_page": [
+              8,
+              9,
+              10
+            ],
+            "physical_page": [
+              8,
+              9,
+              10
+            ]
+          },
+          "allowed_gates": [
+            "quality_and_capacity_review",
+            "technical_revalidation"
+          ],
+          "interpretation_limit": "Supports capacity evidence and revalidation, not a terminal restart date or a promise of future supply.",
+          "transformation_code": "capacity_validation_to_revalidation_evidence",
+          "source_version": "Supplier Requirements Manual",
+          "source_date": "2022-05-31",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Neapco, Supplier Requirements Manual, May 31, 2022",
+          "source_id": "source-neapco-supplier-requirements",
+          "claim": "Supplier capacity and launch readiness are checked through capacity evaluation, annual requalification, and run-at-rate evidence.",
+          "section": "2.5 Product Quality, 2.6 Capacity Planning and Evaluation, and 2.9 Run at Rate",
+          "printed_page": [
+            8,
+            9,
+            10
+          ],
+          "physical_page": [
+            8,
+            9,
+            10
+          ],
+          "source_version_date": "2022-05-31"
+        }
+      ]
+    },
+    {
+      "source_id": "source-far-fac-2025-03",
+      "publisher": "United States General Services Administration",
+      "title": "Federal Acquisition Regulation, FAC 2025-03",
+      "vertical": "construction",
+      "url": "https://www.acquisition.gov/sites/default/files/archives/far/pdf/2025-03.pdf",
+      "sections": [
+        "15.206 Amending the solicitation",
+        "15.303 Responsibilities",
+        "15.308 Source selection decision",
+        "28.102 Performance and payment bonds and alternative payment protections for construction contracts",
+        "36.523 Site visit"
+      ],
+      "content_type": "application/pdf",
+      "version_date": "2025-01-17",
+      "retrieved_at": "2026-08-19",
+      "retrieval_sha256": "sha256:ebefaab2cba6b3cf984e845e7c4c219c3231379b0b5c6d1f5c01c842d58acea0",
+      "retrieval_method": "verified_official_hash_only",
+      "retrieval_bytes": 13068010,
+      "license_classification": "us-federal-public-domain",
+      "allowed_use": [
+        "process_fact_derivation",
+        "synthetic_scenario_design"
+      ],
+      "prohibited_use": [],
+      "fact_ids": [
+        "construction-solicitation-addenda",
+        "construction-best-value-award",
+        "construction-performance-payment-bonds",
+        "construction-site-visit"
+      ],
+      "gate_fact_ids": {
+        "tender": [
+          "construction-solicitation-addenda"
+        ],
+        "bid": [
+          "construction-solicitation-addenda"
+        ],
+        "award_and_contract": [
+          "construction-best-value-award",
+          "construction-performance-payment-bonds"
+        ],
+        "site_walk": [
+          "construction-site-visit"
+        ]
+      },
+      "claims": [
+        {
+          "fact_id": "construction-solicitation-addenda",
+          "bounded_claim": "Changes to a negotiated solicitation's requirements or terms are issued as formal amendments, with a revised closing date when appropriate.",
+          "location": {
+            "section": "FAR 15.206 Amending the solicitation",
+            "printed_page": "15.2-5",
+            "physical_page": 439
+          },
+          "allowed_gates": [
+            "bid",
+            "tender"
+          ],
+          "interpretation_limit": "Supports formal solicitation amendments and revised closing dates, not an award recommendation or value-engineering approval.",
+          "transformation_code": "solicitation_addenda_to_bid_evidence",
+          "source_version": "FAC 2025-03",
+          "source_date": "2025-01-17",
+          "license_class": "us-federal-public-domain",
+          "attribution": "U.S. General Services Administration, Federal Acquisition Regulation, FAC 2025-03, FAR 15.206",
+          "source_id": "source-far-fac-2025-03",
+          "claim": "Changes to a negotiated solicitation's requirements or terms are issued as formal amendments, with a revised closing date when appropriate.",
+          "section": "FAR 15.206 Amending the solicitation",
+          "printed_page": "15.2-5",
+          "physical_page": 439,
+          "source_version_date": "2025-01-17"
+        },
+        {
+          "fact_id": "construction-best-value-award",
+          "bounded_claim": "Federal source selection uses stated evaluation factors and a documented best-value award decision.",
+          "location": {
+            "section": "FAR 15.303 Responsibilities and FAR 15.308 Source selection decision",
+            "printed_page": [
+              "15.3-1",
+              "15.3-5"
+            ],
+            "physical_page": [
+              443,
+              447
+            ]
+          },
+          "allowed_gates": [
+            "award_and_contract"
+          ],
+          "interpretation_limit": "Supports evaluation and award evidence, not value engineering unless a CM/GC source separately applies.",
+          "transformation_code": "best_value_to_award_evidence",
+          "source_version": "FAC 2025-03",
+          "source_date": "2025-01-17",
+          "license_class": "us-federal-public-domain",
+          "attribution": "U.S. General Services Administration, Federal Acquisition Regulation, FAC 2025-03, FAR 15.303 and 15.308",
+          "source_id": "source-far-fac-2025-03",
+          "claim": "Federal source selection uses stated evaluation factors and a documented best-value award decision.",
+          "section": "FAR 15.303 Responsibilities and FAR 15.308 Source selection decision",
+          "printed_page": [
+            "15.3-1",
+            "15.3-5"
+          ],
+          "physical_page": [
+            443,
+            447
+          ],
+          "source_version_date": "2025-01-17"
+        },
+        {
+          "fact_id": "construction-performance-payment-bonds",
+          "bounded_claim": "For covered federal construction contracts, performance and payment bonds or alternative payment protection are threshold-dependent, with required bonds furnished before notice to proceed.",
+          "location": {
+            "section": "FAR 28.102 Performance and payment bonds and alternative payment protections for construction contracts",
+            "printed_page": [
+              "28.1-3",
+              "28.1-4"
+            ],
+            "physical_page": [
+              877,
+              878
+            ]
+          },
+          "allowed_gates": [
+            "award_and_contract"
+          ],
+          "interpretation_limit": "Supports threshold-dependent bond or payment-protection evidence before notice to proceed, not contractor safety, available bonding capacity, or the award decision.",
+          "transformation_code": "federal_performance_payment_bonds_to_contract_evidence",
+          "source_version": "FAC 2025-03",
+          "source_date": "2025-01-17",
+          "license_class": "us-federal-public-domain",
+          "attribution": "U.S. General Services Administration, Federal Acquisition Regulation, FAC 2025-03, FAR 28.102",
+          "source_id": "source-far-fac-2025-03",
+          "claim": "For covered federal construction contracts, performance and payment bonds or alternative payment protection are threshold-dependent, with required bonds furnished before notice to proceed.",
+          "section": "FAR 28.102 Performance and payment bonds and alternative payment protections for construction contracts",
+          "printed_page": [
+            "28.1-3",
+            "28.1-4"
+          ],
+          "physical_page": [
+            877,
+            878
+          ],
+          "source_version_date": "2025-01-17"
+        },
+        {
+          "fact_id": "construction-site-visit",
+          "bounded_claim": "A solicitation may require or schedule a site visit for prospective offerors.",
+          "location": {
+            "section": "FAR 36.523 Site visit",
+            "printed_page": "36.5-4",
+            "physical_page": 1110
+          },
+          "allowed_gates": [
+            "site_walk"
+          ],
+          "interpretation_limit": "Supports a site-visit record, not a construction condition certification or award decision.",
+          "transformation_code": "site_visit_to_field_evidence",
+          "source_version": "FAC 2025-03",
+          "source_date": "2025-01-17",
+          "license_class": "us-federal-public-domain",
+          "attribution": "U.S. General Services Administration, Federal Acquisition Regulation, FAC 2025-03, FAR 36.523",
+          "source_id": "source-far-fac-2025-03",
+          "claim": "A solicitation may require or schedule a site visit for prospective offerors.",
+          "section": "FAR 36.523 Site visit",
+          "printed_page": "36.5-4",
+          "physical_page": 1110,
+          "source_version_date": "2025-01-17"
+        }
+      ]
+    },
+    {
+      "source_id": "source-lloyds-digital-placement",
+      "publisher": "Lloyd's",
+      "title": "Digital Placement Customer Journey V2",
+      "vertical": "commercial_insurance",
+      "url": "https://assets.lloyds.com/media/b4b96d50-27c7-41e5-a322-ebf7f2f7e1ea/Customer%20Journey%20V2%20January%202023.pdf",
+      "sections": [
+        "Digital placement customer journey, pre-bind, pp. 1-2",
+        "Digital placement customer journey, post-bind, pp. 2-3"
+      ],
+      "content_type": "application/pdf",
+      "version_date": "2023-01",
+      "retrieved_at": "2026-08-19",
+      "retrieval_sha256": "sha256:cde400a3d7b1901f47120ba85bbda76a663aae8f2aeaa11150302897b862c48c",
+      "retrieval_method": "verified_official_hash_only",
+      "retrieval_bytes": 2556784,
+      "license_classification": "copyrighted-facts-only",
+      "allowed_use": [
+        "process_fact_derivation",
+        "synthetic_scenario_design"
+      ],
+      "prohibited_use": [
+        "source_text_reproduction",
+        "market_document_reproduction"
+      ],
+      "fact_ids": [
+        "insurance-submission-quote",
+        "insurance-firm-order-bind",
+        "insurance-contract-data-validation",
+        "insurance-post-placement",
+        "insurance-structured-placement-data",
+        "insurance-client-order"
+      ],
+      "gate_fact_ids": {
+        "submission": [
+          "insurance-submission-quote",
+          "insurance-structured-placement-data"
+        ],
+        "additional_information": [
+          "insurance-submission-quote"
+        ],
+        "quotation_request": [
+          "insurance-submission-quote",
+          "insurance-structured-placement-data"
+        ],
+        "quotation": [
+          "insurance-submission-quote",
+          "insurance-structured-placement-data"
+        ],
+        "client_order": [
+          "insurance-client-order"
+        ],
+        "binding": [
+          "insurance-firm-order-bind"
+        ],
+        "contract_data_validation": [
+          "insurance-contract-data-validation"
+        ],
+        "post_placement": [
+          "insurance-post-placement",
+          "insurance-structured-placement-data"
+        ]
+      },
+      "claims": [
+        {
+          "fact_id": "insurance-submission-quote",
+          "bounded_claim": "Digital placement carries structured submission information through information requests and quotation activity before an order is placed.",
+          "location": {
+            "section": "Digital placement customer journey, pre-bind",
+            "printed_page": "unpaginated",
+            "physical_page": [
+              4,
+              5
+            ]
+          },
+          "allowed_gates": [
+            "additional_information",
+            "quotation",
+            "quotation_request",
+            "submission"
+          ],
+          "interpretation_limit": "Supports placement evidence and quotation requests, not an issued policy or a binding decision.",
+          "transformation_code": "placement_submission_to_quote_evidence",
+          "source_version": "Digital Placement Customer Journey V2",
+          "source_date": "2023-01",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Lloyd's, Digital Placement Customer Journey V2, January 2023",
+          "source_id": "source-lloyds-digital-placement",
+          "claim": "Digital placement carries structured submission information through information requests and quotation activity before an order is placed.",
+          "section": "Digital placement customer journey, pre-bind",
+          "printed_page": "unpaginated",
+          "physical_page": [
+            4,
+            5
+          ],
+          "source_version_date": "2023-01"
+        },
+        {
+          "fact_id": "insurance-firm-order-bind",
+          "bounded_claim": "The placement journey distinguishes client order, firm order, and bind confirmation with signed lines and effective terms.",
+          "location": {
+            "section": "Digital placement customer journey, order and bind",
+            "printed_page": "unpaginated",
+            "physical_page": [
+              5,
+              6
+            ]
+          },
+          "allowed_gates": [
+            "binding"
+          ],
+          "interpretation_limit": "Supports order and binding evidence, not downstream policy issuance.",
+          "transformation_code": "order_bind_to_placement_evidence",
+          "source_version": "Digital Placement Customer Journey V2",
+          "source_date": "2023-01",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Lloyd's, Digital Placement Customer Journey V2, January 2023",
+          "source_id": "source-lloyds-digital-placement",
+          "claim": "The placement journey distinguishes client order, firm order, and bind confirmation with signed lines and effective terms.",
+          "section": "Digital placement customer journey, order and bind",
+          "printed_page": "unpaginated",
+          "physical_page": [
+            5,
+            6
+          ],
+          "source_version_date": "2023-01"
+        },
+        {
+          "fact_id": "insurance-contract-data-validation",
+          "bounded_claim": "Post-bind placement requires validation of contract data and tax allocation before downstream processing.",
+          "location": {
+            "section": "Digital placement customer journey, post-bind contract data",
+            "printed_page": "unpaginated",
+            "physical_page": 6
+          },
+          "allowed_gates": [
+            "contract_data_validation"
+          ],
+          "interpretation_limit": "Supports data validation and tax allocation, not policy issuance or a policy number.",
+          "transformation_code": "contract_data_to_validation_evidence",
+          "source_version": "Digital Placement Customer Journey V2",
+          "source_date": "2023-01",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Lloyd's, Digital Placement Customer Journey V2, January 2023",
+          "source_id": "source-lloyds-digital-placement",
+          "claim": "Post-bind placement requires validation of contract data and tax allocation before downstream processing.",
+          "section": "Digital placement customer journey, post-bind contract data",
+          "printed_page": "unpaginated",
+          "physical_page": 6,
+          "source_version_date": "2023-01"
+        },
+        {
+          "fact_id": "insurance-post-placement",
+          "bounded_claim": "Post-placement work reconciles structured contract data and placement records after bind.",
+          "location": {
+            "section": "Digital placement customer journey, post-bind processing",
+            "printed_page": "unpaginated",
+            "physical_page": 6
+          },
+          "allowed_gates": [
+            "post_placement"
+          ],
+          "interpretation_limit": "Supports post-placement reconciliation, not policy issuance or a claim that carrier administration completed.",
+          "transformation_code": "post_placement_to_reconciliation_evidence",
+          "source_version": "Digital Placement Customer Journey V2",
+          "source_date": "2023-01",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Lloyd's, Digital Placement Customer Journey V2, January 2023",
+          "source_id": "source-lloyds-digital-placement",
+          "claim": "Post-placement work reconciles structured contract data and placement records after bind.",
+          "section": "Digital placement customer journey, post-bind processing",
+          "printed_page": "unpaginated",
+          "physical_page": 6,
+          "source_version_date": "2023-01"
+        },
+        {
+          "fact_id": "insurance-structured-placement-data",
+          "bounded_claim": "Structured placement data and messages carry normalized placement information across submission, quotation, order, and post-placement steps.",
+          "location": {
+            "section": "Digital placement customer journey, structured data",
+            "printed_page": "unpaginated",
+            "physical_page": [
+              4,
+              5,
+              6
+            ]
+          },
+          "allowed_gates": [
+            "post_placement",
+            "quotation",
+            "quotation_request",
+            "submission"
+          ],
+          "interpretation_limit": "Supports structured data transformations, not the reproduction of a market document or a coverage decision.",
+          "transformation_code": "structured_placement_to_synthetic_fields",
+          "source_version": "Digital Placement Customer Journey V2",
+          "source_date": "2023-01",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Lloyd's, Digital Placement Customer Journey V2, January 2023",
+          "source_id": "source-lloyds-digital-placement",
+          "claim": "Structured placement data and messages carry normalized placement information across submission, quotation, order, and post-placement steps.",
+          "section": "Digital placement customer journey, structured data",
+          "printed_page": "unpaginated",
+          "physical_page": [
+            4,
+            5,
+            6
+          ],
+          "source_version_date": "2023-01"
+        },
+        {
+          "fact_id": "insurance-client-order",
+          "bounded_claim": "The client order is a distinct placement milestone before firm order and binding.",
+          "location": {
+            "section": "Digital placement customer journey, client order",
+            "printed_page": "unpaginated",
+            "physical_page": 5
+          },
+          "allowed_gates": [
+            "client_order"
+          ],
+          "interpretation_limit": "Supports a client-order record, not acceptance of a quote or a policy issuance event.",
+          "transformation_code": "client_order_to_order_evidence",
+          "source_version": "Digital Placement Customer Journey V2",
+          "source_date": "2023-01",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Lloyd's, Digital Placement Customer Journey V2, January 2023",
+          "source_id": "source-lloyds-digital-placement",
+          "claim": "The client order is a distinct placement milestone before firm order and binding.",
+          "section": "Digital placement customer journey, client order",
+          "printed_page": "unpaginated",
+          "physical_page": 5,
+          "source_version_date": "2023-01"
+        }
+      ]
+    },
+    {
+      "source_id": "source-consultancy-playbook",
+      "publisher": "United Kingdom Cabinet Office",
+      "title": "The Consultancy Playbook, Version 1.1",
+      "vertical": "consulting",
+      "url": "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/1103954/The_Consultancy_Playbook_Version_1.1_September_2022.pdf",
+      "sections": [
+        "Make or buy, outcomes, and market engagement, printed pp. 10-18, physical pp. 12-20",
+        "Evaluation and pricing, printed pp. 23-29, physical pp. 25-31",
+        "Knowledge transfer, printed pp. 36-41, physical pp. 38-43"
+      ],
+      "content_type": "application/pdf",
+      "version_date": "2022-09",
+      "retrieved_at": "2026-08-19",
+      "retrieval_sha256": "sha256:dec2566d78ec23c136b550b221387d53604952afb13c0d2a14c5190cf4785e3d",
+      "retrieval_method": "verified_official_hash_only",
+      "retrieval_bytes": 2654680,
+      "license_classification": "open-government-licence-3.0",
+      "license_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "allowed_use": [
+        "process_fact_derivation",
+        "synthetic_scenario_design"
+      ],
+      "prohibited_use": [],
+      "fact_ids": [
+        "consulting-make-buy-business-case",
+        "consulting-outcome-specification",
+        "consulting-market-engagement",
+        "consulting-evaluation-pricing",
+        "consulting-delivery-resourcing",
+        "consulting-knowledge-transfer"
+      ],
+      "gate_fact_ids": {
+        "discovery": [
+          "consulting-make-buy-business-case"
+        ],
+        "diagnosis": [
+          "consulting-outcome-specification"
+        ],
+        "scope": [
+          "consulting-outcome-specification"
+        ],
+        "delivery_resourcing": [
+          "consulting-delivery-resourcing"
+        ],
+        "commercial_model": [
+          "consulting-evaluation-pricing"
+        ],
+        "service_specification": [
+          "consulting-outcome-specification"
+        ],
+        "procurement": [
+          "consulting-market-engagement",
+          "consulting-evaluation-pricing",
+          "consulting-make-buy-business-case"
+        ],
+        "knowledge_transfer": [
+          "consulting-knowledge-transfer"
+        ]
+      },
+      "claims": [
+        {
+          "fact_id": "consulting-make-buy-business-case",
+          "bounded_claim": "A make-or-buy decision uses a business case and accountable ownership before external consultancy engagement.",
+          "location": {
+            "section": "Make or buy and business case",
+            "printed_page": [
+              10,
+              15
+            ],
+            "physical_page": [
+              12,
+              17
+            ]
+          },
+          "allowed_gates": [
+            "discovery",
+            "procurement"
+          ],
+          "interpretation_limit": "Supports a business-case and procurement-evaluation route, not a generic private-buyer spend-control gate or an invented executive terminal approval.",
+          "transformation_code": "make_buy_to_procurement_evidence",
+          "source_version": "The Consultancy Playbook, Version 1.1",
+          "source_date": "2022-09",
+          "license_class": "open-government-licence-3.0",
+          "attribution": "UK Cabinet Office, The Consultancy Playbook, Version 1.1, OGL v3.0",
+          "source_id": "source-consultancy-playbook",
+          "claim": "A make-or-buy decision uses a business case and accountable ownership before external consultancy engagement.",
+          "section": "Make or buy and business case",
+          "printed_page": [
+            10,
+            15
+          ],
+          "physical_page": [
+            12,
+            17
+          ],
+          "source_version_date": "2022-09"
+        },
+        {
+          "fact_id": "consulting-outcome-specification",
+          "bounded_claim": "The consultancy process defines measurable outcomes and scope boundaries before evaluation.",
+          "location": {
+            "section": "Outcomes and scope",
+            "printed_page": [
+              16,
+              18
+            ],
+            "physical_page": [
+              18,
+              20
+            ]
+          },
+          "allowed_gates": [
+            "diagnosis",
+            "scope",
+            "service_specification"
+          ],
+          "interpretation_limit": "Supports outcome and scope records, not a delivery guarantee or a completed engagement.",
+          "transformation_code": "outcome_specification_to_scope_evidence",
+          "source_version": "The Consultancy Playbook, Version 1.1",
+          "source_date": "2022-09",
+          "license_class": "open-government-licence-3.0",
+          "attribution": "UK Cabinet Office, The Consultancy Playbook, Version 1.1, OGL v3.0",
+          "source_id": "source-consultancy-playbook",
+          "claim": "The consultancy process defines measurable outcomes and scope boundaries before evaluation.",
+          "section": "Outcomes and scope",
+          "printed_page": [
+            16,
+            18
+          ],
+          "physical_page": [
+            18,
+            20
+          ],
+          "source_version_date": "2022-09"
+        },
+        {
+          "fact_id": "consulting-market-engagement",
+          "bounded_claim": "Market engagement uses supplier conversations and clarification records to test the outcome specification before procurement evaluation.",
+          "location": {
+            "section": "Market engagement",
+            "printed_page": [
+              17,
+              18
+            ],
+            "physical_page": [
+              19,
+              20
+            ]
+          },
+          "allowed_gates": [
+            "procurement"
+          ],
+          "interpretation_limit": "Supports market engagement and procurement evidence, not supplier selection by itself.",
+          "transformation_code": "market_engagement_to_procurement_evidence",
+          "source_version": "The Consultancy Playbook, Version 1.1",
+          "source_date": "2022-09",
+          "license_class": "open-government-licence-3.0",
+          "attribution": "UK Cabinet Office, The Consultancy Playbook, Version 1.1, OGL v3.0",
+          "source_id": "source-consultancy-playbook",
+          "claim": "Market engagement uses supplier conversations and clarification records to test the outcome specification before procurement evaluation.",
+          "section": "Market engagement",
+          "printed_page": [
+            17,
+            18
+          ],
+          "physical_page": [
+            19,
+            20
+          ],
+          "source_version_date": "2022-09"
+        },
+        {
+          "fact_id": "consulting-evaluation-pricing",
+          "bounded_claim": "Consultancy evaluation compares quality, delivery approach, pricing basis, and risk allocation against the stated outcomes.",
+          "location": {
+            "section": "Evaluation, pricing, and risk",
+            "printed_page": [
+              23,
+              29
+            ],
+            "physical_page": [
+              25,
+              31
+            ]
+          },
+          "allowed_gates": [
+            "commercial_model",
+            "procurement"
+          ],
+          "interpretation_limit": "Supports evaluation and pricing evidence, not an executed statement of work.",
+          "transformation_code": "evaluation_pricing_to_commercial_evidence",
+          "source_version": "The Consultancy Playbook, Version 1.1",
+          "source_date": "2022-09",
+          "license_class": "open-government-licence-3.0",
+          "attribution": "UK Cabinet Office, The Consultancy Playbook, Version 1.1, OGL v3.0",
+          "source_id": "source-consultancy-playbook",
+          "claim": "Consultancy evaluation compares quality, delivery approach, pricing basis, and risk allocation against the stated outcomes.",
+          "section": "Evaluation, pricing, and risk",
+          "printed_page": [
+            23,
+            29
+          ],
+          "physical_page": [
+            25,
+            31
+          ],
+          "source_version_date": "2022-09"
+        },
+        {
+          "fact_id": "consulting-delivery-resourcing",
+          "bounded_claim": "Consultancy evaluation can compare delivery approach and resource availability against the stated outcomes.",
+          "location": {
+            "section": "Evaluation and resourcing",
+            "printed_page": [
+              23,
+              29
+            ],
+            "physical_page": [
+              25,
+              31
+            ]
+          },
+          "allowed_gates": [
+            "delivery_resourcing"
+          ],
+          "interpretation_limit": "Supports evaluation of delivery approach and resource availability, not named-person commitments or buyer data access.",
+          "transformation_code": "delivery_resourcing_to_evaluation_evidence",
+          "source_version": "The Consultancy Playbook, Version 1.1",
+          "source_date": "2022-09",
+          "license_class": "open-government-licence-3.0",
+          "attribution": "UK Cabinet Office, The Consultancy Playbook, Version 1.1, OGL v3.0",
+          "source_id": "source-consultancy-playbook",
+          "claim": "Consultancy evaluation can compare delivery approach and resource availability against the stated outcomes.",
+          "section": "Evaluation and resourcing",
+          "printed_page": [
+            23,
+            29
+          ],
+          "physical_page": [
+            25,
+            31
+          ],
+          "source_version_date": "2022-09"
+        },
+        {
+          "fact_id": "consulting-knowledge-transfer",
+          "bounded_claim": "Specifications and contract-management arrangements should define knowledge-transfer responsibilities during delivery and exit.",
+          "location": {
+            "section": "Knowledge transfer",
+            "printed_page": [
+              36,
+              41
+            ],
+            "physical_page": [
+              38,
+              43
+            ]
+          },
+          "allowed_gates": [
+            "knowledge_transfer"
+          ],
+          "interpretation_limit": "Supports knowledge-transfer responsibilities, not a statement-of-work requirement or proof of completed transfer.",
+          "transformation_code": "knowledge_transfer_to_handoff_evidence",
+          "source_version": "The Consultancy Playbook, Version 1.1",
+          "source_date": "2022-09",
+          "license_class": "open-government-licence-3.0",
+          "attribution": "UK Cabinet Office, The Consultancy Playbook, Version 1.1, OGL v3.0",
+          "source_id": "source-consultancy-playbook",
+          "claim": "Specifications and contract-management arrangements should define knowledge-transfer responsibilities during delivery and exit.",
+          "section": "Knowledge transfer",
+          "printed_page": [
+            36,
+            41
+          ],
+          "physical_page": [
+            38,
+            43
+          ],
+          "source_version_date": "2022-09"
+        }
+      ]
+    },
+    {
+      "source_id": "source-gsk-ocsi",
+      "publisher": "GlaxoSmithKline and Association of Corporate Counsel",
+      "title": "Outside Counsel Selection Initiative",
+      "vertical": "legal_services",
+      "url": "https://www.acc.com/sites/default/files/2019-12/GlaxoSmithKline-Outside-Counsel-Selection-Initiative-OCSI.pdf",
+      "sections": [
+        "What OCSI is and is not, physical p. 2",
+        "How OCSI works, physical p. 3"
+      ],
+      "content_type": "application/pdf",
+      "version_date": "undated",
+      "retrieved_at": "2026-08-19",
+      "retrieval_sha256": "sha256:e2ad1f33ad5018567d5a7ef4e465eab8fb29bfd53f80dad4b812086c585f815e",
+      "retrieval_method": "verified_official_hash_only",
+      "retrieval_bytes": 370533,
+      "license_classification": "copyrighted-facts-only",
+      "allowed_use": [
+        "process_fact_derivation",
+        "synthetic_scenario_design"
+      ],
+      "prohibited_use": [
+        "source_text_reproduction",
+        "scorecard_reproduction"
+      ],
+      "fact_ids": [
+        "legal-mini-rfi",
+        "legal-uniform-assumptions",
+        "legal-selection-scorecard",
+        "legal-leadership-approval",
+        "legal-value-engagement"
+      ],
+      "gate_fact_ids": {
+        "panel_or_rfp_selection": [
+          "legal-uniform-assumptions",
+          "legal-mini-rfi"
+        ],
+        "uniform_assumptions": [
+          "legal-uniform-assumptions"
+        ],
+        "matter_scope": [
+          "legal-selection-scorecard"
+        ],
+        "fee_arrangement": [
+          "legal-selection-scorecard"
+        ],
+        "leadership_approval": [
+          "legal-leadership-approval"
+        ],
+        "engagement_letter": [
+          "legal-leadership-approval",
+          "legal-value-engagement"
+        ]
+      },
+      "claims": [
+        {
+          "fact_id": "legal-mini-rfi",
+          "bounded_claim": "The outside-counsel process uses a matter-specific mini-RFI and a sourcing room to compare firms.",
+          "location": {
+            "section": "OCSI process overview",
+            "printed_page": "unpaginated",
+            "physical_page": 3
+          },
+          "allowed_gates": [
+            "panel_or_rfp_selection"
+          ],
+          "interpretation_limit": "Supports a selection process, not conflicts clearance or an engagement decision.",
+          "transformation_code": "mini_rfi_to_selection_evidence",
+          "source_version": "Outside Counsel Selection Initiative",
+          "source_date": "undated",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "GSK and Association of Corporate Counsel, Outside Counsel Selection Initiative, undated",
+          "source_id": "source-gsk-ocsi",
+          "claim": "The outside-counsel process uses a matter-specific mini-RFI and a sourcing room to compare firms.",
+          "section": "OCSI process overview",
+          "printed_page": "unpaginated",
+          "physical_page": 3,
+          "source_version_date": "undated"
+        },
+        {
+          "fact_id": "legal-uniform-assumptions",
+          "bounded_claim": "Procurement ensures firms receive consistent assumptions and operates the sourcing room for a comparable response.",
+          "location": {
+            "section": "OCSI process overview",
+            "printed_page": "unpaginated",
+            "physical_page": 3
+          },
+          "allowed_gates": [
+            "panel_or_rfp_selection",
+            "uniform_assumptions"
+          ],
+          "interpretation_limit": "Supports comparable sourcing inputs, not a procurement-delay gate or a final decision.",
+          "transformation_code": "uniform_assumptions_to_selection_evidence",
+          "source_version": "Outside Counsel Selection Initiative",
+          "source_date": "undated",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "GSK and Association of Corporate Counsel, Outside Counsel Selection Initiative, undated",
+          "source_id": "source-gsk-ocsi",
+          "claim": "Procurement ensures firms receive consistent assumptions and operates the sourcing room for a comparable response.",
+          "section": "OCSI process overview",
+          "printed_page": "unpaginated",
+          "physical_page": 3,
+          "source_version_date": "undated"
+        },
+        {
+          "fact_id": "legal-selection-scorecard",
+          "bounded_claim": "The selection review compares matter scope, staffing, quality, fees, and value against consistent assumptions.",
+          "location": {
+            "section": "OCSI process overview and misconceptions",
+            "printed_page": "unpaginated",
+            "physical_page": [
+              2,
+              3
+            ]
+          },
+          "allowed_gates": [
+            "fee_arrangement",
+            "matter_scope"
+          ],
+          "interpretation_limit": "Supports a scorecard and recommendation, not legal advice on the matter or engagement execution.",
+          "transformation_code": "selection_scorecard_to_recommendation_evidence",
+          "source_version": "Outside Counsel Selection Initiative",
+          "source_date": "undated",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "GSK and Association of Corporate Counsel, Outside Counsel Selection Initiative, undated",
+          "source_id": "source-gsk-ocsi",
+          "claim": "The selection review compares matter scope, staffing, quality, fees, and value against consistent assumptions.",
+          "section": "OCSI process overview and misconceptions",
+          "printed_page": "unpaginated",
+          "physical_page": [
+            2,
+            3
+          ],
+          "source_version_date": "undated"
+        },
+        {
+          "fact_id": "legal-leadership-approval",
+          "bounded_claim": "The process routes the recommendation to the practice-group head and responsible legal leadership before preparing the engagement letter.",
+          "location": {
+            "section": "OCSI process overview",
+            "printed_page": "unpaginated",
+            "physical_page": 3
+          },
+          "allowed_gates": [
+            "engagement_letter",
+            "leadership_approval"
+          ],
+          "interpretation_limit": "Supports a leadership route inside engagement formation, not an unsupported terminal review gate.",
+          "transformation_code": "leadership_route_to_engagement_evidence",
+          "source_version": "Outside Counsel Selection Initiative",
+          "source_date": "undated",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "GSK and Association of Corporate Counsel, Outside Counsel Selection Initiative, undated",
+          "source_id": "source-gsk-ocsi",
+          "claim": "The process routes the recommendation to the practice-group head and responsible legal leadership before preparing the engagement letter.",
+          "section": "OCSI process overview",
+          "printed_page": "unpaginated",
+          "physical_page": 3,
+          "source_version_date": "undated"
+        },
+        {
+          "fact_id": "legal-value-engagement",
+          "bounded_claim": "The OCSI process uses matter-specific value, quality, and fee commitments when forming the engagement letter.",
+          "location": {
+            "section": "OCSI process overview and misconceptions",
+            "printed_page": "unpaginated",
+            "physical_page": [
+              2,
+              3
+            ]
+          },
+          "allowed_gates": [
+            "engagement_letter"
+          ],
+          "interpretation_limit": "Supports engagement terms and acceptance, not a claim that legal work has started or ended.",
+          "transformation_code": "value_engagement_to_terms_evidence",
+          "source_version": "Outside Counsel Selection Initiative",
+          "source_date": "undated",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "GSK and Association of Corporate Counsel, Outside Counsel Selection Initiative, undated",
+          "source_id": "source-gsk-ocsi",
+          "claim": "The OCSI process uses matter-specific value, quality, and fee commitments when forming the engagement letter.",
+          "section": "OCSI process overview and misconceptions",
+          "printed_page": "unpaginated",
+          "physical_page": [
+            2,
+            3
+          ],
+          "source_version_date": "undated"
+        }
+      ]
+    },
+    {
+      "source_id": "source-occ-loan-portfolio-management",
+      "publisher": "Office of the Comptroller of the Currency",
+      "title": "Loan Portfolio Management",
+      "vertical": "corporate_banking",
+      "url": "https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/files/lending-loan-portfolio-risk-management/pub-ch-loan-portfolio-mgmt-previous.pdf",
+      "sections": [
+        "Portfolio Risk and Reward and Topics of Loan Policy, printed pp. 16-17, 72, and 76, physical pp. 19-20, 75, and 79",
+        "Loan Approval Process, Underwriting, and Safety and Soundness Standards, printed pp. 20-21, 32-33, and 79, physical pp. 23-24, 35-36, and 82",
+        "Exceptions to Policy, Procedures, and Underwriting Guidelines, printed pp. 26-27, physical pp. 29-30",
+        "Documentation Exceptions, printed p. 26, physical p. 29"
+      ],
+      "content_type": "application/pdf",
+      "version_date": "1998-04",
+      "publication_date": "1998-03-31",
+      "updated_dates": [
+        "2017-06-26",
+        "2025-03-20"
+      ],
+      "rescinded_date": "2026-06-25",
+      "issuance_url": "https://www.occ.gov/news-issuances/news-releases/1998/nr-occ-1998-35.html",
+      "rescission_url": "https://www.occ.gov/news-issuances/bulletins/2026/bulletin-2026-29.html",
+      "retrieved_at": "2026-08-19",
+      "retrieval_sha256": "sha256:ff2338f0d8bf9699c680322ba2ebe4205ca477e8961573851f131d01a8372efc",
+      "retrieval_method": "verified_official_hash_only",
+      "retrieval_bytes": 1364335,
+      "license_classification": "us-federal-public-domain",
+      "allowed_use": [
+        "process_fact_derivation",
+        "synthetic_scenario_design"
+      ],
+      "prohibited_use": [],
+      "fact_ids": [
+        "banking-lending-authority",
+        "banking-underwriting-repayment",
+        "banking-credit-separation",
+        "banking-exception-approval",
+        "banking-preclosing-documentation"
+      ],
+      "gate_fact_ids": {
+        "underwriting": [
+          "banking-underwriting-repayment"
+        ],
+        "pricing": [
+          "banking-lending-authority"
+        ],
+        "credit_approval": [
+          "banking-credit-separation",
+          "banking-exception-approval"
+        ],
+        "documentation": [
+          "banking-preclosing-documentation"
+        ],
+        "closing": [
+          "banking-preclosing-documentation"
+        ]
+      },
+      "version": "April 1998",
+      "claims": [
+        {
+          "fact_id": "banking-lending-authority",
+          "bounded_claim": "Lending authority and risk-based pricing are governed by documented limits, approval rights, and return expectations.",
+          "location": {
+            "section": "Portfolio Risk and Reward and Topics of Loan Policy",
+            "printed_page": [
+              16,
+              17,
+              72,
+              76
+            ],
+            "physical_page": [
+              19,
+              20,
+              75,
+              79
+            ]
+          },
+          "allowed_gates": [
+            "pricing"
+          ],
+          "interpretation_limit": "Supports pricing and authority evidence, not a credit approval or a funded loan.",
+          "transformation_code": "occ_authority_to_pricing_evidence",
+          "source_version": "April 1998",
+          "source_date": "1998-04",
+          "license_class": "us-federal-public-domain",
+          "attribution": "Office of the Comptroller of the Currency, Loan Portfolio Management, April 1998, updated March 20, 2025",
+          "source_id": "source-occ-loan-portfolio-management",
+          "claim": "Lending authority and risk-based pricing are governed by documented limits, approval rights, and return expectations.",
+          "section": "Portfolio Risk and Reward and Topics of Loan Policy",
+          "printed_page": [
+            16,
+            17,
+            72,
+            76
+          ],
+          "physical_page": [
+            19,
+            20,
+            75,
+            79
+          ],
+          "source_version_date": "1998-04"
+        },
+        {
+          "fact_id": "banking-underwriting-repayment",
+          "bounded_claim": "Credit underwriting evaluates repayment sources, financial capacity, collateral, guarantors, and sensitivity to adverse conditions.",
+          "location": {
+            "section": "Loan Approval Process, Stress Testing, and Safety and Soundness Standards",
+            "printed_page": [
+              21,
+              32,
+              33,
+              79
+            ],
+            "physical_page": [
+              24,
+              35,
+              36,
+              82
+            ]
+          },
+          "allowed_gates": [
+            "underwriting"
+          ],
+          "interpretation_limit": "Supports underwriting analysis, not a final approval or a funding event.",
+          "transformation_code": "occ_underwriting_to_repayment_evidence",
+          "source_version": "April 1998",
+          "source_date": "1998-04",
+          "license_class": "us-federal-public-domain",
+          "attribution": "Office of the Comptroller of the Currency, Loan Portfolio Management, April 1998, updated March 20, 2025",
+          "source_id": "source-occ-loan-portfolio-management",
+          "claim": "Credit underwriting evaluates repayment sources, financial capacity, collateral, guarantors, and sensitivity to adverse conditions.",
+          "section": "Loan Approval Process, Stress Testing, and Safety and Soundness Standards",
+          "printed_page": [
+            21,
+            32,
+            33,
+            79
+          ],
+          "physical_page": [
+            24,
+            35,
+            36,
+            82
+          ],
+          "source_version_date": "1998-04"
+        },
+        {
+          "fact_id": "banking-credit-separation",
+          "bounded_claim": "A bank may model independent or dual credit approval controls within its documented loan approval system.",
+          "location": {
+            "section": "Loan Approval Process and Topics of Loan Policy",
+            "printed_page": [
+              20,
+              21,
+              72
+            ],
+            "physical_page": [
+              23,
+              24,
+              75
+            ]
+          },
+          "allowed_gates": [
+            "credit_approval"
+          ],
+          "interpretation_limit": "Supports an optional modeled independent or dual approval control. The OCC prescribes no single approval system for every bank or credit request.",
+          "transformation_code": "occ_separation_to_independent_approval_evidence",
+          "source_version": "April 1998",
+          "source_date": "1998-04",
+          "license_class": "us-federal-public-domain",
+          "attribution": "Office of the Comptroller of the Currency, Loan Portfolio Management, April 1998, updated March 20, 2025",
+          "source_id": "source-occ-loan-portfolio-management",
+          "claim": "A bank may model independent or dual credit approval controls within its documented loan approval system.",
+          "section": "Loan Approval Process and Topics of Loan Policy",
+          "printed_page": [
+            20,
+            21,
+            72
+          ],
+          "physical_page": [
+            23,
+            24,
+            75
+          ],
+          "source_version_date": "1998-04"
+        },
+        {
+          "fact_id": "banking-exception-approval",
+          "bounded_claim": "Exceptions to lending policy or authority are documented and routed through the applicable approval authority.",
+          "location": {
+            "section": "Exceptions to Policy, Procedures, and Underwriting Guidelines",
+            "printed_page": [
+              26,
+              27
+            ],
+            "physical_page": [
+              29,
+              30
+            ]
+          },
+          "allowed_gates": [
+            "credit_approval"
+          ],
+          "interpretation_limit": "Supports an exception route when required, not a universal approval body or checkpoint.",
+          "transformation_code": "occ_exception_to_authority_route_evidence",
+          "source_version": "April 1998",
+          "source_date": "1998-04",
+          "license_class": "us-federal-public-domain",
+          "attribution": "Office of the Comptroller of the Currency, Loan Portfolio Management, April 1998, updated March 20, 2025",
+          "source_id": "source-occ-loan-portfolio-management",
+          "claim": "Exceptions to lending policy or authority are documented and routed through the applicable approval authority.",
+          "section": "Exceptions to Policy, Procedures, and Underwriting Guidelines",
+          "printed_page": [
+            26,
+            27
+          ],
+          "physical_page": [
+            29,
+            30
+          ],
+          "source_version_date": "1998-04"
+        },
+        {
+          "fact_id": "banking-preclosing-documentation",
+          "bounded_claim": "Loan administration identifies documentation exceptions, keeps documentation current and valid, and resolves deficiencies before funding where practicable.",
+          "location": {
+            "section": "Documentation Exceptions",
+            "printed_page": 26,
+            "physical_page": 29
+          },
+          "allowed_gates": [
+            "closing",
+            "documentation"
+          ],
+          "interpretation_limit": "Supports pre-closing documentation controls and deficiency resolution, not a universal conditions-precedent formulation or proof of disbursement.",
+          "transformation_code": "occ_preclosing_to_documentation_evidence",
+          "source_version": "April 1998",
+          "source_date": "1998-04",
+          "license_class": "us-federal-public-domain",
+          "attribution": "Office of the Comptroller of the Currency, Loan Portfolio Management, April 1998, updated March 20, 2025",
+          "source_id": "source-occ-loan-portfolio-management",
+          "claim": "Loan administration identifies documentation exceptions, keeps documentation current and valid, and resolves deficiencies before funding where practicable.",
+          "section": "Documentation Exceptions",
+          "printed_page": 26,
+          "physical_page": 29,
+          "source_version_date": "1998-04"
+        }
+      ]
+    },
+    {
+      "source_id": "source-ffiec-cip",
+      "publisher": "Federal Financial Institutions Examination Council",
+      "title": "Customer Identification Program",
+      "vertical": "corporate_banking",
+      "url": "https://www.fdic.gov/sites/default/files/2024-03/fil21012b.pdf",
+      "sections": [
+        "Customer Identification Program, February 2021, section 01"
+      ],
+      "content_type": "application/pdf",
+      "version_date": "2021-02",
+      "retrieved_at": "2026-08-19",
+      "retrieval_sha256": "sha256:6245c4bd779189dafcff1612eb6433e20beb3577dc336c339e331bde7f4f49c1",
+      "retrieval_method": "verified_official_hash_only",
+      "license_classification": "copyrighted-facts-only",
+      "allowed_use": [
+        "process_fact_derivation",
+        "synthetic_scenario_design"
+      ],
+      "prohibited_use": [
+        "source_text_reproduction"
+      ],
+      "fact_ids": [
+        "banking-customer-identification"
+      ],
+      "gate_fact_ids": {
+        "customer_identification": [
+          "banking-customer-identification"
+        ]
+      },
+      "claims": [
+        {
+          "fact_id": "banking-customer-identification",
+          "bounded_claim": "The Customer Identification Program requires written procedures to collect and verify identifying information for customers.",
+          "location": {
+            "section": "Customer Identification Program, Identity Verification Procedures",
+            "printed_page": [
+              1,
+              2
+            ],
+            "physical_page": [
+              1,
+              2
+            ]
+          },
+          "allowed_gates": [
+            "customer_identification"
+          ],
+          "interpretation_limit": "Supports identification evidence, not a conclusion that a customer passed AML review.",
+          "transformation_code": "ffiec_cip_to_identity_evidence",
+          "source_version": "February 2021",
+          "source_date": "2021-02",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Federal Financial Institutions Examination Council, BSA/AML Examination Manual, Customer Identification Program, February 2021",
+          "source_id": "source-ffiec-cip",
+          "claim": "The Customer Identification Program requires written procedures to collect and verify identifying information for customers.",
+          "section": "Customer Identification Program, Identity Verification Procedures",
+          "printed_page": [
+            1,
+            2
+          ],
+          "physical_page": [
+            1,
+            2
+          ],
+          "source_version_date": "2021-02"
+        }
+      ],
+      "retrieval_bytes": 258848
+    },
+    {
+      "source_id": "source-ffiec-cdd",
+      "publisher": "Federal Financial Institutions Examination Council",
+      "title": "Customer Due Diligence",
+      "vertical": "corporate_banking",
+      "url": "https://www.fdic.gov/sites/default/files/2024-03/fil18026a.pdf",
+      "sections": [
+        "Customer Due Diligence, May 5, 2018, section 02"
+      ],
+      "content_type": "application/pdf",
+      "version_date": "2018-05-05",
+      "retrieved_at": "2026-08-19",
+      "retrieval_sha256": "sha256:55fb3860008f8c5aff353b725ec3ed0740adaa6bd134f29a9a76247195ccc8ae",
+      "retrieval_method": "verified_official_hash_only",
+      "license_classification": "copyrighted-facts-only",
+      "allowed_use": [
+        "process_fact_derivation",
+        "synthetic_scenario_design"
+      ],
+      "prohibited_use": [
+        "source_text_reproduction"
+      ],
+      "fact_ids": [
+        "banking-risk-profile-monitoring"
+      ],
+      "gate_fact_ids": {
+        "customer_due_diligence": [
+          "banking-risk-profile-monitoring"
+        ]
+      },
+      "claims": [
+        {
+          "fact_id": "banking-risk-profile-monitoring",
+          "bounded_claim": "Customer due diligence develops a customer risk profile and uses ongoing monitoring to understand and manage changing risk.",
+          "location": {
+            "section": "Customer Due Diligence, Overview",
+            "printed_page": [
+              1,
+              2
+            ],
+            "physical_page": [
+              1,
+              2
+            ]
+          },
+          "allowed_gates": [
+            "customer_due_diligence"
+          ],
+          "interpretation_limit": "Supports a standalone customer due diligence risk-profile and monitoring checkpoint, not an underwriting conclusion or credit approval.",
+      "transformation_code": "ffiec_cdd_to_risk_profile_monitoring_evidence",
+          "source_version": "05/05/2018",
+          "source_date": "2018-05-05",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Federal Financial Institutions Examination Council, BSA/AML Examination Manual, Customer Due Diligence, May 5, 2018",
+          "source_id": "source-ffiec-cdd",
+          "claim": "Customer due diligence develops a customer risk profile and uses ongoing monitoring to understand and manage changing risk.",
+          "section": "Customer Due Diligence, Overview",
+          "printed_page": [
+            1,
+            2
+          ],
+          "physical_page": [
+            1,
+            2
+          ],
+          "source_version_date": "2018-05-05"
+        }
+      ],
+      "retrieval_bytes": 88982
+    },
+    {
+      "source_id": "source-ffiec-beneficial-ownership",
+      "publisher": "Federal Financial Institutions Examination Council",
+      "title": "Beneficial Ownership Requirements for Legal Entity Customers",
+      "vertical": "corporate_banking",
+      "url": "https://www.fdic.gov/sites/default/files/2024-03/fil18026b.pdf",
+      "sections": [
+        "Beneficial Ownership Requirements for Legal Entity Customers, May 5, 2018, section 03"
+      ],
+      "content_type": "application/pdf",
+      "version_date": "2018-05-05",
+      "retrieved_at": "2026-08-19",
+      "retrieval_sha256": "sha256:9de41ef2adf789fdc6d3ef87aa580dac49bd8683326504c5b319102b5041ede4",
+      "retrieval_method": "verified_official_hash_only",
+      "license_classification": "copyrighted-facts-only",
+      "allowed_use": [
+        "process_fact_derivation",
+        "synthetic_scenario_design"
+      ],
+      "prohibited_use": [
+        "source_text_reproduction"
+      ],
+      "fact_ids": [
+        "banking-beneficial-owner-verification"
+      ],
+      "gate_fact_ids": {
+        "beneficial_ownership": [
+          "banking-beneficial-owner-verification"
+        ]
+      },
+      "claims": [
+        {
+          "fact_id": "banking-beneficial-owner-verification",
+          "bounded_claim": "Beneficial ownership procedures identify and verify the ownership and control prongs for legal-entity customers.",
+          "location": {
+            "section": "Beneficial Ownership Requirements for Legal Entity Customers",
+            "printed_page": [
+              1,
+              2
+            ],
+            "physical_page": [
+              1,
+              2
+            ]
+          },
+          "allowed_gates": [
+            "beneficial_ownership"
+          ],
+          "interpretation_limit": "Supports beneficial-owner evidence, not a conclusion that a legal entity is approved for credit.",
+          "transformation_code": "ffiec_bo_to_beneficial_owner_evidence",
+          "source_version": "05/05/2018",
+          "source_date": "2018-05-05",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Federal Financial Institutions Examination Council, BSA/AML Examination Manual, Beneficial Ownership, May 5, 2018",
+          "source_id": "source-ffiec-beneficial-ownership",
+          "claim": "Beneficial ownership procedures identify and verify the ownership and control prongs for legal-entity customers.",
+          "section": "Beneficial Ownership Requirements for Legal Entity Customers",
+          "printed_page": [
+            1,
+            2
+          ],
+          "physical_page": [
+            1,
+            2
+          ],
+          "source_version_date": "2018-05-05"
+        }
+      ],
+      "retrieval_bytes": 89348
+    },
+    {
+      "source_id": "source-agc-cmgc-value-engineering",
+      "publisher": "Associated General Contractors of America",
+      "title": "Highway CM/GC Best Practices",
+      "vertical": "construction",
+      "url": "https://www.agc.org/sites/default/files/Files/Programs%20%26%20Industry%20Relations/Highway_CMGC_Best_Practices_Final_03-11.pdf",
+      "sections": [
+        "CM/GC selection, qualifications, interviews, and bonding capacity, physical pp. 1-3",
+        "CM/GC delivery and Value Engineering, physical p. 5"
+      ],
+      "content_type": "application/pdf",
+      "version_date": "2011-03-23",
+      "retrieved_at": "2026-08-19",
+      "retrieval_sha256": "sha256:7e534c889afb2041d2a5de84b92d09ab9da96038f7d2e786d937be3356dd8cee",
+      "retrieval_method": "verified_official_hash_only",
+      "license_classification": "copyrighted-facts-only",
+      "allowed_use": [
+        "process_fact_derivation",
+        "synthetic_scenario_design"
+      ],
+      "prohibited_use": [
+        "source_text_reproduction",
+        "form_or_template_reproduction"
+      ],
+      "fact_ids": [
+        "construction-qualification",
+        "construction-bonding-capacity",
+        "construction-cmgc-interview",
+        "construction-cmgc-value-engineering"
+      ],
+      "gate_fact_ids": {
+        "qualification": [
+          "construction-qualification"
+        ],
+        "bonding_capacity": [
+          "construction-bonding-capacity"
+        ],
+        "interview": [
+          "construction-cmgc-interview"
+        ],
+        "value_engineering": [
+          "construction-cmgc-value-engineering"
+        ]
+      },
+      "claims": [
+        {
+          "fact_id": "construction-qualification",
+          "bounded_claim": "Public transportation CM/GC selection can shortlist firms through a competitive best-value process that evaluates qualification statements before later proposals.",
+          "location": {
+            "section": "CM/GC competitive best-value selection",
+            "printed_page": "unpaginated",
+            "physical_page": [
+              1,
+              2,
+              3
+            ]
+          },
+          "allowed_gates": [
+            "qualification"
+          ],
+          "interpretation_limit": "Applies only to public transportation CM/GC selection and does not establish responsibility or award in another procurement method.",
+          "transformation_code": "cmgc_qualification_to_selection_evidence",
+          "source_version": "Approved 2011-03-23",
+          "source_date": "2011-03-23",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Associated General Contractors of America, Highway CM/GC Best Practices",
+          "source_id": "source-agc-cmgc-value-engineering",
+          "claim": "Public transportation CM/GC selection can shortlist firms through a competitive best-value process that evaluates qualification statements before later proposals.",
+          "section": "CM/GC competitive best-value selection",
+          "printed_page": "unpaginated",
+          "physical_page": [
+            1,
+            2,
+            3
+          ],
+          "source_version_date": "2011-03-23"
+        },
+        {
+          "fact_id": "construction-bonding-capacity",
+          "bounded_claim": "Available bonding capacity can be evaluated as part of CM/GC contractor qualification.",
+          "location": {
+            "section": "CM/GC contractor qualification criteria",
+            "printed_page": "unpaginated",
+            "physical_page": [
+              1,
+              2,
+              3
+            ]
+          },
+          "allowed_gates": [
+            "bonding_capacity"
+          ],
+          "interpretation_limit": "Supports evidence of available bonding capacity, not a bond requirement, safety clearance, contract award, or surety commitment.",
+          "transformation_code": "cmgc_bonding_capacity_to_qualification_evidence",
+          "source_version": "Approved 2011-03-23",
+          "source_date": "2011-03-23",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Associated General Contractors of America, Highway CM/GC Best Practices",
+          "source_id": "source-agc-cmgc-value-engineering",
+          "claim": "Available bonding capacity can be evaluated as part of CM/GC contractor qualification.",
+          "section": "CM/GC contractor qualification criteria",
+          "printed_page": "unpaginated",
+          "physical_page": [
+            1,
+            2,
+            3
+          ],
+          "source_version_date": "2011-03-23"
+        },
+        {
+          "fact_id": "construction-cmgc-interview",
+          "bounded_claim": "A CM/GC best-value selection can evaluate shortlisted firms through technical proposals and interviews before selection.",
+          "location": {
+            "section": "CM/GC proposal, interview, and selection process",
+            "printed_page": "unpaginated",
+            "physical_page": [
+              1,
+              2,
+              3
+            ]
+          },
+          "allowed_gates": [
+            "interview"
+          ],
+          "interpretation_limit": "Supports an interview and evaluation record for public transportation CM/GC selection, not a contract award.",
+          "transformation_code": "cmgc_interview_to_selection_evidence",
+          "source_version": "Approved 2011-03-23",
+          "source_date": "2011-03-23",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Associated General Contractors of America, Highway CM/GC Best Practices",
+          "source_id": "source-agc-cmgc-value-engineering",
+          "claim": "A CM/GC best-value selection can evaluate shortlisted firms through technical proposals and interviews before selection.",
+          "section": "CM/GC proposal, interview, and selection process",
+          "printed_page": "unpaginated",
+          "physical_page": [
+            1,
+            2,
+            3
+          ],
+          "source_version_date": "2011-03-23"
+        },
+        {
+          "fact_id": "construction-cmgc-value-engineering",
+          "bounded_claim": "In CM/GC delivery, cost-saving ideas are normally developed during preconstruction and incorporated into the GMP, with later construction-phase value engineering conditional on a satisfactory explanation.",
+          "location": {
+            "section": "CM/GC best practices, Value Engineering",
+            "printed_page": "unpaginated",
+            "physical_page": 5
+          },
+          "allowed_gates": [
+            "value_engineering"
+          ],
+          "interpretation_limit": "Applies only to public transportation CM/GC preconstruction and construction routes, not ordinary design-bid-build work.",
+          "transformation_code": "cm_gc_value_engineering_to_conditional_evidence",
+          "source_version": "Approved 2011-03-23",
+          "source_date": "2011-03-23",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "Associated General Contractors of America, Highway CM/GC Best Practices",
+          "source_id": "source-agc-cmgc-value-engineering",
+          "claim": "In CM/GC delivery, cost-saving ideas are normally developed during preconstruction and incorporated into the GMP, with later construction-phase value engineering conditional on a satisfactory explanation.",
+          "section": "CM/GC best practices, Value Engineering",
+          "printed_page": "unpaginated",
+          "physical_page": 5,
+          "source_version_date": "2011-03-23"
+        }
+      ],
+      "retrieval_bytes": 365838,
+      "version": "Approved 2011-03-23"
+    },
+    {
+      "source_id": "source-calbar-rules-2018",
+      "publisher": "State Bar of California",
+      "title": "California Rules of Professional Conduct, Effective November 1, 2018",
+      "vertical": "legal_services",
+      "url": "https://www.calbar.ca.gov/sites/default/files/portals/0/documents/rules/New-Rules-of-Professional-Conduct-2018.pdf",
+      "sections": [
+        "Rule 1.6(a)-(e), Confidential Information of a Client, printed pp. 7-8, physical pp. 17-18",
+        "Rule 1.7(a)-(e), Conflict of Interest: Current Clients, printed pp. 10-11, physical pp. 20-21"
+      ],
+      "content_type": "application/pdf",
+      "version_date": "2018-11-01",
+      "retrieved_at": "2026-08-19",
+      "retrieval_sha256": "sha256:7831074b81189ab9f555f9832f8aaa2e0da95ab5ceed6e3da0355ce67371bc1a",
+      "retrieval_method": "verified_official_hash_only",
+      "license_classification": "copyrighted-facts-only",
+      "allowed_use": [
+        "process_fact_derivation",
+        "synthetic_scenario_design"
+      ],
+      "prohibited_use": [
+        "source_text_reproduction"
+      ],
+      "fact_ids": [
+        "legal-conflicts",
+        "legal-confidentiality"
+      ],
+      "gate_fact_ids": {
+        "conflicts": [
+          "legal-conflicts"
+        ],
+        "confidentiality": [
+          "legal-confidentiality"
+        ]
+      },
+      "claims": [
+        {
+          "fact_id": "legal-conflicts",
+          "bounded_claim": "California Rule 1.7 treats direct adversity or a significant risk of material limitation as a conflict requiring informed written consent and compliance with paragraph (d).",
+          "location": {
+            "section": "Rule 1.7(a)-(e), Conflict of Interest: Current Clients",
+            "printed_page": [
+              10,
+              11
+            ],
+            "physical_page": [
+              20,
+              21
+            ]
+          },
+          "allowed_gates": [
+            "conflicts"
+          ],
+          "interpretation_limit": "Limited to California representations during the modeled period; supports conflict screening and consent evidence, not another jurisdiction's law, privilege doctrine, or a complete conflicts system.",
+          "transformation_code": "california_rule_17_to_conflict_screen_evidence",
+          "source_version": "Effective November 1, 2018",
+          "source_date": "2018-11-01",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "State Bar of California, California Rules of Professional Conduct, effective November 1, 2018, Rule 1.7",
+          "source_id": "source-calbar-rules-2018",
+          "claim": "California Rule 1.7 treats direct adversity or a significant risk of material limitation as a conflict requiring informed written consent and compliance with paragraph (d).",
+          "section": "Rule 1.7(a)-(e), Conflict of Interest: Current Clients",
+          "printed_page": [
+            10,
+            11
+          ],
+          "physical_page": [
+            20,
+            21
+          ],
+          "source_version_date": "2018-11-01"
+        },
+        {
+          "fact_id": "legal-confidentiality",
+          "bounded_claim": "California Rule 1.6 protects client confidential information and limits disclosure absent informed consent or a rule or law exception, including a narrow prevention-of-harm exception.",
+          "location": {
+            "section": "Rule 1.6(a)-(e), Confidential Information of a Client",
+            "printed_page": [
+              7,
+              8
+            ],
+            "physical_page": [
+              17,
+              18
+            ]
+          },
+          "allowed_gates": [
+            "confidentiality"
+          ],
+          "interpretation_limit": "Limited to California representations during the modeled period; supports confidentiality and permitted-disclosure handling, not cybersecurity, privilege, or security clearance.",
+          "transformation_code": "california_rule_16_to_confidentiality_evidence",
+          "source_version": "Effective November 1, 2018",
+          "source_date": "2018-11-01",
+          "license_class": "copyrighted-facts-only",
+          "attribution": "State Bar of California, California Rules of Professional Conduct, effective November 1, 2018, Rule 1.6",
+          "source_id": "source-calbar-rules-2018",
+          "claim": "California Rule 1.6 protects client confidential information and limits disclosure absent informed consent or a rule or law exception, including a narrow prevention-of-harm exception.",
+          "section": "Rule 1.6(a)-(e), Confidential Information of a Client",
+          "printed_page": [
+            7,
+            8
+          ],
+          "physical_page": [
+            17,
+            18
+          ],
+          "source_version_date": "2018-11-01"
+        }
+      ],
+      "retrieval_bytes": 957081,
+      "version": "Effective November 1, 2018"
+    }
+  ]
+}

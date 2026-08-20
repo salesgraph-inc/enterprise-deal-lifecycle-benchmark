@@ -1,0 +1,109 @@
+{
+  "artifact_key": "quotation_quote_recommendation_authority_insurance_broker_authority",
+  "gate_id": "quotation",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": true,
+      "basis": {
+        "amount_minor_units": 8000000,
+        "field": "annual_premium_minor_units",
+        "value": 8000000
+      },
+      "policy_evidence": "quote comparison, commission disclosure, and client order",
+      "policy_limit_minor_units": 10000000,
+      "policy_owner": "Broking Director",
+      "reason": "concrete_term_within_policy",
+      "required": false,
+      "trigger": "seller_policy_exception"
+    },
+    "approval_required": false,
+    "artifact_key": "quotation_quote_recommendation_authority_insurance_broker_authority",
+    "artifact_subtype": "quote_recommendation",
+    "author": {
+      "display_name": "Finley V. Solace-North-08f5",
+      "email": "finley-v-solace-north-08f5@blueharbor-risk.example",
+      "kind": "internal",
+      "organization_id": "org-16ae0290a01581c703bd",
+      "role_id": "insurance.broker_authority"
+    },
+    "author_actor_id": "act-826c547844fd8510847c",
+    "author_role_id": "insurance.broker_authority",
+    "authoritative_for": [
+      "quotation",
+      "decision_state"
+    ],
+    "authority_actor_ids": [
+      "act-826c547844fd8510847c"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-826c547844fd8510847c",
+        "effective_at": "2025-07-04T09:00:00Z",
+        "resolution": "deferred",
+        "rights": [
+          "accept_coverage_request",
+          "review_submission"
+        ]
+      }
+    ],
+    "authority_role_id": "insurance.broker_authority",
+    "authority_role_ids": [
+      "insurance.broker_authority"
+    ],
+    "channel": "email",
+    "checkpoint_id": "checkpoint-957f9ffc12af9562a1fc",
+    "commissions": {
+      "broker_minor_units": 800000,
+      "carrier_fee_minor_units": 320000,
+      "total_minor_units": 1120000
+    },
+    "decision_owner_actor_id": "act-826c547844fd8510847c",
+    "decision_owner_actor_ids": [
+      "act-826c547844fd8510847c"
+    ],
+    "decision_state": "deferred",
+    "exclusions": [
+      "known_pollution_without_endorsement"
+    ],
+    "forecast_cutoff_at": "2025-07-04T15:00:00Z",
+    "gate_id": "quotation",
+    "limits": {
+      "aggregate_minor_units": 640000000,
+      "each_claim_minor_units": 320000000
+    },
+    "premium_to_each_claim_limit": 0.025,
+    "premiums": {
+      "annual_minor_units": 8000000,
+      "total_term_minor_units": 16000000
+    },
+    "recipient_role_ids": [
+      "insurance.client_authority"
+    ],
+    "recipients": [
+      {
+        "display_name": "Indra C. Fallow-Harbor-7040",
+        "email": "indra-c-fallow-harbor-7040@harbor-westmere-holdings.example",
+        "kind": "buyer",
+        "organization_id": "org-142aed8aa9b8966eef19",
+        "role_id": "insurance.client_authority"
+      }
+    ],
+    "required_signer_actor_ids": [
+      "act-826c547844fd8510847c"
+    ],
+    "required_signer_role_ids": [
+      "insurance.broker_authority"
+    ],
+    "source_evidence_term": "quotation with limits, premiums, commissions, and exclusions",
+    "source_fact_ids": [
+      "insurance-submission-quote",
+      "insurance-structured-placement-data"
+    ]
+  }
+}

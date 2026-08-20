@@ -1,9 +1,0 @@
-# Corporate Banking covenants and closing update
-
-- Channel: internal chat
-- Date: 2025-11-13T09:00:00Z
-- Participants: Dara K. Cairn, Greer M. Fallow
-
-Dara K. Cairn: The USD 90,000,000.00 amount is unchanged, but covenants and closing still has an open dependency.
-Greer M. Fallow: I will flag the stale projection and avoid overwriting the audit history.
-Dara K. Cairn: Uma D. Solace added a traceability requirement for the covenants and closing gate, and the seller's current delivery plan covers it.

@@ -6,8 +6,8 @@ authorship and review remain pending release gates.
 ## Implemented and machine-checked
 
 - [x] 72 public worlds, 24 each in train, dev, and blind.
-- [x] 72 artifacts per world and 5,184 total artifacts.
-- [x] 716 checkpoint windows across the full pack.
+- [x] 100 to 120 artifacts per world and 8,060 total artifacts.
+- [x] 576 checkpoint windows across the full pack.
 - [x] 180 shared seller documents.
 - [x] 36 counterfactual pairs.
 - [x] 4 rich renderings, 2 PDF and 2 XLSX.
@@ -26,6 +26,9 @@ authorship and review remain pending release gates.
       phone numbers, configured copied phrases and entities, and duplicate
       person identities. These are configured-list checks, not a global
       real-person or copy scan.
+- [x] The 11-row source-evidence manifest is a strict registry bijection. Remote
+      originals remain URL, byte-count, and SHA-256 records and can be verified
+      with the standard-library streaming verifier. Host challenges fail closed.
 - [x] Canary scanning, quota ledger, exact-byte manifest hashing, HMAC result
       signing, immutable network-disabled Podman isolation, and RevOps-only CRM
       merge have focused tests.

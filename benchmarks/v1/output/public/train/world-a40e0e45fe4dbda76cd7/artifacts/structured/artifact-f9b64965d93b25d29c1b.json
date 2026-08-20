@@ -1,0 +1,100 @@
+{
+  "artifact_key": "artifact-key-5d28cbb2e2efa9d441cc",
+  "gate_id": "credit_approval",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": false,
+      "basis": null,
+      "policy_evidence": null,
+      "policy_limit_minor_units": null,
+      "policy_owner": null,
+      "reason": "no_seller_exception",
+      "required": false,
+      "trigger": "none"
+    },
+    "approval_record": {
+      "approval_authority": "credit_officer",
+      "status": "pending"
+    },
+    "approval_required": false,
+    "artifact_key": "artifact-key-5d28cbb2e2efa9d441cc",
+    "artifact_subtype": "credit_decision",
+    "author": {
+      "display_name": "Niko R. Grove-Juniper-e0dd",
+      "email": "niko-r-grove-juniper-e0dd@emberline-bank.example",
+      "kind": "internal",
+      "organization_id": "org-15490f97d24ea61d5e2a",
+      "role_id": "bank.credit_authority"
+    },
+    "author_actor_id": "act-7235a0747d43f9a6e28d",
+    "author_role_id": "bank.credit_authority",
+    "authoritative_for": [
+      "credit_approval",
+      "decision_state"
+    ],
+    "authority_actor_ids": [
+      "act-7235a0747d43f9a6e28d"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-7235a0747d43f9a6e28d",
+        "effective_at": "2025-12-01T09:00:00Z",
+        "resolution": "rejected",
+        "rights": [
+          "accept_credit_decision",
+          "review_independent_credit_record"
+        ]
+      }
+    ],
+    "authority_role_id": "bank.credit_authority",
+    "authority_role_ids": [
+      "bank.credit_authority"
+    ],
+    "channel": "document",
+    "checkpoint_id": "checkpoint-b6583446308e18bb2822",
+    "decision_owner_actor_id": "act-7235a0747d43f9a6e28d",
+    "decision_owner_actor_ids": [
+      "act-7235a0747d43f9a6e28d"
+    ],
+    "decision_state": "rejected",
+    "exception_route": {
+      "reason": "within_delegated_authority",
+      "required": false
+    },
+    "forecast_cutoff_at": "2025-12-01T16:45:00Z",
+    "gate_id": "credit_approval",
+    "origination_separation": {
+      "approver": "independent_credit",
+      "originator": "relationship_team"
+    },
+    "recipient_role_ids": [
+      "seller.sales_manager"
+    ],
+    "recipients": [
+      {
+        "display_name": "Kiran M. Yarrow-Ashby-2e32",
+        "email": "sales.manager@emberline-bank.example",
+        "kind": "seller",
+        "organization_id": "org-15490f97d24ea61d5e2a",
+        "role_id": "seller.sales_manager"
+      }
+    ],
+    "required_signer_actor_ids": [
+      "act-7235a0747d43f9a6e28d"
+    ],
+    "required_signer_role_ids": [
+      "bank.credit_authority"
+    ],
+    "source_evidence_term": "separated origination and approval with routed exceptions when required",
+    "source_fact_ids": [
+      "banking-credit-separation",
+      "banking-exception-approval"
+    ]
+  }
+}

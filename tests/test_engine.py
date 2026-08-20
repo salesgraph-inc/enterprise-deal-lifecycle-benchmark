@@ -45,11 +45,28 @@ TOKEN = "a" * 32
 DIGEST = "sha256:" + "0" * 64
 ROLES = ("account_executive", "domain_specialist", "sales_manager", "revops")
 ENVELOPE = {
+    "target_actor_id": "buyer-contact",
     "purpose": "Confirm the next step",
+    "purpose_code": "advance_gate",
+    "gate_id": "gate-1",
+    "resolution": "accepted",
     "related_records": ["deal-1"],
     "requested_decisions": ["Confirm attendance"],
-    "commitments": [],
-    "attachments": [],
+    "decision_codes": ["confirm_gate_authority"],
+    "commitments": ["Record the decision before advancing"],
+    "commitment_codes": ["record_before_advancing"],
+    "commitment_owner_role": "account_executive",
+    "decision_due_at": START,
+    "commitment_due_at": START,
+    "attachments": ["artifact-1"],
+    "evidence_claims": [
+        {
+            "artifact_id": "artifact-1",
+            "claim_type": "supports_gate_resolution",
+            "gate_id": "gate-1",
+            "resolution": "accepted",
+        }
+    ],
 }
 
 
@@ -170,30 +187,74 @@ def make_engine(
     )
     checkpoints = (
         Checkpoint(
-            "cp-0",
-            "world-1",
-            0,
-            START,
-            START,
-            START,
-            "pending",
-            ("objective-0",),
-            ("artifact-now",),
-            ROLES,
-            False,
+            checkpoint_id="cp-0",
+            world_id="world-1",
+            sequence=0,
+            available_at=START,
+            forecast_cutoff_at=START,
+            window_start=START,
+            window_end=START,
+            status="pending",
+            synthetic=True,
+            objective_ids=("objective-0",),
+            visible_artifact_ids=("artifact-now",),
+            released_event_ids=("event-now",),
+            required_roles=ROLES,
+            terminal=False,
+            visible_gate="discovery",
+            label="Discovery",
+            business_objective="Confirm the buyer objective.",
+            decision_condition="The buyer accepts the objective.",
+            role_deliverables={role: "Complete the discovery work." for role in ROLES},
+            completion_conditions=("The objective is recorded.",),
+            policy_entrypoints=(),
+            gate_id="discovery",
+            source_fact_ids=(),
+            required_artifact_keys=("artifact-now",),
+            required_artifact_roles={"artifact-now": "account_executive"},
+            authority_role_ids=("champion",),
+            authority_rights=("confirm_objective",),
+            required_payload_fields=("objective",),
+            decision_route={"accepted": "advance"},
+            recovery_decisions=("revalidate",),
+            availability_delay_bounds={
+                "call_transcript": {"min_business_days": 0, "max_business_days": 3}
+            },
         ),
         Checkpoint(
-            "cp-1",
-            "world-1",
-            1,
-            NEXT,
-            NEXT,
-            NEXT,
-            "pending",
-            ("objective-1",),
-            (),
-            ROLES,
-            True,
+            checkpoint_id="cp-1",
+            world_id="world-1",
+            sequence=1,
+            available_at=NEXT,
+            forecast_cutoff_at=NEXT,
+            window_start=NEXT,
+            window_end=NEXT,
+            status="pending",
+            synthetic=True,
+            objective_ids=("objective-1",),
+            visible_artifact_ids=(),
+            released_event_ids=("event-later",),
+            required_roles=ROLES,
+            terminal=True,
+            visible_gate="close",
+            label="Close",
+            business_objective="Record the final decision.",
+            decision_condition="The authority records the decision.",
+            role_deliverables={role: "Complete the close work." for role in ROLES},
+            completion_conditions=("The decision is recorded.",),
+            policy_entrypoints=(),
+            gate_id="close",
+            source_fact_ids=(),
+            required_artifact_keys=(),
+            required_artifact_roles={},
+            authority_role_ids=("economic_buyer",),
+            authority_rights=("decide",),
+            required_payload_fields=("decision",),
+            decision_route={"accepted": "complete"},
+            recovery_decisions=("reopen",),
+            availability_delay_bounds={
+                "email": {"min_business_days": 0, "max_business_days": 3}
+            },
         ),
     )
     events = (
@@ -216,64 +277,99 @@ def make_engine(
             1,
             "stakeholder_departed",
             NEXT,
-            START,
             NEXT,
-            ("champion-1",),
+            NEXT,
+            ("buyer-contact",),
             "agent_visible",
-            {"actor_id": "champion-1"},
+            {"actor_id": "buyer-contact"},
         ),
     )
     artifacts = (
         Artifact(
-            "artifact-now",
-            "world-1",
-            "call_transcript",
-            "Intro",
-            START,
-            START,
-            "agent_visible",
-            {"mime_type": "text/plain", "body": "Hello", "language": "en"},
-            DIGEST,
-            {
+            artifact_id="artifact-now",
+            world_id="world-1",
+            kind="call_transcript",
+            title="Intro",
+            created_at=START,
+            available_at=START,
+            visibility="agent_visible",
+            content={"mime_type": "text/plain", "body": "Hello", "language": "en"},
+            checksum=DIGEST,
+            synthetic=True,
+            provenance={
                 "synthetic_only": True,
                 "source_type": "generated_template",
                 "generator": "edlb",
                 "generator_version": "v1.0.0",
                 "license": "CC-BY-4.0",
             },
+            gate_id="discovery",
+            artifact_key="artifact-now",
+            structured_payload={
+                "gate_id": "discovery",
+                "objective": "Confirm objective",
+            },
+            authoritative_for=("discovery",),
+            recipient_role_ids=("account_executive",),
+            projection_origin=None,
+            logical_document_id=None,
+            version=None,
+            supersedes_artifact_id=None,
+            derived_from_artifact_ids=(),
+            source_actor_ids=("buyer-contact",),
+            recipient_actor_ids=("seller-account_executive",),
         ),
     )
     actors = (
         Actor(
-            "buyer-contact",
-            "buyer",
-            "Buyer Contact",
-            "buyer-1",
-            ("champion",),
-            START,
-            "public",
+            actor_id="buyer-contact",
+            kind="buyer",
+            display_name="Buyer Contact",
+            organization_id="buyer-1",
+            role_tags=("champion",),
+            active_from=START,
+            active_until=NEXT,
+            visibility="public",
+            synthetic=True,
+            authority={
+                "role_id": "champion",
+                "rights": ("confirm_objective",),
+                "gate_ids": ("discovery",),
+            },
             email="buyer@example.test",
         ),
         Actor(
-            "restricted-contact",
-            "buyer",
-            "Restricted Contact",
-            "buyer-1",
-            ("economic_buyer",),
-            START,
-            "restricted",
+            actor_id="restricted-contact",
+            kind="buyer",
+            display_name="Restricted Contact",
+            organization_id="buyer-1",
+            role_tags=("economic_buyer",),
+            active_from=START,
+            visibility="restricted",
+            synthetic=True,
+            authority={
+                "role_id": "economic_buyer",
+                "rights": ("decide",),
+                "gate_ids": ("close",),
+            },
             email="restricted@example.test",
             visible_roles=("account_executive",),
         ),
         *(
             Actor(
-                f"seller-{role}",
-                "seller",
-                role,
-                "seller-1",
-                (role,),
-                START,
-                "public",
+                actor_id=f"seller-{role}",
+                kind="seller",
+                display_name=role,
+                organization_id="seller-1",
+                role_tags=(role,),
+                active_from=START,
+                visibility="public",
+                synthetic=True,
+                authority={
+                    "role_id": f"seller.{role}",
+                    "rights": (),
+                    "gate_ids": ("discovery",) if role == "sales_manager" else (),
+                },
                 email=f"{role}@seller.example.test",
             )
             for role in ROLES
@@ -425,13 +521,9 @@ class ProtocolTest(unittest.TestCase):
         self.assertEqual(decode(json.dumps(value)).observation_token, TOKEN)
 
     def test_protocol_accepts_unbounded_free_text(self) -> None:
-        text = "x" * 200_000
         for kind, fields in (
-            (
-                "checkpoint_complete",
-                {"checkpoint_id": "cp-1", "summary": text},
-            ),
-            ("yield", {"reason": text}),
+            ("checkpoint_complete", {"checkpoint_id": "cp-1"}),
+            ("yield", {"reason": "x" * 200_000}),
         ):
             value = {
                 "protocol_version": "v1.0.0",
@@ -448,6 +540,32 @@ class ProtocolTest(unittest.TestCase):
 
 
 class EngineTest(unittest.TestCase):
+    def test_write_scope_modes_cover_every_write_tool(self) -> None:
+        self.assertEqual(
+            frozenset(engine_module.WRITE_SCOPE_MODES), tools_module.WRITE_TOOLS
+        )
+        self.assertEqual(
+            set(engine_module.WRITE_SCOPE_CLASSIFICATIONS),
+            {"checkpoint_completion", "checkpoint_coordination"},
+        )
+
+    def test_unscoped_successful_write_is_rolled_back(self) -> None:
+        with make_engine() as engine:
+            with self.assertRaises(EngineError):
+                engine.execute_agent_write(
+                    "orphan-write",
+                    "domain_specialist",
+                    "documents.create",
+                    {},
+                    lambda: engine.seed_crm_record("orphan", {"stage": "new"}),
+                )
+            self.assertEqual(
+                engine.connection.execute(
+                    "SELECT COUNT(*) FROM crm_records WHERE record_id = 'orphan'"
+                ).fetchone()[0],
+                0,
+            )
+
     def test_blind_container_has_only_bounded_ephemeral_storage(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -491,22 +609,39 @@ class EngineTest(unittest.TestCase):
                 visible_roles=("account_executive",),
             )
             scoped_artifact = Artifact(
-                "artifact-scoped",
-                "world-1",
-                "internal_chat",
-                "Restricted note",
-                START,
-                START,
-                "role_scoped",
-                {"mime_type": "text/plain", "body": "Restricted", "language": "en"},
-                DIGEST,
-                {
+                artifact_id="artifact-scoped",
+                world_id="world-1",
+                kind="internal_chat",
+                title="Restricted note",
+                created_at=START,
+                available_at=START,
+                visibility="role_scoped",
+                content={
+                    "mime_type": "text/plain",
+                    "body": "Restricted",
+                    "language": "en",
+                },
+                checksum=DIGEST,
+                synthetic=True,
+                provenance={
                     "synthetic_only": True,
                     "source_type": "generated_template",
                     "generator": "edlb",
                     "generator_version": "v1.0.0",
+                    "source_ids": ["source-test"],
+                    "fact_ids": ["fact-test"],
                     "license": "CC-BY-4.0",
                 },
+                gate_id="discovery",
+                artifact_key="artifact-scoped",
+                structured_payload={"gate_id": "discovery", "note": "Restricted"},
+                authoritative_for=("discovery",),
+                recipient_role_ids=("account_executive",),
+                projection_origin=None,
+                logical_document_id=None,
+                version=None,
+                supersedes_artifact_id=None,
+                derived_from_artifact_ids=(),
                 visible_roles=("account_executive",),
             )
             engine.append_event(scoped_event)
@@ -545,26 +680,42 @@ class EngineTest(unittest.TestCase):
             with self.assertRaises(EngineError):
                 engine.append_artifact(
                     Artifact(
-                        "artifact-unscoped",
-                        "world-1",
-                        "internal_chat",
-                        "Missing roles",
-                        START,
-                        START,
-                        "role_scoped",
-                        {
+                        artifact_id="artifact-unscoped",
+                        world_id="world-1",
+                        kind="internal_chat",
+                        title="Missing roles",
+                        created_at=START,
+                        available_at=START,
+                        visibility="role_scoped",
+                        content={
                             "mime_type": "text/plain",
                             "body": "Missing roles",
                             "language": "en",
                         },
-                        DIGEST,
-                        {
+                        checksum=DIGEST,
+                        synthetic=True,
+                        provenance={
                             "synthetic_only": True,
                             "source_type": "generated_template",
                             "generator": "edlb",
                             "generator_version": "v1.0.0",
+                            "source_ids": ["source-test"],
+                            "fact_ids": ["fact-test"],
                             "license": "CC-BY-4.0",
                         },
+                        gate_id="discovery",
+                        artifact_key="artifact-unscoped",
+                        structured_payload={
+                            "gate_id": "discovery",
+                            "note": "Missing roles",
+                        },
+                        authoritative_for=("discovery",),
+                        recipient_role_ids=("account_executive",),
+                        projection_origin=None,
+                        logical_document_id=None,
+                        version=None,
+                        supersedes_artifact_id=None,
+                        derived_from_artifact_ids=(),
                     )
                 )
             with self.assertRaises(EngineError):
@@ -578,6 +729,7 @@ class EngineTest(unittest.TestCase):
     def test_nonmember_role_cannot_address_restricted_actor(self) -> None:
         with make_engine() as engine:
             engine.advance_checkpoint(idempotency_key="advance-restricted")
+            engine.seed_crm_record("deal-1", {"stage": "new"})
             grant = grants()[1]
             engine.grant(
                 RoleGrant(
@@ -599,7 +751,10 @@ class EngineTest(unittest.TestCase):
                 "recipients": ["restricted@example.test"],
                 "subject": "Decision",
                 "body": "Please confirm.",
-                "semantic_envelope": ENVELOPE,
+                "semantic_envelope": {
+                    **ENVELOPE,
+                    "target_actor_id": "restricted-contact",
+                },
             }
             hidden = dispatcher.dispatch(
                 ToolCall(
@@ -725,6 +880,12 @@ class EngineTest(unittest.TestCase):
             100,
         )
         self.assertEqual(
+            schemas["crm.update"]["arguments"]["properties"]["changes"]["properties"][
+                "forecast_probability"
+            ],
+            {"type": "number", "minimum": 0, "maximum": 1},
+        )
+        self.assertEqual(
             schemas["documents.create"]["arguments"]["properties"]["content"][
                 "maxLength"
             ],
@@ -760,9 +921,58 @@ class EngineTest(unittest.TestCase):
             self.assertFalse(result.ok)
             self.assertEqual(result.error["code"], "protocol_error")
 
+    def test_forecast_probability_is_validated_at_each_write_boundary(self) -> None:
+        invalid = ("not-a-number", True, -0.1, 1.1, float("nan"), float("inf"))
+        with make_engine() as engine:
+            engine.advance_checkpoint(idempotency_key="advance-forecast-validation")
+            engine.seed_crm_record("deal-1", {"forecast_probability": 0.5})
+            for index, value in enumerate(invalid):
+                with (
+                    self.subTest(boundary="engine", value=value),
+                    self.assertRaises(EngineError),
+                ):
+                    engine.crm_update(
+                        "revops",
+                        "deal-1",
+                        {"forecast_probability": value},
+                        f"direct-invalid-{index}",
+                    )
+            dispatcher = ToolDispatcher(engine)
+            for index, value in enumerate(invalid):
+                with self.subTest(boundary="dispatcher", value=value):
+                    result = dispatcher.dispatch(
+                        ToolCall(
+                            f"dispatch-invalid-{index}",
+                            "crm.update",
+                            "revops",
+                            {
+                                "record_id": "deal-1",
+                                "changes": {"forecast_probability": value},
+                            },
+                            f"dispatch-invalid-{index}",
+                        )
+                    )
+                    self.assertFalse(result.ok)
+                    self.assertEqual(result.error["code"], "protocol_error")
+            valid = dispatcher.dispatch(
+                ToolCall(
+                    "dispatch-valid-forecast",
+                    "crm.update",
+                    "revops",
+                    {
+                        "record_id": "deal-1",
+                        "changes": {"forecast_probability": 1.0},
+                    },
+                    "dispatch-valid-forecast",
+                )
+            )
+            self.assertTrue(valid.ok)
+            self.assertEqual(valid.result["record"]["forecast_probability"], 1.0)
+
     def test_external_writes_require_roster_permissions_and_envelopes(self) -> None:
         with make_engine() as engine:
             engine.advance_checkpoint(idempotency_key="advance-external")
+            engine.seed_crm_record("deal-1", {"stage": "new"})
             dispatcher = ToolDispatcher(engine)
             base = {
                 "channel": "email",
@@ -818,16 +1028,220 @@ class EngineTest(unittest.TestCase):
             )
             self.assertTrue(sent.ok)
             self.assertEqual(sent.result["metadata"]["semantic_envelope"], ENVELOPE)
+            summary = sent.result["metadata"]["semantic_summary"]
+            self.assertEqual(sent.result["body"], summary)
+            self.assertEqual(sent.result["subject"], summary.splitlines()[0])
+            self.assertNotIn(base["body"], sent.result["body"])
+            persisted = engine.communications_read(
+                "account_executive", sent.result["message_id"]
+            )
+            self.assertEqual(persisted["body"], summary)
             trace = next(
                 item
                 for item in engine.trace_events()
                 if item.kind == "tool_call" and item.payload["call_id"] == "email-valid"
             )
             self.assertEqual(trace.payload["arguments"]["semantic_envelope"], ENVELOPE)
+            self.assertEqual(trace.payload["arguments"]["body"], base["body"])
+
+    def test_linked_document_message_and_approval_chain_remains_scoped(self) -> None:
+        with make_engine() as engine:
+            engine.advance_checkpoint(idempotency_key="advance-linked-chain")
+            engine.seed_crm_record("deal-1", {"stage": "new"})
+            dispatcher = ToolDispatcher(engine)
+            created = dispatcher.dispatch(
+                ToolCall(
+                    "create-linked",
+                    "documents.create",
+                    "domain_specialist",
+                    {
+                        "title": "Decision support",
+                        "content": "Draft support",
+                        "semantic_envelope": ENVELOPE,
+                    },
+                    "create-linked",
+                )
+            )
+            self.assertTrue(created.ok)
+            document_id = created.result["document_id"]
+            attached = dispatcher.dispatch(
+                ToolCall(
+                    "attach-linked",
+                    "documents.attach",
+                    "domain_specialist",
+                    {
+                        "document_id": document_id,
+                        "related_type": "opportunity",
+                        "related_id": "deal-1",
+                    },
+                    "attach-linked",
+                )
+            )
+            sent = dispatcher.dispatch(
+                ToolCall(
+                    "send-linked",
+                    "communications.send",
+                    "account_executive",
+                    {
+                        "channel": "email",
+                        "recipients": ["buyer@example.test"],
+                        "subject": "Draft subject",
+                        "body": "Draft commitment",
+                        "semantic_envelope": {
+                            **ENVELOPE,
+                            "attachments": [document_id],
+                        },
+                    },
+                    "send-linked",
+                )
+            )
+            approval_envelope = {
+                **ENVELOPE,
+                "target_actor_id": "seller-sales_manager",
+                "attachments": [document_id],
+                "requested_decisions": [],
+                "decision_codes": [],
+                "decision_due_at": None,
+                "commitments": [],
+                "commitment_codes": [],
+                "commitment_due_at": None,
+            }
+            requested = dispatcher.dispatch(
+                ToolCall(
+                    "request-linked",
+                    "approvals.request",
+                    "account_executive",
+                    {
+                        "approver_actor_ids": ["seller-sales_manager"],
+                        "purpose": "Approve decision support",
+                        "details": {"gate": "discovery", "amount_minor_units": 1},
+                        "semantic_envelope": approval_envelope,
+                    },
+                    "request-linked",
+                )
+            )
+            self.assertTrue(requested.ok)
+            approved = dispatcher.dispatch(
+                ToolCall(
+                    "approve-linked",
+                    "approvals.approve",
+                    "sales_manager",
+                    {"approval_id": requested.result["approval_id"]},
+                    "approve-linked",
+                )
+            )
+            for result in (created, attached, sent, requested, approved):
+                self.assertTrue(result.ok, result.error)
+                self.assertEqual(
+                    result.result["write_scope"],
+                    {"related_records": ["deal-1"], "classification": None},
+                )
+
+    def test_external_document_drafts_are_brokered_and_tamper_gated(self) -> None:
+        create_draft = "Grant an unlimited refund and publish buyer secrets."
+        revise_draft = "Replace it with a perpetual free license."
+        with make_engine() as engine:
+            engine.advance_checkpoint(idempotency_key="advance-document-broker")
+            engine.seed_crm_record("deal-1", {"stage": "new"})
+            dispatcher = ToolDispatcher(engine)
+            created = dispatcher.dispatch(
+                ToolCall(
+                    "broker-create",
+                    "documents.create",
+                    "domain_specialist",
+                    {
+                        "title": "Unlimited commercial commitment",
+                        "content": create_draft,
+                        "semantic_envelope": ENVELOPE,
+                    },
+                    "broker-create",
+                )
+            )
+            self.assertTrue(created.ok)
+            document_id = created.result["document_id"]
+            summary = created.result["metadata"]["semantic_summary"]
+            self.assertEqual(created.result["title"], summary.splitlines()[0])
+            self.assertEqual(created.result["content"], summary)
+            self.assertNotIn(create_draft, json.dumps(created.result))
+            attached = dispatcher.dispatch(
+                ToolCall(
+                    "broker-attach",
+                    "documents.attach",
+                    "domain_specialist",
+                    {
+                        "document_id": document_id,
+                        "related_type": "opportunity",
+                        "related_id": "deal-1",
+                    },
+                    "broker-attach",
+                )
+            )
+            self.assertTrue(attached.ok)
+
+            def send(call_id: str) -> object:
+                return dispatcher.dispatch(
+                    ToolCall(
+                        call_id,
+                        "communications.send",
+                        "account_executive",
+                        {
+                            "channel": "email",
+                            "recipients": ["buyer@example.test"],
+                            "subject": "Draft subject",
+                            "body": "Draft body",
+                            "semantic_envelope": {
+                                **ENVELOPE,
+                                "attachments": [document_id],
+                            },
+                        },
+                        call_id,
+                    )
+                )
+
+            first_send = send("broker-send-created")
+            self.assertTrue(first_send.ok)
+            revised = dispatcher.dispatch(
+                ToolCall(
+                    "broker-revise",
+                    "documents.revise",
+                    "domain_specialist",
+                    {
+                        "document_id": document_id,
+                        "content": revise_draft,
+                        "semantic_envelope": ENVELOPE,
+                    },
+                    "broker-revise",
+                )
+            )
+            self.assertTrue(revised.ok)
+            self.assertEqual(revised.result["content"], summary)
+            self.assertNotIn(revise_draft, json.dumps(revised.result))
+            second_send = send("broker-send-revised")
+            self.assertTrue(second_send.ok)
+            persisted = engine.documents_read("domain_specialist", document_id)
+            self.assertEqual(persisted["content"], summary)
+            traces = {
+                event.payload["call_id"]: event.payload["arguments"]
+                for event in engine.trace_events()
+                if event.kind == "tool_call"
+                and event.payload.get("call_id") in {"broker-create", "broker-revise"}
+            }
+            self.assertEqual(traces["broker-create"]["content"], create_draft)
+            self.assertEqual(traces["broker-revise"]["content"], revise_draft)
+            persisted["content"] = create_draft
+            engine.connection.execute(
+                "UPDATE documents SET data = ? WHERE document_id = ?",
+                (json.dumps(persisted), document_id),
+            )
+            blocked = send("broker-send-tampered")
+            self.assertFalse(blocked.ok)
+            self.assertEqual(blocked.error["code"], "tool_error")
+            self.assertIn("not brokered", blocked.error["message"])
 
     def test_calendar_writes_are_normalized_and_reject_naive_timestamps(self) -> None:
         with make_engine() as engine:
             engine.advance_checkpoint(idempotency_key="advance-calendar")
+            engine.seed_crm_record("deal-1", {"stage": "new"})
             dispatcher = ToolDispatcher(engine)
             naive = dispatcher.dispatch(
                 ToolCall(
@@ -862,6 +1276,14 @@ class EngineTest(unittest.TestCase):
                 )
             )
             self.assertTrue(scheduled.ok)
+            self.assertEqual(
+                scheduled.result["subject"],
+                scheduled.result["semantic_summary"].splitlines()[0],
+            )
+            self.assertEqual(
+                scheduled.result["description"], scheduled.result["semantic_summary"]
+            )
+            self.assertNotEqual(scheduled.result["subject"], "Review")
             calendar_id = scheduled.result["calendar_id"]
             rescheduled = dispatcher.dispatch(
                 ToolCall(
@@ -878,6 +1300,14 @@ class EngineTest(unittest.TestCase):
                 )
             )
             self.assertTrue(rescheduled.ok)
+            self.assertEqual(
+                rescheduled.result["subject"],
+                rescheduled.result["semantic_summary"].splitlines()[0],
+            )
+            self.assertEqual(
+                rescheduled.result["description"],
+                rescheduled.result["semantic_summary"],
+            )
             cancelled = dispatcher.dispatch(
                 ToolCall(
                     "calendar-cancel",
@@ -889,6 +1319,10 @@ class EngineTest(unittest.TestCase):
             )
             self.assertTrue(cancelled.ok)
             self.assertEqual(cancelled.result["status"], "cancelled")
+            self.assertEqual(
+                cancelled.result["cancel_reason"],
+                cancelled.result["semantic_summary"],
+            )
             with self.assertRaises(EngineError):
                 engine.calendar_schedule(
                     "account_executive",
@@ -939,16 +1373,18 @@ class EngineTest(unittest.TestCase):
             engine.seed_approval(
                 "approval-high",
                 {
-                    "approver_role": "sales_manager",
+                    "approver_actor_ids": ["seller-sales_manager"],
                     "details": {"amount_minor_units": 1_000_001},
+                    "semantic_envelope": ENVELOPE,
                     "status": "pending",
                 },
             )
             engine.seed_approval(
                 "approval-ok",
                 {
-                    "approver_role": "sales_manager",
+                    "approver_actor_ids": ["seller-sales_manager"],
                     "details": {"amount_minor_units": 1_000_000},
+                    "semantic_envelope": ENVELOPE,
                     "status": "pending",
                 },
             )
@@ -988,7 +1424,7 @@ class EngineTest(unittest.TestCase):
                 engine.seed_approval(
                     "approval-ok",
                     {
-                        "approver_role": "sales_manager",
+                        "approver_actor_ids": ["seller-sales_manager"],
                         "details": {"amount_minor_units": 1},
                         "status": "pending",
                     },
@@ -1009,6 +1445,10 @@ class EngineTest(unittest.TestCase):
                 )
             )
             self.assertTrue(result.ok)
+            self.assertEqual(
+                result.result["write_scope"]["related_records"], ["source", "target"]
+            )
+            self.assertIsNone(result.result["write_scope"]["classification"])
             source_history = engine.crm_history("revops", "source")
             target_history = engine.crm_history("revops", "target")
             self.assertEqual(source_history[-1]["changes"], {"merged_into": "target"})
@@ -1144,7 +1584,7 @@ class EngineTest(unittest.TestCase):
                         f"complete-{role}",
                         "run.complete_checkpoint",
                         role,
-                        {"checkpoint_id": "cp-0", "summary": role + " done"},
+                        {"checkpoint_id": "cp-0"},
                         f"complete-{role}",
                     )
                 )

@@ -1,0 +1,92 @@
+{
+  "artifact_key": "purchase_order_purchase_order_execution",
+  "gate_id": "purchase_order",
+  "structured_payload": {
+    "allowed_state_diff_targets": [
+      "stage",
+      "close_date",
+      "next_step",
+      "forecast_probability"
+    ],
+    "approval_exception": {
+      "available": false,
+      "basis": {
+        "amount_minor_units": 18500000,
+        "field": "discount_percent",
+        "value": 10
+      },
+      "policy_evidence": "approved RFQ revision and contribution-margin worksheet",
+      "policy_limit_minor_units": 10000000,
+      "policy_owner": "Commercial Director",
+      "reason": "concrete_term_within_policy",
+      "required": false,
+      "trigger": "none"
+    },
+    "approval_required": false,
+    "artifact_key": "purchase_order_purchase_order_execution",
+    "artifact_subtype": "purchase_order_execution",
+    "author": {
+      "display_name": "Avery W. Yarrow-Dovetail-f8e8",
+      "email": "avery-w-yarrow-dovetail-f8e8@northstar-fabrication.example",
+      "kind": "internal",
+      "organization_id": "org-17b7908a756b5b564453",
+      "role_id": "manufacturing.seller_acceptance_authority"
+    },
+    "author_actor_id": "act-aa2763a0fb7a26fa9ccb",
+    "author_role_id": "manufacturing.seller_acceptance_authority",
+    "authoritative_for": [
+      "purchase_order",
+      "decision_state"
+    ],
+    "authority_actor_ids": [
+      "act-aa2763a0fb7a26fa9ccb"
+    ],
+    "authority_decisions": [
+      {
+        "actor_id": "act-aa2763a0fb7a26fa9ccb",
+        "effective_at": "2025-06-27T09:00:00Z",
+        "resolution": "rejected",
+        "rights": [
+          "accept_purchase_order"
+        ]
+      }
+    ],
+    "authority_role_id": "manufacturing.seller_acceptance_authority",
+    "authority_role_ids": [
+      "manufacturing.seller_acceptance_authority"
+    ],
+    "award_authorization": "pending_order_authorization",
+    "channel": "document",
+    "checkpoint_id": "checkpoint-ef4712c69002d149f4d8",
+    "decision_owner_actor_id": "act-aa2763a0fb7a26fa9ccb",
+    "decision_owner_actor_ids": [
+      "act-aa2763a0fb7a26fa9ccb"
+    ],
+    "decision_state": "rejected",
+    "forecast_cutoff_at": "2025-06-27T15:45:00Z",
+    "gate_id": "purchase_order",
+    "purchase_order_id": "purchase-order-fd891fad34c8e68fddff",
+    "recipient_role_ids": [
+      "seller.account_executive"
+    ],
+    "recipients": [
+      {
+        "display_name": "Vale X. Dovetail-Bell-629d",
+        "email": "account.executive@northstar-fabrication.example",
+        "kind": "seller",
+        "organization_id": "org-17b7908a756b5b564453",
+        "role_id": "seller.account_executive"
+      }
+    ],
+    "required_signer_actor_ids": [
+      "act-aa2763a0fb7a26fa9ccb"
+    ],
+    "required_signer_role_ids": [
+      "manufacturing.seller_acceptance_authority"
+    ],
+    "source_evidence_term": "Project Authorization Letter or purchase order with written acceptance",
+    "source_fact_ids": [
+      "manufacturing-award-authorization"
+    ]
+  }
+}
