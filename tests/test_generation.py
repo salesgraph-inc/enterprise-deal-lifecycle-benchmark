@@ -1815,8 +1815,7 @@ class GenerationTest(unittest.TestCase):
         expected_total = f"{summary['artifact_total']:,}"
         for document in (
             ROOT / "README.md",
-            ROOT / "DATA_CARD.md",
-            ROOT / "BENCHMARK_CARD.md",
+            ROOT / "docs" / "benchmark.md",
         ):
             text = " ".join(document.read_text(encoding="utf-8").split())
             self.assertIn(expected_range, text)

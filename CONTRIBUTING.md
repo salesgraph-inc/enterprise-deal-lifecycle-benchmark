@@ -1,102 +1,54 @@
 # Contributing
 
-EDLB v1 includes the contract, generated public pack, future private-pack
-support, runtime,
-CLI, harnesses, causal checks, grading, reporting, and release documentation.
-Do not add customer data, live integrations, fabricated benchmark results, or
-unreviewed changes to blind evaluator data.
+Keep changes small, deterministic, and reviewable. Read
+[Running EDLB](docs/running.md) before changing generated data.
 
 ## Contract rules
 
-- Treat src/edlb/schemas/ as normative. A field change requires a versioning decision.
-- Use stable lowercase IDs. Do not encode outcomes, split membership, or
-  causal variants in public IDs or filenames.
-- Use RFC 3339 date-time strings with explicit timezone information.
-- Represent money as integer minor units plus an ISO 4217 currency code.
-- Keep any future bundle marked `release_visibility=private` outside public
-  bundles. v1's public pack intentionally includes causal truth, assertions,
-  oracle state, hidden events, and reference traces.
-- Keep comments out of generated schema and data files. Explain contract
-  decisions in documentation or review records.
+- Treat `src/edlb/schemas/` as normative. Field changes require a versioning
+  decision.
+- Reject unknown fields at trust boundaries.
+- Use RFC 3339 date-time strings, integer minor currency units, and ISO 4217
+  currency codes.
+- Preserve role grants, visibility, timing, idempotency, trace integrity, and
+  release visibility.
+- Update schemas, models, validation, fixtures, and tests together.
 
-## Execution-resource policy
+## Data rules
 
-EDLB sets no model or execution budget by default. Do not add implicit token
-caps or temperature, top-p, reasoning-effort, or cost settings, or default
-checkpoint tool-call, turn, response-time, total wall-time, context-history, or
-retrieval-result caps. Runner retries default to zero. The implemented operator
-controls are per-checkpoint tool calls, turns, response timeout, and retries;
-nullable controls use null for unlimited. External systems must declare model
-IDs, digests, prompt hashes, and provider settings in a resolved pre-run agent
-manifest. EDLB records that declaration and binds it to configuration and
-manifest hashes. External execution also pins runtime, artifact, revision, and
-effective host and job policy provenance in a resolved environment manifest.
-The executor-policy digest records inherited rlimits and other policy and adds
-no resource cap. EDLB imposes no total wall-time, CPU, memory, process, or
-file-descriptor cap. Keep executor policy and configuration identical for
-comparisons. Blind-container storage isolation retains the 64 MiB temporary
-filesystem and network and filesystem restrictions.
+- Author causal facts, timing, visibility, policy, and rubric assertions before
+  prose.
+- Generate prose only from allowed facts. Prose must not change state,
+  permissions, approvals, or outcomes.
+- Use fictional entities, reserved domains, and non-routable phone numbers.
+- Do not copy customer records or passages from process references.
+- Record source, generator, model, prompt, seed, and license provenance.
+- Keep counterfactual variants identical before their declared intervention.
 
-Business, authorization, and temporal rules, protocol trust-boundary
-validation, blind submission quotas and canaries, network isolation, and
-declared evaluator safety policy remain required controls.
-
-## Data authoring rules
-
-Author structured causal facts, event timing, visibility, policies, and rubric
-assertions before writing dialogue. Dialogue and document prose must be
-generated from an allowed-facts packet and must not change state, permissions,
-approvals, or outcomes.
-
-Use fictional entities, reserved domains, and non-routable phone numbers. Do
-not copy customer records or passages from process references. Cite process
-sources for design context and record generator, model, prompt, seed, and
-license provenance.
-
-The current pack contains 72 public worlds, 24 each in train, dev, and blind
-splits. Each world contains 100 to 120 artifacts, for 8,060 artifacts overall, and 180
-shared seller documents.
-
-The current records are generated from structured template blueprints. Expert
-authoring, recruitment, and review gates remain pending.
-
-## Review rules
-
-Every world requires automated schema and invariant checks, then two blinded
-expert reviews. Reviewers must not be told the intended outcome or the
-counterfactual intervention. Record actual results only in
-benchmarks/v1/reviews/.
-
-The reviewer template, status register, reproducibility guide, and release
-checklist are part of this repository. Expert recruitment, both reviews per
-world, stakeholder-model selection, model and judge calibration, the 12-world
-resource characterization pilot, official three-trial model runs, endpoint
-allowlisting, and end-to-end evaluator security evidence remain pending. Canary
-scanning, quota enforcement, exact-byte manifest hashing, HMAC result signing,
-immutable Podman isolation, and RevOps-only CRM merge are implemented and
-focused-tested.
+Every world must pass automated schema and invariant checks. The planned release
+process also requires two blinded expert reviews without revealing the intended
+outcome or intervention.
 
 ## Validation
 
-Run the complete machine checks before proposing a contract or runtime change:
+Run these checks before committing:
 
-~~~bash
+```bash
 uv run --group dev python3 -m unittest discover -s tests
-uv run --group dev python3 -m unittest tests.test_schema
+uv run --group dev ruff format --check .
 uv run --group dev ruff check .
-python3 -m compileall -q src tests
-edlb validate benchmarks/v1/output
-edlb validate benchmarks/v1
-~~~
+uv run --group dev mypy src
+uv run edlb validate benchmarks/v1/output
+uv run edlb validate benchmarks/v1
+```
 
-The schema suite uses Draft 2020-12 validators with an explicit RFC 3339
-date-time checker. It validates generated manifests, actors, artifacts,
-events, checkpoints, assertions, rubric assertions, reference protocol
-messages, and model serialization fixtures.
+Changes to generated data must be deterministic. Regenerate into a temporary
+directory and compare it with the checked pack before replacing files. See the
+[release checks](docs/running.md#release-checks).
 
 ## Licensing
 
-By contributing source, schemas, or documentation, you contribute under the
-MIT License unless the file states otherwise. Public synthetic data and retired
-test packs use CC BY 4.0. Do not submit material that requires a different
-license without maintainer approval.
+Source, schema, and documentation contributions use the MIT License unless a
+file states otherwise. Public synthetic data and retired test packs use CC BY
+4.0. Do not submit material requiring another license without maintainer
+approval.
